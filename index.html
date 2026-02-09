@@ -7,27 +7,30 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 95%; max-width: 1200px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* Number Panel Styling */
-        .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 8px; margin-bottom: 25px; background: #1a1a1a; padding: 15px; border-radius: 10px; }
+        /* Number Panel */
+        .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 8px; margin-bottom: 20px; background: #1a1a1a; padding: 15px; border-radius: 10px; }
         .num-btn { padding: 15px 5px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; }
-        .btn-green { background: #27ae60; grid-row: span 1; }
+        .btn-green { background: #27ae60; grid-row: span 3; }
         .btn-red { background: #c0392b; }
         .btn-black { background: #2c3e50; }
-        .num-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
-        .num-btn:active { transform: scale(0.9); }
+        .num-btn:hover { transform: scale(1.05); filter: brightness(1.2); }
+
+        /* Status & Logs */
+        .dashboard-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; }
+        .last-hit-box { background: #e8f5e9; border: 1px solid #27ae60; padding: 10px 20px; border-radius: 8px; color: #1b5e20; font-weight: bold; flex-grow: 1; margin-right: 15px; }
+        .reset-btn { background: #7f8c8d; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .reset-btn:hover { background: #2c3e50; }
 
         /* Grid & Cards */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
         .card { padding: 20px; border-radius: 12px; border: 2px solid #e0e0e0; position: relative; transition: 0.3s; }
         .streak-active { border-color: #f39c12; background: #fffdf0; }
-        .zone-hit { border-color: #27ae60; background: #f0fff4; animation: flash 0.5s; }
+        .zone-hit { border-color: #27ae60; background: #f0fff4; }
         
-        @keyframes flash { 0% { opacity: 0.5; } 100% { opacity: 1; } }
-
         .streak-badge { position: absolute; top: 10px; right: 10px; background: #f39c12; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }
         .peak-badge { position: absolute; top: 35px; right: 10px; color: #7f8c8d; font-size: 10px; font-weight: bold; }
         
-        .ds-badge { background: #34495e; color: white; padding: 5px 10px; border-radius: 5px; margin-right: 5px; font-size: 0.9em; font-weight: bold; }
+        .ds-badge { background: #34495e; color: white; padding: 5px 10px; border-radius: 5px; margin-right: 5px; font-size: 0.9em; font-weight: bold; display: inline-block; margin-top: 5px;}
         .active-ds { background: #27ae60; box-shadow: 0 0 8px #27ae60; }
         
         .history-bar { background: #2c3e50; color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; width: 100%; font-family: monospace; text-align: center; }
@@ -36,13 +39,18 @@
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; color: #2c3e50;">🎰 Terminal DS Pattern Tracker</h2>
+    <h2 style="text-align:center; color: #2c3e50;">🎰 DS Pattern Source Dashboard</h2>
 
     <div class="number-panel" id="numberPanel">
-        <button class="num-btn btn-green" onclick="handleSpin(0)" style="grid-column: 1; grid-row: 1 / 4;">0</button>
-        </div>
+        <button class="num-btn btn-green" onclick="handleSpin(0)">0</button>
+    </div>
 
-    <div class="history-bar" id="history">Click a number to begin tracking...</div>
+    <div class="dashboard-meta">
+        <div class="last-hit-box" id="patternSource">Last Hit Pattern: Waiting for data...</div>
+        <button class="reset-btn" onclick="resetSession()">Reset Session</button>
+    </div>
+
+    <div class="history-bar" id="history">Click a number to start...</div>
 
     <div class="grid" id="predictionGrid"></div>
 </div>
@@ -68,7 +76,6 @@
         32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29]
     };
 
-    // Initialize Number Panel
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
         const btn = document.createElement('button');
@@ -79,6 +86,15 @@
     }
 
     function getDS(num) { return num === 0 ? 0 : Math.ceil(num / 6); }
+
+    function resetSession() {
+        spins = [];
+        lastPredictionsDS = {};
+        for(let key in stats) stats[key] = { hits: 0, total: 0, streak: 0, peak: 0 };
+        document.getElementById('history').innerText = "Session Reset. Click a number...";
+        document.getElementById('patternSource').innerText = "Last Hit Pattern: Waiting...";
+        document.getElementById('predictionGrid').innerHTML = '';
+    }
 
     function handleSpin(val) {
         const currentDS = getDS(val);
@@ -96,6 +112,15 @@
                     stats[opName].streak = 0;
                 }
             }
+        }
+
+        const sourceBox = document.getElementById('patternSource');
+        if (winningOps.length > 0) {
+            sourceBox.innerText = `Last Hit (${val}): From ${winningOps.join(' & ')} | DS Group: ${currentDS}`;
+            sourceBox.style.background = "#e8f5e9";
+        } else {
+            sourceBox.innerText = `Last Hit (${val}): No Match`;
+            sourceBox.style.background = "#ffebee";
         }
 
         spins.push(val);
@@ -138,8 +163,8 @@
                 <div class="streak-badge">STREAK: ${opStats.streak}</div>
                 <div class="peak-badge">PEAK: ${opStats.peak}</div>
                 <strong>${op.name}</strong>
-                <p style="font-size: 0.8em; color: #7f8c8d;">Delta: ${deltaNum} (Terminals: ${terminals.join(',') || 'None'})</p>
-                <div style="margin-top:15px;">
+                <p style="font-size: 0.8em; color: #7f8c8d;">Next Delta: ${deltaNum}</p>
+                <div>
                     ${targetDS.map(ds => `<span class="ds-badge ${isWinner && ds === currentDS ? 'active-ds' : ''}">DS ${ds}</span>`).join('')}
                 </div>
             `;
