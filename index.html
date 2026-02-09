@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BIET Nature - Terminal Probability Tracker</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 95%; max-width: 900px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .card { padding: 15px; border-radius: 12px; border: 2px solid #e0e0e0; position: relative; transition: 0.3s; }
+        .active-hit { border-color: #27ae60; background: #f0fff4; transform: scale(1.02); }
+        .meter-container { background: #eee; height: 10px; border-radius: 5px; margin-top: 10px; overflow: hidden; }
+        .meter-fill { background: #27ae60; height: 100%; width: 0%; transition: width 0.5s; }
+        .stats { font-size: 0.85em; color: #666; margin-top: 5px; }
+        .ds-badge { background: #2c3e50; color: white; padding: 2px 6px; border-radius: 4px; margin-right: 3px; font-size: 0.8em; }
+        .history-bar { background: #2c3e50; color: white; padding: 12px; border-radius: 8px; margin: 20px 0; width: 100%; word-wrap: break-word; }
+        input { padding: 10px; border-radius: 5px; border: 1px solid #ccc; width: 80px; font-size: 16px; }
+        button { padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎯 Probability Pattern Tracker</h2>
+    
+    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 10px;">
+        <input type="number" id="spinInput" placeholder="Spin" min="0" max="36">
+        <button onclick="handleSpin()">Add Spin</button>
+    </div>
+
+    <div class="history-bar" id="history">History: Ready for input...</div>
+
+    <div class="grid" id="predictionGrid"></div>
+</div>
+
+<script>
+    let spins = [];
+    let lastPredictions = {}; // To store predictions made AFTER spin N to check against spin N+1
+    let stats = {
+        "Only (-)": { hits: 0, total: 0 },
+        "Only (- & -1)": { hits: 0, total: 0 },
+        "Only (- & +1)": { hits: 0, total: 0 },
+        "Only (+)": { hits: 0, total: 0 },
+        "Only (+ & -1)": { hits: 0, total: 0 },
+        "Only (+ & +1)": { hits: 0, total: 0 }
+    };
+
+    const terminalMap = {
+        1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17],
+        11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24],
+        18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29],
+        25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26],
+        32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29]
+    };
+
+    function getDS(num) { return num === 0 ? 0 : Math.ceil(num / 6); }
+
+    function handleSpin() {
+        const val = parseInt(document.getElementById('spinInput').value);
+        if (isNaN(val) || val < 0 || val > 36) return;
+        
+        // 1. Check if the new spin was a "Hit" for previous predictions
+        if (Object.keys(lastPredictions).length > 0) {
+            for (let opName in lastPredictions) {
+                stats[opName].total++;
+                if (lastPredictions[opName].includes(val)) {
+                    stats[opName].hits++;
+                }
+            }
+        }
+
+        spins.push(val);
+        document.getElementById('spinInput').value = '';
+        updateUI(val);
+    }
+
+    function updateUI(currentSpin) {
+        document.getElementById('history').innerText = "History: " + spins.join(" - ");
+        const grid = document.getElementById('predictionGrid');
+        grid.innerHTML = '';
+
+        if (spins.length < 2) return;
+
+        const last = spins[spins.length - 1];
+        const prev = spins[spins.length - 2];
+
+        const ops = [
+            { name: "Only (-)", res: Math.abs(last - prev) },
+            { name: "Only (- & -1)", res: Math.abs(last - prev) - 1 },
+            { name: "Only (- & +1)", res: Math.abs(last - prev) + 1 },
+            { name: "Only (+)", res: (last + prev) },
+            { name: "Only (+ & -1)", res: (last + prev) - 1 },
+            { name: "Only (+ & +1)", res: (last + prev) + 1 }
+        ];
+
+        let newPredictions = {};
+
+        ops.forEach(op => {
+            const resultNum = op.res;
+            const terminals = terminalMap[resultNum] || [];
+            // Target numbers = Delta itself + Terminals
+            const targetNumbers = [resultNum, ...terminals].filter(n => n > 0 && n <= 36);
+            newPredictions[op.name] = targetNumbers;
+
+            const streets = [...new Set(targetNumbers.map(t => getDS(t)))];
+            const hitRate = stats[op.name].total === 0 ? 0 : Math.round((stats[op.name].hits / stats[op.name].total) * 100);
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            // Highlight if the JUST LANDED spin was a hit for this operator
+            if (lastPredictions[op.name] && lastPredictions[op.name].includes(currentSpin)) {
+                card.classList.add('active-hit');
+            }
+
+            card.innerHTML = `
+                <strong>${op.name}</strong>
+                <div class="stats">Accuracy: ${hitRate}% (${stats[op.name].hits}/${stats[op.name].total})</div>
+                <div class="meter-container">
+                    <div class="meter-fill" style="width: ${hitRate}%"></div>
+                </div>
+                <p style="font-size: 0.9em; margin: 10px 0;">Next: ${targetNumbers.join(', ')}</p>
+                <div>${streets.map(s => `<span class="ds-badge">DS ${s}</span>`).join('')}</div>
+            `;
+            grid.appendChild(card);
+        });
+
+        lastPredictions = newPredictions;
+    }
+</script>
+</body>
+</html>
