@@ -2,52 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - DS Group Pattern Tracker</title>
+    <title>BIET - DS Pattern Dashboard</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 95%; max-width: 1100px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
-        .card { padding: 20px; border-radius: 12px; border: 2px solid #e0e0e0; transition: 0.3s; position: relative; }
+        .container { width: 95%; max-width: 1200px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* Zone-Based Hit Highlighting */
-        .zone-hit { border-color: #27ae60; background: #f0fff4; transform: translateY(-5px); box-shadow: 0 8px 20px rgba(39,174,96,0.15); }
-        .hit-indicator { position: absolute; top: 10px; right: 10px; background: #27ae60; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; visibility: hidden; }
-        .zone-hit .hit-indicator { visibility: visible; }
+        /* Number Panel Styling */
+        .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 8px; margin-bottom: 25px; background: #1a1a1a; padding: 15px; border-radius: 10px; }
+        .num-btn { padding: 15px 5px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; }
+        .btn-green { background: #27ae60; grid-row: span 1; }
+        .btn-red { background: #c0392b; }
+        .btn-black { background: #2c3e50; }
+        .num-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
+        .num-btn:active { transform: scale(0.9); }
 
-        .meter-container { background: #eee; height: 10px; border-radius: 5px; margin: 12px 0; }
-        .meter-fill { background: #27ae60; height: 100%; border-radius: 5px; transition: width 0.6s; }
-        .ds-badge { background: #2c3e50; color: white; padding: 4px 10px; border-radius: 5px; margin-right: 5px; font-size: 0.9em; font-weight: bold; border: 2px solid transparent; }
-        .active-ds { border-color: #f1c40f; background: #34495e; } /* Highlights the specific DS that hit */
+        /* Grid & Cards */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .card { padding: 20px; border-radius: 12px; border: 2px solid #e0e0e0; position: relative; transition: 0.3s; }
+        .streak-active { border-color: #f39c12; background: #fffdf0; }
+        .zone-hit { border-color: #27ae60; background: #f0fff4; animation: flash 0.5s; }
         
-        .history-bar { background: #2c3e50; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; width: 100%; font-family: monospace; font-size: 1.2em; text-align: center;}
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { padding: 12px; border-radius: 6px; border: 1px solid #ccc; width: 90px; font-size: 18px; text-align: center; }
-        button { padding: 12px 25px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .trend-label { color: #7f8c8d; font-size: 0.85em; margin-bottom: 10px; }
+        @keyframes flash { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .streak-badge { position: absolute; top: 10px; right: 10px; background: #f39c12; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }
+        .peak-badge { position: absolute; top: 35px; right: 10px; color: #7f8c8d; font-size: 10px; font-weight: bold; }
+        
+        .ds-badge { background: #34495e; color: white; padding: 5px 10px; border-radius: 5px; margin-right: 5px; font-size: 0.9em; font-weight: bold; }
+        .active-ds { background: #27ae60; box-shadow: 0 0 8px #27ae60; }
+        
+        .history-bar { background: #2c3e50; color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; width: 100%; font-family: monospace; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="color: #2c3e50;">📊 DS Group Pattern Source</h2>
-    
-    <div class="input-group">
-        <input type="number" id="spinInput" placeholder="Spin" min="0" max="36">
-        <button onclick="handleSpin()">Submit Result</button>
-    </div>
+    <h2 style="text-align:center; color: #2c3e50;">🎰 Terminal DS Pattern Tracker</h2>
 
-    <div class="history-bar" id="history">Waiting for spins...</div>
+    <div class="number-panel" id="numberPanel">
+        <button class="num-btn btn-green" onclick="handleSpin(0)" style="grid-column: 1; grid-row: 1 / 4;">0</button>
+        </div>
+
+    <div class="history-bar" id="history">Click a number to begin tracking...</div>
 
     <div class="grid" id="predictionGrid"></div>
 </div>
 
 <script>
+    const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
     let spins = [];
-    let lastPredictionsDS = {}; // Stores the Double Streets (1-6) predicted previously
+    let lastPredictionsDS = {}; 
     let stats = {
-        "Only (-)": { hits: 0, total: 0 }, "Only (- & -1)": { hits: 0, total: 0 },
-        "Only (- & +1)": { hits: 0, total: 0 }, "Only (+)": { hits: 0, total: 0 },
-        "Only (+ & -1)": { hits: 0, total: 0 }, "Only (+ & +1)": { hits: 0, total: 0 }
+        "Only (-)": { hits: 0, total: 0, streak: 0, peak: 0 },
+        "Only (- & -1)": { hits: 0, total: 0, streak: 0, peak: 0 },
+        "Only (- & +1)": { hits: 0, total: 0, streak: 0, peak: 0 },
+        "Only (+)": { hits: 0, total: 0, streak: 0, peak: 0 },
+        "Only (+ & -1)": { hits: 0, total: 0, streak: 0, peak: 0 },
+        "Only (+ & +1)": { hits: 0, total: 0, streak: 0, peak: 0 }
     };
 
     const terminalMap = {
@@ -58,38 +68,46 @@
         32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29]
     };
 
+    // Initialize Number Panel
+    const panel = document.getElementById('numberPanel');
+    for (let i = 1; i <= 36; i++) {
+        const btn = document.createElement('button');
+        btn.innerText = i;
+        btn.className = `num-btn ${redNumbers.includes(i) ? 'btn-red' : 'btn-black'}`;
+        btn.onclick = () => handleSpin(i);
+        panel.appendChild(btn);
+    }
+
     function getDS(num) { return num === 0 ? 0 : Math.ceil(num / 6); }
 
-    function handleSpin() {
-        const val = parseInt(document.getElementById('spinInput').value);
-        if (isNaN(val) || val < 0 || val > 36) return;
-        
+    function handleSpin(val) {
         const currentDS = getDS(val);
         let winningOps = [];
 
-        // Check against DS Groups instead of exact numbers
         if (Object.keys(lastPredictionsDS).length > 0) {
             for (let opName in lastPredictionsDS) {
                 stats[opName].total++;
                 if (lastPredictionsDS[opName].includes(currentDS)) {
                     stats[opName].hits++;
+                    stats[opName].streak++;
+                    if (stats[opName].streak > stats[opName].peak) stats[opName].peak = stats[opName].streak;
                     winningOps.push(opName);
+                } else {
+                    stats[opName].streak = 0;
                 }
             }
         }
 
         spins.push(val);
-        document.getElementById('spinInput').value = '';
         updateUI(currentDS, winningOps);
     }
 
     function updateUI(currentDS, winningOps) {
-        document.getElementById('history').innerText = spins.join(" → ");
+        document.getElementById('history').innerText = "History: " + spins.slice(-12).join(" | ");
         const grid = document.getElementById('predictionGrid');
         grid.innerHTML = '';
 
         if (spins.length < 2) return;
-
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
 
@@ -98,8 +116,8 @@
             { name: "Only (- & -1)", res: Math.abs(last - prev) - 1 },
             { name: "Only (- & +1)", res: Math.abs(last - prev) + 1 },
             { name: "Only (+)", res: (last + prev) },
-            { { name: "Only (+ & -1)", res: (last + prev) - 1 },
-            { { name: "Only (+ & +1)", res: (last + prev) + 1 }
+            { name: "Only (+ & -1)", res: (last + prev) - 1 },
+            { name: "Only (+ & +1)", res: (last + prev) + 1 }
         ];
 
         let nextPredictionsDS = {};
@@ -107,34 +125,26 @@
         ops.forEach(op => {
             const deltaNum = op.res;
             const terminals = terminalMap[deltaNum] || [];
-            // Group targets = Delta DS + Terminal DS
             const targetDS = [...new Set([deltaNum, ...terminals].map(n => getDS(n)))].filter(d => d > 0 && d <= 6);
             nextPredictionsDS[op.name] = targetDS;
 
-            const hitRate = stats[op.name].total === 0 ? 0 : Math.round((stats[op.name].hits / stats[op.name].total) * 100);
+            const opStats = stats[op.name];
             const isWinner = winningOps.includes(op.name);
 
             const card = document.createElement('div');
-            card.className = `card ${isWinner ? 'zone-hit' : ''}`;
+            card.className = `card ${opStats.streak > 0 ? 'streak-active' : ''} ${isWinner ? 'zone-hit' : ''}`;
             
             card.innerHTML = `
-                <div class="hit-indicator">ZONE HIT</div>
+                <div class="streak-badge">STREAK: ${opStats.streak}</div>
+                <div class="peak-badge">PEAK: ${opStats.peak}</div>
                 <strong>${op.name}</strong>
-                <div class="trend-label">Pattern Accuracy: ${hitRate}%</div>
-                <div class="meter-container"><div class="meter-fill" style="width: ${hitRate}%"></div></div>
+                <p style="font-size: 0.8em; color: #7f8c8d;">Delta: ${deltaNum} (Terminals: ${terminals.join(',') || 'None'})</p>
                 <div style="margin-top:15px;">
-                    ${targetDS.map(ds => `
-                        <span class="ds-badge ${isWinner && ds === currentDS ? 'active-ds' : ''}">
-                            DS ${ds}
-                        </span>`).join('')}
+                    ${targetDS.map(ds => `<span class="ds-badge ${isWinner && ds === currentDS ? 'active-ds' : ''}">DS ${ds}</span>`).join('')}
                 </div>
-                <p style="font-size:0.8em; color:#95a5a6; margin-top:10px;">
-                    Targeting: ${targetDS.map(d => `${(d*6)-5}-${d*6}`).join(', ')}
-                </p>
             `;
             grid.appendChild(card);
         });
-
         lastPredictionsDS = nextPredictionsDS;
     }
 </script>
