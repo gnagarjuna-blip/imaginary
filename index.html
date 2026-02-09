@@ -2,46 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Pattern Source Tracker</title>
+    <title>BIET - DS Group Pattern Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 95%; max-width: 1000px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
-        .card { padding: 18px; border-radius: 12px; border: 2px solid #e0e0e0; transition: all 0.4s ease; position: relative; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 95%; max-width: 1100px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .card { padding: 20px; border-radius: 12px; border: 2px solid #e0e0e0; transition: 0.3s; position: relative; }
         
-        /* Highlighting the Source of the current result */
-        .source-hit { border-color: #27ae60; background: #ebffef; transform: translateY(-5px); box-shadow: 0 5px 15px rgba(39,174,96,0.2); }
-        .source-badge { position: absolute; top: -10px; right: 10px; background: #27ae60; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; }
-        .source-hit .source-badge { display: block; }
+        /* Zone-Based Hit Highlighting */
+        .zone-hit { border-color: #27ae60; background: #f0fff4; transform: translateY(-5px); box-shadow: 0 8px 20px rgba(39,174,96,0.15); }
+        .hit-indicator { position: absolute; top: 10px; right: 10px; background: #27ae60; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; visibility: hidden; }
+        .zone-hit .hit-indicator { visibility: visible; }
 
-        .meter-container { background: #ddd; height: 8px; border-radius: 4px; margin: 10px 0; }
-        .meter-fill { background: #27ae60; height: 100%; width: 0%; border-radius: 4px; transition: width 0.6s; }
-        .ds-badge { background: #2c3e50; color: white; padding: 3px 8px; border-radius: 4px; margin-right: 4px; font-size: 0.85em; font-weight: bold; }
-        .history-bar { background: #2c3e50; color: white; padding: 15px; border-radius: 8px; margin: 20px 0; width: 100%; font-family: monospace; font-size: 1.1em; }
-        .input-section { display: flex; gap: 10px; margin-bottom: 15px; }
-        input { padding: 12px; border-radius: 6px; border: 1px solid #ccc; width: 100px; font-size: 18px; text-align: center; }
+        .meter-container { background: #eee; height: 10px; border-radius: 5px; margin: 12px 0; }
+        .meter-fill { background: #27ae60; height: 100%; border-radius: 5px; transition: width 0.6s; }
+        .ds-badge { background: #2c3e50; color: white; padding: 4px 10px; border-radius: 5px; margin-right: 5px; font-size: 0.9em; font-weight: bold; border: 2px solid transparent; }
+        .active-ds { border-color: #f1c40f; background: #34495e; } /* Highlights the specific DS that hit */
+        
+        .history-bar { background: #2c3e50; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; width: 100%; font-family: monospace; font-size: 1.2em; text-align: center;}
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { padding: 12px; border-radius: 6px; border: 1px solid #ccc; width: 90px; font-size: 18px; text-align: center; }
         button { padding: 12px 25px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .result-meta { color: #555; font-size: 0.9em; margin-bottom: 5px; }
+        .trend-label { color: #7f8c8d; font-size: 0.85em; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; color: #2c3e50;">🧬 Pattern Source Predictor</h2>
+    <h2 style="color: #2c3e50;">📊 DS Group Pattern Source</h2>
     
-    <div class="input-section">
+    <div class="input-group">
         <input type="number" id="spinInput" placeholder="Spin" min="0" max="36">
         <button onclick="handleSpin()">Submit Result</button>
     </div>
 
-    <div class="history-bar" id="history">History: Waiting for data...</div>
+    <div class="history-bar" id="history">Waiting for spins...</div>
 
     <div class="grid" id="predictionGrid"></div>
 </div>
 
 <script>
     let spins = [];
-    let lastPredictions = {}; 
+    let lastPredictionsDS = {}; // Stores the Double Streets (1-6) predicted previously
     let stats = {
         "Only (-)": { hits: 0, total: 0 }, "Only (- & -1)": { hits: 0, total: 0 },
         "Only (- & +1)": { hits: 0, total: 0 }, "Only (+)": { hits: 0, total: 0 },
@@ -62,26 +64,27 @@
         const val = parseInt(document.getElementById('spinInput').value);
         if (isNaN(val) || val < 0 || val > 36) return;
         
-        let winningOperators = [];
+        const currentDS = getDS(val);
+        let winningOps = [];
 
-        // Identify which operator produced the result
-        if (Object.keys(lastPredictions).length > 0) {
-            for (let opName in lastPredictions) {
+        // Check against DS Groups instead of exact numbers
+        if (Object.keys(lastPredictionsDS).length > 0) {
+            for (let opName in lastPredictionsDS) {
                 stats[opName].total++;
-                if (lastPredictions[opName].includes(val)) {
+                if (lastPredictionsDS[opName].includes(currentDS)) {
                     stats[opName].hits++;
-                    winningOperators.push(opName);
+                    winningOps.push(opName);
                 }
             }
         }
 
         spins.push(val);
         document.getElementById('spinInput').value = '';
-        updateUI(winningOperators);
+        updateUI(currentDS, winningOps);
     }
 
-    function updateUI(winningOps) {
-        document.getElementById('history').innerText = "Sequence: " + spins.join(" → ");
+    function updateUI(currentDS, winningOps) {
+        document.getElementById('history').innerText = spins.join(" → ");
         const grid = document.getElementById('predictionGrid');
         grid.innerHTML = '';
 
@@ -95,45 +98,44 @@
             { name: "Only (- & -1)", res: Math.abs(last - prev) - 1 },
             { name: "Only (- & +1)", res: Math.abs(last - prev) + 1 },
             { name: "Only (+)", res: (last + prev) },
-            { name: "Only (+ & -1)", res: (last + prev) - 1 },
-            { name: "Only (+ & +1)", res: (last + prev) + 1 }
+            { { name: "Only (+ & -1)", res: (last + prev) - 1 },
+            { { name: "Only (+ & +1)", res: (last + prev) + 1 }
         ];
 
-        let newPredictions = {};
+        let nextPredictionsDS = {};
 
         ops.forEach(op => {
-            const resultNum = op.res;
-            const terminals = terminalMap[resultNum] || [];
-            const targets = [resultNum, ...terminals].filter(n => n > 0 && n <= 36);
-            newPredictions[op.name] = targets;
+            const deltaNum = op.res;
+            const terminals = terminalMap[deltaNum] || [];
+            // Group targets = Delta DS + Terminal DS
+            const targetDS = [...new Set([deltaNum, ...terminals].map(n => getDS(n)))].filter(d => d > 0 && d <= 6);
+            nextPredictionsDS[op.name] = targetDS;
 
-            const streets = [...new Set(targets.map(t => getDS(t)))];
             const hitRate = stats[op.name].total === 0 ? 0 : Math.round((stats[op.name].hits / stats[op.name].total) * 100);
+            const isWinner = winningOps.includes(op.name);
 
             const card = document.createElement('div');
-            card.className = 'card';
+            card.className = `card ${isWinner ? 'zone-hit' : ''}`;
             
-            // Highlight if THIS operator was the source of the result
-            if (winningOps.includes(op.name)) {
-                card.classList.add('source-hit');
-            }
-
             card.innerHTML = `
-                <div class="source-badge">LAST HIT SOURCE</div>
+                <div class="hit-indicator">ZONE HIT</div>
                 <strong>${op.name}</strong>
-                <div class="stats">Success Rate: ${hitRate}%</div>
-                <div class="meter-container">
-                    <div class="meter-fill" style="width: ${hitRate}%"></div>
+                <div class="trend-label">Pattern Accuracy: ${hitRate}%</div>
+                <div class="meter-container"><div class="meter-fill" style="width: ${hitRate}%"></div></div>
+                <div style="margin-top:15px;">
+                    ${targetDS.map(ds => `
+                        <span class="ds-badge ${isWinner && ds === currentDS ? 'active-ds' : ''}">
+                            DS ${ds}
+                        </span>`).join('')}
                 </div>
-                <div class="result-meta">Predicted Terminals: ${targets.join(', ')}</div>
-                <div style="margin-top:10px;">
-                    ${streets.map(s => `<span class="ds-badge">DS ${s}</span>`).join('')}
-                </div>
+                <p style="font-size:0.8em; color:#95a5a6; margin-top:10px;">
+                    Targeting: ${targetDS.map(d => `${(d*6)-5}-${d*6}`).join(', ')}
+                </p>
             `;
             grid.appendChild(card);
         });
 
-        lastPredictions = newPredictions;
+        lastPredictionsDS = nextPredictionsDS;
     }
 </script>
 </body>
