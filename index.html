@@ -7,6 +7,18 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 95%; max-width: 1200px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
+        /* Bankroll Header Styling */
+        .bankroll-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #ebf2f7; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .input-group input { width: 90%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 18px; font-weight: bold; }
+        
+        .bankroll-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: #1a1a1a; color: white; padding: 15px; border-radius: 10px; text-align: center; border-bottom: 4px solid #3498db; }
+        .stat-card small { display: block; font-size: 12px; margin-bottom: 5px; }
+        .stat-card span { font-size: 20px; font-weight: bold; }
+        .val-win { color: #2ecc71; }
+        .val-loss { color: #e74c3c; }
+
         /* Number Panel */
         .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 8px; margin-bottom: 20px; background: #1a1a1a; padding: 15px; border-radius: 10px; }
         .num-btn { padding: 15px 5px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; }
@@ -18,8 +30,7 @@
         /* Status & Logs */
         .dashboard-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; }
         .last-hit-box { background: #e8f5e9; border: 1px solid #27ae60; padding: 10px 20px; border-radius: 8px; color: #1b5e20; font-weight: bold; flex-grow: 1; margin-right: 15px; }
-        .reset-btn { background: #7f8c8d; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .reset-btn:hover { background: #2c3e50; }
+        .reset-btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
         /* Grid & Cards */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
@@ -39,14 +50,34 @@
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; color: #2c3e50;">🎰 DS Pattern Source Dashboard</h2>
+    <div class="bankroll-inputs">
+        <div class="input-group">
+            <label>Bankroll</label>
+            <input type="number" id="inputBankroll" value="1500" onchange="initBankroll()">
+        </div>
+        <div class="input-group">
+            <label>Base Unit</label>
+            <input type="number" id="inputBase" value="10" onchange="initBankroll()">
+        </div>
+        <div class="input-group">
+            <label>Target %</label>
+            <input type="number" id="inputTarget" value="10" onchange="initBankroll()">
+        </div>
+    </div>
+
+    <div class="bankroll-stats">
+        <div class="stat-card"><small>Current Bankroll</small><span id="statBankroll">1500.00</span></div>
+        <div class="stat-card"><small>Session P/L</small><span id="statPL" class="val-win">0.00</span></div>
+        <div class="stat-card"><small>Current Stake</small><span id="statStake">10 (1x)</span></div>
+        <div class="stat-card"><small>Goal</small><span id="statGoal" class="val-win">+150.00</span></div>
+    </div>
 
     <div class="number-panel" id="numberPanel">
         <button class="num-btn btn-green" onclick="handleSpin(0)">0</button>
     </div>
 
     <div class="dashboard-meta">
-        <div class="last-hit-box" id="patternSource">Last Hit Pattern: Waiting for data...</div>
+        <div class="last-hit-box" id="patternSource">Last Hit Pattern: Waiting...</div>
         <button class="reset-btn" onclick="resetSession()">Reset Session</button>
     </div>
 
@@ -59,6 +90,13 @@
     const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
     let spins = [];
     let lastPredictionsDS = {}; 
+    
+    // Logic Variables
+    let currentBankroll = 1500;
+    let baseUnit = 10;
+    let multiplier = 1;
+    let sessionPL = 0;
+
     let stats = {
         "Only (-)": { hits: 0, total: 0, streak: 0, peak: 0 },
         "Only (- & -1)": { hits: 0, total: 0, streak: 0, peak: 0 },
@@ -76,6 +114,7 @@
         32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29]
     };
 
+    // Initialize Panel
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
         const btn = document.createElement('button');
@@ -85,20 +124,42 @@
         panel.appendChild(btn);
     }
 
+    function initBankroll() {
+        currentBankroll = parseFloat(document.getElementById('inputBankroll').value);
+        baseUnit = parseFloat(document.getElementById('inputBase').value);
+        let targetPer = parseFloat(document.getElementById('inputTarget').value);
+        
+        document.getElementById('statBankroll').innerText = currentBankroll.toFixed(2);
+        document.getElementById('statGoal').innerText = "+" + (currentBankroll * (targetPer/100)).toFixed(2);
+        document.getElementById('statStake').innerText = `${baseUnit * multiplier} (${multiplier}x)`;
+    }
+
     function getDS(num) { return num === 0 ? 0 : Math.ceil(num / 6); }
 
     function resetSession() {
         spins = [];
         lastPredictionsDS = {};
+        multiplier = 1;
+        sessionPL = 0;
+        initBankroll();
         for(let key in stats) stats[key] = { hits: 0, total: 0, streak: 0, peak: 0 };
         document.getElementById('history').innerText = "Session Reset. Click a number...";
         document.getElementById('patternSource').innerText = "Last Hit Pattern: Waiting...";
         document.getElementById('predictionGrid').innerHTML = '';
+        updateBankrollUI();
+    }
+
+    function updateBankrollUI() {
+        document.getElementById('statBankroll').innerText = currentBankroll.toFixed(2);
+        document.getElementById('statPL').innerText = sessionPL.toFixed(2);
+        document.getElementById('statPL').className = sessionPL >= 0 ? 'val-win' : 'val-loss';
+        document.getElementById('statStake').innerText = `${baseUnit * multiplier} (${multiplier}x)`;
     }
 
     function handleSpin(val) {
         const currentDS = getDS(val);
         let winningOps = [];
+        let isGlobalWin = false;
 
         if (Object.keys(lastPredictionsDS).length > 0) {
             for (let opName in lastPredictionsDS) {
@@ -108,9 +169,22 @@
                     stats[opName].streak++;
                     if (stats[opName].streak > stats[opName].peak) stats[opName].peak = stats[opName].streak;
                     winningOps.push(opName);
+                    isGlobalWin = true; // Count as win if any pattern hits
                 } else {
                     stats[opName].streak = 0;
                 }
+            }
+
+            // Logic: Loss = +1 unit, Win = -1 unit
+            let currentStakeValue = baseUnit * multiplier;
+            if (isGlobalWin) {
+                sessionPL += currentStakeValue; // Simplified P/L
+                currentBankroll += currentStakeValue;
+                if (multiplier > 1) multiplier--; 
+            } else {
+                sessionPL -= currentStakeValue;
+                currentBankroll -= currentStakeValue;
+                multiplier++;
             }
         }
 
@@ -124,6 +198,7 @@
         }
 
         spins.push(val);
+        updateBankrollUI();
         updateUI(currentDS, winningOps);
     }
 
@@ -172,6 +247,9 @@
         });
         lastPredictionsDS = nextPredictionsDS;
     }
+
+    // Initial setup call
+    initBankroll();
 </script>
 </body>
 </html>
