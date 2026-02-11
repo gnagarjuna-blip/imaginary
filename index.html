@@ -2,74 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - DS Pattern Dashboard</title>
+    <title>BIET - DS Double Street Dashboard</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 95%; max-width: 1200px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* Bankroll Header Styling */
         .bankroll-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #ebf2f7; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
         .input-group label { display: block; font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
         .input-group input { width: 90%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 18px; font-weight: bold; }
         
         .bankroll-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
         .stat-card { background: #1a1a1a; color: white; padding: 15px; border-radius: 10px; text-align: center; border-bottom: 4px solid #3498db; }
-        .stat-card small { display: block; font-size: 12px; margin-bottom: 5px; }
+        .stat-card small { display: block; font-size: 11px; margin-bottom: 5px; color: #bdc3c7; }
         .stat-card span { font-size: 20px; font-weight: bold; }
         .val-win { color: #2ecc71; }
         .val-loss { color: #e74c3c; }
 
-        /* Number Panel */
         .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 8px; margin-bottom: 20px; background: #1a1a1a; padding: 15px; border-radius: 10px; }
         .num-btn { padding: 15px 5px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; }
         .btn-green { background: #27ae60; grid-row: span 3; }
         .btn-red { background: #c0392b; }
         .btn-black { background: #2c3e50; }
-        .num-btn:hover { transform: scale(1.05); filter: brightness(1.2); }
 
-        /* Status & Logs */
         .dashboard-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; }
         .last-hit-box { background: #e8f5e9; border: 1px solid #27ae60; padding: 10px 20px; border-radius: 8px; color: #1b5e20; font-weight: bold; flex-grow: 1; margin-right: 15px; }
         .reset-btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        /* Grid & Cards */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-        .card { padding: 20px; border-radius: 12px; border: 2px solid #e0e0e0; position: relative; transition: 0.3s; }
+        .card { padding: 20px; border-radius: 12px; border: 2px solid #e0e0e0; position: relative; }
         .streak-active { border-color: #f39c12; background: #fffdf0; }
         .zone-hit { border-color: #27ae60; background: #f0fff4; }
         
         .streak-badge { position: absolute; top: 10px; right: 10px; background: #f39c12; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; }
-        .peak-badge { position: absolute; top: 35px; right: 10px; color: #7f8c8d; font-size: 10px; font-weight: bold; }
-        
         .ds-badge { background: #34495e; color: white; padding: 5px 10px; border-radius: 5px; margin-right: 5px; font-size: 0.9em; font-weight: bold; display: inline-block; margin-top: 5px;}
         .active-ds { background: #27ae60; box-shadow: 0 0 8px #27ae60; }
         
-        .history-bar { background: #2c3e50; color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; width: 100%; font-family: monospace; text-align: center; }
+        .history-bar { background: #2c3e50; color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; width: 100%; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="bankroll-inputs">
-        <div class="input-group">
-            <label>Bankroll</label>
-            <input type="number" id="inputBankroll" value="1500" onchange="initBankroll()">
-        </div>
-        <div class="input-group">
-            <label>Base Unit</label>
-            <input type="number" id="inputBase" value="10" onchange="initBankroll()">
-        </div>
-        <div class="input-group">
-            <label>Target %</label>
-            <input type="number" id="inputTarget" value="10" onchange="initBankroll()">
-        </div>
+        <div class="input-group"><label>Bankroll</label><input type="number" id="inputBankroll" value="1500" onchange="initBankroll()"></div>
+        <div class="input-group"><label>Base Unit (Per DS)</label><input type="number" id="inputBase" value="20" onchange="initBankroll()"></div>
+        <div class="input-group"><label>Target %</label><input type="number" id="inputTarget" value="10" onchange="initBankroll()"></div>
     </div>
 
     <div class="bankroll-stats">
         <div class="stat-card"><small>Current Bankroll</small><span id="statBankroll">1500.00</span></div>
-        <div class="stat-card"><small>Session P/L</small><span id="statPL" class="val-win">0.00</span></div>
-        <div class="stat-card"><small>Current Stake</small><span id="statStake">10 (1x)</span></div>
-        <div class="stat-card"><small>Goal</small><span id="statGoal" class="val-win">+150.00</span></div>
+        <div class="stat-card"><small>Session P/L</small><span id="statPL">0.00</span></div>
+        <div class="stat-card"><small>Stake per DS</small><span id="statStake">20 (1x)</span></div>
+        <div class="stat-card"><small>Goal</small><span id="statGoal">+150.00</span></div>
     </div>
 
     <div class="number-panel" id="numberPanel">
@@ -77,23 +61,28 @@
     </div>
 
     <div class="dashboard-meta">
-        <div class="last-hit-box" id="patternSource">Last Hit Pattern: Waiting...</div>
+        <div class="last-hit-box" id="patternSource">Enter 2 numbers to start prediction...</div>
         <button class="reset-btn" onclick="resetSession()">Reset Session</button>
     </div>
 
-    <div class="history-bar" id="history">Click a number to start...</div>
-
+    <div class="history-bar" id="history">History: Waiting...</div>
     <div class="grid" id="predictionGrid"></div>
 </div>
 
 <script>
     const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+    const terminalMap = {
+        1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17],
+        11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24],
+        18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29],
+        25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26],
+        32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29]
+    };
+
     let spins = [];
     let lastPredictionsDS = {}; 
-    
-    // Logic Variables
     let currentBankroll = 1500;
-    let baseUnit = 10;
+    let baseUnit = 20;
     let multiplier = 1;
     let sessionPL = 0;
 
@@ -106,15 +95,6 @@
         "Only (+ & +1)": { hits: 0, total: 0, streak: 0, peak: 0 }
     };
 
-    const terminalMap = {
-        1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17],
-        11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24],
-        18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29],
-        25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26],
-        32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29]
-    };
-
-    // Initialize Panel
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
         const btn = document.createElement('button');
@@ -127,11 +107,10 @@
     function initBankroll() {
         currentBankroll = parseFloat(document.getElementById('inputBankroll').value);
         baseUnit = parseFloat(document.getElementById('inputBase').value);
-        let targetPer = parseFloat(document.getElementById('inputTarget').value);
-        
+        let targetValue = (currentBankroll * (parseFloat(document.getElementById('inputTarget').value)/100));
         document.getElementById('statBankroll').innerText = currentBankroll.toFixed(2);
-        document.getElementById('statGoal').innerText = "+" + (currentBankroll * (targetPer/100)).toFixed(2);
-        document.getElementById('statStake').innerText = `${baseUnit * multiplier} (${multiplier}x)`;
+        document.getElementById('statGoal').innerText = "+" + targetValue.toFixed(2);
+        updateBankrollUI();
     }
 
     function getDS(num) { return num === 0 ? 0 : Math.ceil(num / 6); }
@@ -143,10 +122,8 @@
         sessionPL = 0;
         initBankroll();
         for(let key in stats) stats[key] = { hits: 0, total: 0, streak: 0, peak: 0 };
-        document.getElementById('history').innerText = "Session Reset. Click a number...";
-        document.getElementById('patternSource').innerText = "Last Hit Pattern: Waiting...";
+        document.getElementById('history').innerText = "History: Reset";
         document.getElementById('predictionGrid').innerHTML = '';
-        updateBankrollUI();
     }
 
     function updateBankrollUI() {
@@ -159,9 +136,18 @@
     function handleSpin(val) {
         const currentDS = getDS(val);
         let winningOps = [];
-        let isGlobalWin = false;
-
+        
         if (Object.keys(lastPredictionsDS).length > 0) {
+            // Logic: Count unique Double Streets covered across ALL patterns
+            let uniqueDSPredicted = new Set();
+            for (let op in lastPredictionsDS) {
+                lastPredictionsDS[op].forEach(ds => uniqueDSPredicted.add(ds));
+            }
+
+            let currentUnit = baseUnit * multiplier;
+            let totalRisk = uniqueDSPredicted.size * currentUnit;
+            let isHit = false;
+
             for (let opName in lastPredictionsDS) {
                 stats[opName].total++;
                 if (lastPredictionsDS[opName].includes(currentDS)) {
@@ -169,33 +155,29 @@
                     stats[opName].streak++;
                     if (stats[opName].streak > stats[opName].peak) stats[opName].peak = stats[opName].streak;
                     winningOps.push(opName);
-                    isGlobalWin = true; // Count as win if any pattern hits
+                    isHit = true;
                 } else {
                     stats[opName].streak = 0;
                 }
             }
 
-            // Logic: Loss = +1 unit, Win = -1 unit
-            let currentStakeValue = baseUnit * multiplier;
-            if (isGlobalWin) {
-                sessionPL += currentStakeValue; // Simplified P/L
-                currentBankroll += currentStakeValue;
-                if (multiplier > 1) multiplier--; 
+            if (isHit) {
+                // Double Street payout is 5:1. Total return = stake * 6
+                let totalReturn = currentUnit * 6; 
+                let profit = totalReturn - totalRisk;
+                sessionPL += profit;
+                currentBankroll += profit;
+                if (multiplier > 1) multiplier--;
             } else {
-                sessionPL -= currentStakeValue;
-                currentBankroll -= currentStakeValue;
+                sessionPL -= totalRisk;
+                currentBankroll -= totalRisk;
                 multiplier++;
             }
         }
 
         const sourceBox = document.getElementById('patternSource');
-        if (winningOps.length > 0) {
-            sourceBox.innerText = `Last Hit (${val}): From ${winningOps.join(' & ')} | DS Group: ${currentDS}`;
-            sourceBox.style.background = "#e8f5e9";
-        } else {
-            sourceBox.innerText = `Last Hit (${val}): No Match`;
-            sourceBox.style.background = "#ffebee";
-        }
+        sourceBox.innerText = winningOps.length > 0 ? `HIT: ${winningOps.join(', ')} (DS ${currentDS})` : `LOSS (DS ${currentDS})`;
+        sourceBox.style.background = winningOps.length > 0 ? "#e8f5e9" : "#ffebee";
 
         spins.push(val);
         updateBankrollUI();
@@ -203,14 +185,13 @@
     }
 
     function updateUI(currentDS, winningOps) {
-        document.getElementById('history').innerText = "History: " + spins.slice(-12).join(" | ");
+        document.getElementById('history').innerText = "History: " + spins.slice(-10).join(" | ");
         const grid = document.getElementById('predictionGrid');
         grid.innerHTML = '';
-
         if (spins.length < 2) return;
+
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
-
         const ops = [
             { name: "Only (-)", res: Math.abs(last - prev) },
             { name: "Only (- & -1)", res: Math.abs(last - prev) - 1 },
@@ -221,34 +202,23 @@
         ];
 
         let nextPredictionsDS = {};
-
         ops.forEach(op => {
-            const deltaNum = op.res;
-            const terminals = terminalMap[deltaNum] || [];
-            const targetDS = [...new Set([deltaNum, ...terminals].map(n => getDS(n)))].filter(d => d > 0 && d <= 6);
+            const terminals = terminalMap[op.res] || [];
+            const targetDS = [...new Set([op.res, ...terminals].map(n => getDS(n)))].filter(d => d > 0 && d <= 6);
             nextPredictionsDS[op.name] = targetDS;
 
-            const opStats = stats[op.name];
-            const isWinner = winningOps.includes(op.name);
-
             const card = document.createElement('div');
-            card.className = `card ${opStats.streak > 0 ? 'streak-active' : ''} ${isWinner ? 'zone-hit' : ''}`;
-            
+            card.className = `card ${stats[op.name].streak > 0 ? 'streak-active' : ''} ${winningOps.includes(op.name) ? 'zone-hit' : ''}`;
             card.innerHTML = `
-                <div class="streak-badge">STREAK: ${opStats.streak}</div>
-                <div class="peak-badge">PEAK: ${opStats.peak}</div>
+                <div class="streak-badge">STRK: ${stats[op.name].streak}</div>
                 <strong>${op.name}</strong>
-                <p style="font-size: 0.8em; color: #7f8c8d;">Next Delta: ${deltaNum}</p>
-                <div>
-                    ${targetDS.map(ds => `<span class="ds-badge ${isWinner && ds === currentDS ? 'active-ds' : ''}">DS ${ds}</span>`).join('')}
-                </div>
+                <p style="font-size: 11px; margin: 5px 0;">Delta: ${op.res}</p>
+                <div>${targetDS.map(ds => `<span class="ds-badge ${winningOps.includes(op.name) && ds === currentDS ? 'active-ds' : ''}">DS ${ds}</span>`).join('')}</div>
             `;
             grid.appendChild(card);
         });
         lastPredictionsDS = nextPredictionsDS;
     }
-
-    // Initial setup call
     initBankroll();
 </script>
 </body>
