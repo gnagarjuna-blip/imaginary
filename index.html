@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - DS Double Street Dashboard</title>
+    <title>BIET - DS Pattern Dashboard</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 95%; max-width: 1200px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
+        /* Bankroll Header */
         .bankroll-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #ebf2f7; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
         .input-group label { display: block; font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
         .input-group input { width: 90%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 18px; font-weight: bold; }
@@ -52,7 +53,7 @@
     <div class="bankroll-stats">
         <div class="stat-card"><small>Current Bankroll</small><span id="statBankroll">1500.00</span></div>
         <div class="stat-card"><small>Session P/L</small><span id="statPL">0.00</span></div>
-        <div class="stat-card"><small>Stake per DS</small><span id="statStake">20 (1x)</span></div>
+        <div class="stat-card"><small>Next Bet (Per DS)</small><span id="statStake">20 (1x)</span></div>
         <div class="stat-card"><small>Goal</small><span id="statGoal">+150.00</span></div>
     </div>
 
@@ -61,11 +62,11 @@
     </div>
 
     <div class="dashboard-meta">
-        <div class="last-hit-box" id="patternSource">Enter 2 numbers to start prediction...</div>
+        <div class="last-hit-box" id="patternSource">Waiting for 2 spins to generate patterns...</div>
         <button class="reset-btn" onclick="resetSession()">Reset Session</button>
     </div>
 
-    <div class="history-bar" id="history">History: Waiting...</div>
+    <div class="history-bar" id="history">History: Ready</div>
     <div class="grid" id="predictionGrid"></div>
 </div>
 
@@ -80,7 +81,7 @@
     };
 
     let spins = [];
-    let lastPredictionsDS = {}; 
+    let activePredictions = {}; // Holds predictions from PREVIOUS spin
     let currentBankroll = 1500;
     let baseUnit = 20;
     let multiplier = 1;
@@ -117,13 +118,14 @@
 
     function resetSession() {
         spins = [];
-        lastPredictionsDS = {};
+        activePredictions = {};
         multiplier = 1;
         sessionPL = 0;
         initBankroll();
         for(let key in stats) stats[key] = { hits: 0, total: 0, streak: 0, peak: 0 };
         document.getElementById('history').innerText = "History: Reset";
         document.getElementById('predictionGrid').innerHTML = '';
+        document.getElementById('patternSource').innerText = "Waiting for 2 spins...";
     }
 
     function updateBankrollUI() {
@@ -135,56 +137,66 @@
 
     function handleSpin(val) {
         const currentDS = getDS(val);
-        let winningOps = [];
-        
-        if (Object.keys(lastPredictionsDS).length > 0) {
-            // Logic: Count unique Double Streets covered across ALL patterns
-            let uniqueDSPredicted = new Set();
-            for (let op in lastPredictionsDS) {
-                lastPredictionsDS[op].forEach(ds => uniqueDSPredicted.add(ds));
+        let currentWinningPatterns = [];
+        let betWasActive = false;
+
+        // 1. EVALUATE PREVIOUS SPIN PREDICTIONS
+        if (Object.keys(activePredictions).length > 0) {
+            let uniqueDS = new Set();
+            for (let op in activePredictions) {
+                activePredictions[op].forEach(d => uniqueDS.add(d));
             }
 
-            let currentUnit = baseUnit * multiplier;
-            let totalRisk = uniqueDSPredicted.size * currentUnit;
-            let isHit = false;
+            if (uniqueDS.size > 0) {
+                betWasActive = true;
+                let unitAmount = baseUnit * multiplier;
+                let totalBetCost = uniqueDS.size * unitAmount;
+                let isHit = false;
 
-            for (let opName in lastPredictionsDS) {
-                stats[opName].total++;
-                if (lastPredictionsDS[opName].includes(currentDS)) {
-                    stats[opName].hits++;
-                    stats[opName].streak++;
-                    if (stats[opName].streak > stats[opName].peak) stats[opName].peak = stats[opName].streak;
-                    winningOps.push(opName);
-                    isHit = true;
-                } else {
-                    stats[opName].streak = 0;
+                for (let opName in activePredictions) {
+                    stats[opName].total++;
+                    if (activePredictions[opName].includes(currentDS)) {
+                        stats[opName].hits++;
+                        stats[opName].streak++;
+                        if (stats[opName].streak > stats[opName].peak) stats[opName].peak = stats[opName].streak;
+                        currentWinningPatterns.push(opName);
+                        isHit = true;
+                    } else {
+                        stats[opName].streak = 0;
+                    }
                 }
-            }
 
-            if (isHit) {
-                // Double Street payout is 5:1. Total return = stake * 6
-                let totalReturn = currentUnit * 6; 
-                let profit = totalReturn - totalRisk;
-                sessionPL += profit;
-                currentBankroll += profit;
-                if (multiplier > 1) multiplier--;
-            } else {
-                sessionPL -= totalRisk;
-                currentBankroll -= totalRisk;
-                multiplier++;
+                if (isHit) {
+                    let profit = (unitAmount * 6) - totalBetCost;
+                    sessionPL += profit;
+                    currentBankroll += profit;
+                    if (multiplier > 1) multiplier--;
+                } else {
+                    sessionPL -= totalBetCost;
+                    currentBankroll -= totalBetCost;
+                    multiplier++;
+                }
             }
         }
 
+        // 2. LOG RESULT
         const sourceBox = document.getElementById('patternSource');
-        sourceBox.innerText = winningOps.length > 0 ? `HIT: ${winningOps.join(', ')} (DS ${currentDS})` : `LOSS (DS ${currentDS})`;
-        sourceBox.style.background = winningOps.length > 0 ? "#e8f5e9" : "#ffebee";
+        if (!betWasActive) {
+            sourceBox.innerText = `Observation Mode (DS ${currentDS})`;
+            sourceBox.style.background = "#ebf2f7";
+        } else {
+            sourceBox.innerText = currentWinningPatterns.length > 0 ? `WIN: ${currentWinningPatterns.join(', ')} (DS ${currentDS})` : `LOSS (DS ${currentDS})`;
+            sourceBox.style.background = currentWinningPatterns.length > 0 ? "#e8f5e9" : "#ffebee";
+        }
 
         spins.push(val);
         updateBankrollUI();
-        updateUI(currentDS, winningOps);
+
+        // 3. GENERATE NEW PREDICTIONS FOR NEXT SPIN
+        generateNextPredictions(currentDS, currentWinningPatterns);
     }
 
-    function updateUI(currentDS, winningOps) {
+    function generateNextPredictions(currentDS, winningOps) {
         document.getElementById('history').innerText = "History: " + spins.slice(-10).join(" | ");
         const grid = document.getElementById('predictionGrid');
         grid.innerHTML = '';
@@ -201,23 +213,26 @@
             { name: "Only (+ & +1)", res: (last + prev) + 1 }
         ];
 
-        let nextPredictionsDS = {};
+        let nextCyclePredictions = {};
         ops.forEach(op => {
             const terminals = terminalMap[op.res] || [];
             const targetDS = [...new Set([op.res, ...terminals].map(n => getDS(n)))].filter(d => d > 0 && d <= 6);
-            nextPredictionsDS[op.name] = targetDS;
+            
+            if (targetDS.length > 0) nextCyclePredictions[op.name] = targetDS;
 
             const card = document.createElement('div');
             card.className = `card ${stats[op.name].streak > 0 ? 'streak-active' : ''} ${winningOps.includes(op.name) ? 'zone-hit' : ''}`;
             card.innerHTML = `
                 <div class="streak-badge">STRK: ${stats[op.name].streak}</div>
                 <strong>${op.name}</strong>
-                <p style="font-size: 11px; margin: 5px 0;">Delta: ${op.res}</p>
-                <div>${targetDS.map(ds => `<span class="ds-badge ${winningOps.includes(op.name) && ds === currentDS ? 'active-ds' : ''}">DS ${ds}</span>`).join('')}</div>
+                <p style="font-size: 11px; margin: 5px 0;">Next Delta: ${op.res}</p>
+                <div>${targetDS.length > 0 ? targetDS.map(ds => `<span class="ds-badge">DS ${ds}</span>`).join('') : '--'}</div>
             `;
             grid.appendChild(card);
         });
-        lastPredictionsDS = nextPredictionsDS;
+        
+        // Save these to check against the NEXT spin
+        activePredictions = nextCyclePredictions;
     }
     initBankroll();
 </script>
