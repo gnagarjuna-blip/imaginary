@@ -2,55 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Fast Wheel Input Tracker</title>
+    <title>BIET - Unpredicted Zone Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 95%; max-width: 1100px; background: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 1px solid #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 95%; max-width: 900px; background: #161616; padding: 25px; border-radius: 15px; border: 1px solid #333; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         
-        .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
-        .input-group label { display: block; font-size: 11px; font-weight: bold; color: #3498db; text-transform: uppercase; margin-bottom: 5px; }
-        .input-group select, .input-group input { width: 100%; padding: 10px; background: #333; color: #fff; border: 1px solid #555; border-radius: 5px; font-weight: bold; }
-
-        .dashboard { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 20px; }
-        .info-panel { background: #252525; padding: 15px; border-radius: 10px; border-left: 4px solid #3498db; }
-        .bet-panel { background: #1a1a1a; padding: 15px; border-radius: 10px; border: 2px solid #27ae60; text-align: center; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .op-box { background: #222; padding: 10px 20px; border-radius: 8px; border-left: 4px solid #f1c40f; }
         
-        .op-title { font-size: 14px; color: #999; margin-bottom: 5px; }
-        .op-value { font-size: 24px; font-weight: bold; color: #fff; }
-        .wheel-shorthand { font-size: 32px; font-weight: bold; color: #2ecc71; letter-spacing: 2px; margin: 10px 0; }
-        .note { font-size: 12px; color: #7f8c8d; margin-top: 5px; }
+        .bet-area { background: #002b36; border: 2px solid #268bd2; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px; position: relative; }
+        .bet-label { position: absolute; top: -12px; left: 20px; background: #268bd2; color: white; padding: 2px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        
+        .shorthand { font-size: 38px; font-weight: 800; color: #2aa198; letter-spacing: 2px; margin: 15px 0; text-shadow: 0 0 10px rgba(42, 161, 152, 0.5); }
+        .targets { font-size: 14px; color: #859900; font-family: monospace; }
 
         .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin-bottom: 20px; background: #000; padding: 15px; border-radius: 10px; }
-        .num-btn { padding: 15px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .num-btn { padding: 15px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.1s; }
+        .num-btn:active { transform: translateY(2px); }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
-        .history { background: #333; padding: 10px; border-radius: 8px; text-align: center; font-family: monospace; font-size: 16px; }
+        
+        .history { background: #1a1a1a; padding: 12px; border-radius: 8px; text-align: center; color: #666; font-size: 14px; }
+        .settings { margin-bottom: 20px; display: flex; gap: 20px; align-items: center; }
+        select { background: #333; color: white; border: 1px solid #555; padding: 5px 10px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="controls">
-        <div class="input-group"><label>Neighbor Count (n)</label>
+    <div class="header">
+        <div class="settings">
+            <label>Neighbor Count:</label>
             <select id="nVal">
                 <option value="1">1n</option><option value="2">2n</option><option value="3" selected>3n</option>
                 <option value="4">4n</option><option value="5">5n</option>
             </select>
         </div>
-        <div class="input-group"><label>Last Operator</label><div id="activeOp" class="op-value" style="font-size: 18px; color: #f1c40f;">WAITING...</div></div>
-        <div class="input-group"><label>Reset</label><button onclick="resetSession()" style="width:100%; padding:8px; background:#e74c3c; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">CLEAR DATA</button></div>
+        <div class="op-box">
+            <small style="color:#999">DETECTED OP</small>
+            <div id="activeOp" style="font-size: 20px; font-weight: bold; color: #f1c40f;">NONE</div>
+        </div>
     </div>
 
-    <div class="dashboard">
-        <div class="info-panel">
-            <div class="op-title">PREDICTED TARGETS</div>
-            <div id="targetList" style="font-size: 18px; font-weight: bold;">--</div>
-            <div class="note">These are Main Terminals based on the last operator move.</div>
-        </div>
-        <div class="bet-panel">
-            <div style="color: #2ecc71; font-weight: bold; text-transform: uppercase; font-size: 12px;">Fast Wheel Input (Unpredicted Zones)</div>
-            <div id="shorthandUI" class="wheel-shorthand">READY</div>
-            <div id="coverageNote" class="note">Enter numbers to generate instructions.</div>
-        </div>
+    <div class="bet-area">
+        <div class="bet-label">UNPREDICTED WHEEL ZONES (FAST INPUT)</div>
+        <div id="shorthandUI" class="shorthand">---</div>
+        <div id="targetUI" class="targets">Wait for input...</div>
     </div>
 
     <div class="number-panel" id="numberPanel">
@@ -58,10 +54,12 @@
     </div>
 
     <div class="history" id="history">HISTORY: --</div>
+    <button onclick="resetSession()" style="width:100%; margin-top:10px; background:transparent; border:1px solid #444; color:#666; padding:8px; cursor:pointer; border-radius:5px;">Reset</button>
 </div>
 
 <script>
-    const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    const red = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     const terminalMap = {
         1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17],
         11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24],
@@ -72,12 +70,12 @@
 
     let spins = [];
 
-    // Init Number Panel
+    // Build buttons
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
         const btn = document.createElement('button');
         btn.innerText = i;
-        btn.className = `num-btn ${[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i) ? 'btn-red' : 'btn-black'}`;
+        btn.className = `num-btn ${red.includes(i) ? 'btn-red' : 'btn-black'}`;
         btn.onclick = () => handleSpin(i);
         panel.appendChild(btn);
     }
@@ -92,53 +90,89 @@
         if (spins.length < 2) return;
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
-        const n = document.getElementById('nVal').value;
-        
+        const nAmount = parseInt(document.getElementById('nVal').value);
+
         const ops = [
-            { name: "+10", res: prev + 10 }, { name: "-10", res: prev - 10 },
-            { name: "+1", res: prev + 1 }, { name: "-1", res: prev - 1 }
+            { id: "+10", res: prev + 10 }, { id: "-10", res: prev - 10 },
+            { id: "+1", res: prev + 1 }, { id: "-1", res: prev - 1 }
         ];
 
         let matchedOp = null;
-        for (let op of ops) {
-            let terminals = [op.res, ...(terminalMap[op.res] || [])];
-            if (terminals.includes(last)) { matchedOp = op.name; break; }
+        for (let o of ops) {
+            let terms = [o.res, ...(terminalMap[o.res] || [])];
+            if (terms.includes(last)) { matchedOp = o.id; break; }
         }
 
-        if (matchedOp) {
-            document.getElementById('activeOp').innerText = matchedOp;
-            
-            // Calculate NEXT Target based on matched operator
-            let nextVal;
-            if (matchedOp === "+10") nextVal = last + 10;
-            else if (matchedOp === "-10") nextVal = last - 10;
-            else if (matchedOp === "+1") nextVal = last + 1;
-            else if (matchedOp === "-1") nextVal = last - 1;
+        if (!matchedOp) {
+            document.getElementById('activeOp').innerText = "WAITING";
+            return;
+        }
 
-            if (nextVal >= 0 && nextVal <= 36) {
-                let targets = [nextVal, ...(terminalMap[nextVal] || [])];
-                document.getElementById('targetList').innerText = targets.join(", ");
-                
-                // Build Wheel Shorthand for Fast Input
-                // Format: "X p Yn, Z p Yn"
-                let shorthand = targets.map(t => `${t} p ${n}n`).join(" | ");
-                document.getElementById('shorthandUI').innerText = shorthand;
-                document.getElementById('coverageNote').innerText = `Select these ${targets.length} points on the wheel with ${n} neighbors.`;
+        document.getElementById('activeOp').innerText = matchedOp;
+
+        // 1. Calculate the Predicted Zone (to avoid)
+        let nextVal;
+        if (matchedOp === "+10") nextVal = last + 10;
+        else if (matchedOp === "-10") nextVal = last - 10;
+        else if (matchedOp === "+1") nextVal = last + 1;
+        else if (matchedOp === "-1") nextVal = last - 1;
+
+        if (nextVal < 0 || nextVal > 36) return;
+
+        let predictPoints = [nextVal, ...(terminalMap[nextVal] || [])];
+        let predictedFullSet = new Set();
+
+        predictPoints.forEach(p => {
+            let idx = wheel.indexOf(p);
+            for (let i = -nAmount; i <= nAmount; i++) {
+                predictedFullSet.add(wheel[(idx + i + 37) % 37]);
             }
-        } else {
-            document.getElementById('activeOp').innerText = "NO MATCH";
-            document.getElementById('shorthandUI').innerText = "WAITING";
-            document.getElementById('targetList').innerText = "--";
-            document.getElementById('coverageNote').innerText = "The move from " + prev + " to " + last + " didn't match an operator.";
+        });
+
+        // 2. Identify the Unpredicted Blocks
+        let unpredictedIndices = [];
+        for (let i = 0; i < 37; i++) {
+            if (!predictedFullSet.has(wheel[i])) unpredictedIndices.push(i);
         }
+
+        // 3. Convert indices to shorthand notation (find center of blocks)
+        let blocks = [];
+        if (unpredictedIndices.length > 0) {
+            let currentBlock = [unpredictedIndices[0]];
+            for (let i = 1; i < unpredictedIndices.length; i++) {
+                if (unpredictedIndices[i] === unpredictedIndices[i - 1] + 1) {
+                    currentBlock.push(unpredictedIndices[i]);
+                } else {
+                    blocks.push(currentBlock);
+                    currentBlock = [unpredictedIndices[i]];
+                }
+            }
+            // Wrap around check
+            if (unpredictedIndices.includes(0) && unpredictedIndices.includes(36)) {
+                let lastBlock = currentBlock;
+                let firstBlock = blocks.shift();
+                blocks.push([...lastBlock, ...firstBlock]);
+            } else {
+                blocks.push(currentBlock);
+            }
+        }
+
+        // 4. Create shorthand (e.g., 2 p 5n)
+        let resultShorthand = blocks.map(b => {
+            let midIndex = b[Math.floor(b.length / 2)];
+            let nForBlock = Math.floor((b.length - 1) / 2);
+            return `${wheel[midIndex]} p ${nForBlock}n`;
+        });
+
+        document.getElementById('shorthandUI').innerText = resultShorthand.join(" | ");
+        document.getElementById('targetUI').innerText = "AVOIDING ZONES AROUND: " + predictPoints.join(", ");
     }
 
     function resetSession() {
         spins = [];
-        document.getElementById('activeOp').innerText = "WAITING...";
-        document.getElementById('shorthandUI').innerText = "READY";
-        document.getElementById('targetList').innerText = "--";
-        document.getElementById('history').innerText = "HISTORY: --";
+        document.getElementById('shorthandUI').innerText = "---";
+        document.getElementById('activeOp').innerText = "NONE";
+        document.getElementById('targetUI').innerText = "Wait for input...";
     }
 </script>
 </body>
