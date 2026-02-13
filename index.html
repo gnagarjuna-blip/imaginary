@@ -2,40 +2,65 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - DS Adaptive Broad Match</title>
+    <title>BIET - Straight Up Adaptive Tracker</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 95%; max-width: 1200px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: #ebf2f7; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 11px; font-weight: bold; color: #2c3e50; text-transform: uppercase; margin-bottom: 5px; }
+        .input-group select, .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-weight: bold; }
+
         .bankroll-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
         .stat-card { background: #1a1a1a; color: white; padding: 12px; border-radius: 10px; text-align: center; border-bottom: 4px solid #3498db; }
-        .stat-card small { display: block; font-size: 10px; color: #bdc3c7; margin-bottom: 5px; text-transform: uppercase; }
+        .stat-card small { display: block; font-size: 10px; color: #bdc3c7; margin-bottom: 5px; }
         .stat-card span { font-size: 18px; font-weight: bold; }
-        .signal-box { background: #fff3e0; border: 2px solid #ff9800; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; min-height: 110px; }
+
+        .signal-box { background: #fff3e0; border: 2px solid #ff9800; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; min-height: 120px; }
         .op-badge { background: #2c3e50; color: #fff; padding: 6px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
-        .streak-badge { background: #2ecc71; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
-        .ds-chip { background: #ff9800; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; font-size: 24px; margin: 5px; display: inline-block; box-shadow: 0 4px 0 #bf7100; border: none; }
+        .num-chip { background: #ff9800; color: white; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 16px; margin: 3px; display: inline-block; box-shadow: 0 2px 0 #bf7100; }
+        
         .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin-bottom: 20px; background: #1a1a1a; padding: 15px; border-radius: 10px; }
-        .num-btn { padding: 12px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.15s; }
-        .num-btn:active { transform: scale(0.9); }
+        .num-btn { padding: 12px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
-        .history-bar { background: #2c3e50; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; width: 100%; text-align: center; font-family: monospace; }
-        .waiting-msg { color: #95a5a6; font-style: italic; font-size: 18px; margin-top: 10px; }
+        
+        .history-bar { background: #2c3e50; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; width: 100%; text-align: center; }
+        .val-win { color: #2ecc71; } .val-loss { color: #e74c3c; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="controls">
+        <div class="input-group"><label>Bankroll</label><input type="number" id="inputBankroll" value="1500" onchange="updateUI()"></div>
+        <div class="input-group"><label>Base Stake/Num</label><input type="number" id="inputBase" value="5" onchange="updateUI()"></div>
+        <div class="input-group">
+            <label>Neighbors (0-7)</label>
+            <select id="neighborSelect" onchange="resetLogic()">
+                <option value="0">0 Neighbors</option>
+                <option value="1">1 Neighbor</option>
+                <option value="2" selected>2 Neighbors</option>
+                <option value="3">3 Neighbors</option>
+                <option value="4">4 Neighbors</option>
+                <option value="5">5 Neighbors</option>
+                <option value="6">6 Neighbors</option>
+                <option value="7">7 Neighbors</option>
+            </select>
+        </div>
+        <div class="input-group"><label>Session</label><button onclick="resetSession()" style="width:100%; height:35px; background:#e74c3c; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">RESET</button></div>
+    </div>
+
     <div class="bankroll-stats">
         <div class="stat-card"><small>Bankroll</small><span id="statBankroll">1500.00</span></div>
         <div class="stat-card"><small>P/L</small><span id="statPL">0.00</span></div>
-        <div class="stat-card"><small>Stake</small><span id="statStake">20</span></div>
         <div class="stat-card"><small>Active Op</small><span id="statOp">NONE</span></div>
         <div class="stat-card"><small>Streak</small><span id="statStreak">0</span></div>
+        <div class="stat-card"><small>Total Bet</small><span id="statTotalBet">0</span></div>
     </div>
 
-    <div class="signal-box" id="signalBox">
+    <div class="signal-box">
         <div id="opUI"></div>
-        <div id="betList"><span class="waiting-msg">ENTER NUMBERS TO IDENTIFY OPERATOR STREETS</span></div>
+        <div id="betList"><span style="color:#95a5a6; font-style:italic;">ENTER NUMBERS TO DETECT STRAIGHT UP MATCH</span></div>
     </div>
 
     <div class="number-panel" id="numberPanel">
@@ -43,12 +68,10 @@
     </div>
 
     <div class="history-bar" id="history">Waiting for spins...</div>
-    <div style="text-align: right; width: 100%;">
-        <button onclick="resetSession()" style="background:#e74c3c; color:white; border:none; padding:10px 25px; border-radius:5px; cursor:pointer; font-weight:bold;">RESET SESSION</button>
-    </div>
 </div>
 
 <script>
+    const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     const terminalMap = {
         1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17],
@@ -60,12 +83,12 @@
 
     let spins = [];
     let currentBankroll = 1500;
-    let baseUnit = 20;
     let sessionPL = 0;
-    let currentBetDS = [];
     let activeOpName = null;
     let streakCount = 0;
+    let currentBetNums = [];
 
+    // Init Number Panel
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
         const btn = document.createElement('button');
@@ -75,47 +98,56 @@
         panel.appendChild(btn);
     }
 
-    function getDS(num) { 
-        return (num > 0 && num <= 36) ? Math.ceil(num / 6) : null; 
+    function getNeighbors(num, count) {
+        if (count === 0) return [num];
+        let idx = wheelOrder.indexOf(num);
+        let result = [];
+        for (let i = -count; i <= count; i++) {
+            let neighborIdx = (idx + i + wheelOrder.length) % wheelOrder.length;
+            result.push(wheelOrder[neighborIdx]);
+        }
+        return result;
     }
 
-    // New helper to get all DS associated with a target and its terminals
-    function getOperatorDSSet(targetValue) {
-        if (targetValue < 1 || targetValue > 36) return [];
+    function getPredictionSet(targetValue) {
+        if (targetValue < 0 || targetValue > 36) return [];
+        const nAmount = parseInt(document.getElementById('neighborSelect').value);
         let terminals = terminalMap[targetValue] || [];
-        let allNums = [targetValue, ...terminals];
-        return [...new Set(allNums.map(n => getDS(n)))].filter(d => d !== null).sort();
+        let baseNums = [targetValue, ...terminals];
+        
+        let finalSet = new Set();
+        baseNums.forEach(n => {
+            getNeighbors(n, nAmount).forEach(neighbor => finalSet.add(neighbor));
+        });
+        return Array.from(finalSet);
     }
 
     function handleSpin(val) {
-        const spinDS = getDS(val);
-
-        // Resolve Bet Result
-        if (currentBetDS.length > 0) {
-            if (currentBetDS.includes(spinDS)) {
-                let profit = (baseUnit * 6) - (currentBetDS.length * baseUnit);
-                sessionPL += profit; currentBankroll += profit;
+        // 1. Resolve Bet
+        if (currentBetNums.length > 0) {
+            let unit = parseFloat(document.getElementById('inputBase').value);
+            if (currentBetNums.includes(val)) {
+                let win = unit * 36;
+                let cost = currentBetNums.length * unit;
+                sessionPL += (win - cost); currentBankroll += (win - cost);
             } else {
-                let loss = currentBetDS.length * baseUnit;
+                let loss = currentBetNums.length * unit;
                 sessionPL -= loss; currentBankroll -= loss;
             }
         }
 
         spins.push(val);
-        processBroadLogic(val);
+        processStraightLogic(val);
         updateUI();
     }
 
-    function processBroadLogic(lastResult) {
+    function processStraightLogic(lastResult) {
         if (spins.length < 2) return;
         const prevResult = spins[spins.length - 2];
-        const lastDS = getDS(lastResult);
-        
         const operators = ["+10", "-10", "+1", "-1"];
         let matchedOp = null;
 
-        // Broad Match: Check if the LATEST spin falls into ANY DS 
-        // generated by applying the operator to the PREVIOUS spin.
+        // Check which operator connecting prev -> last
         for (let op of operators) {
             let target;
             if (op === "+10") target = prevResult + 10;
@@ -123,8 +155,8 @@
             else if (op === "+1") target = prevResult + 1;
             else if (op === "-1") target = prevResult - 1;
 
-            let possibleDS = getOperatorDSSet(target);
-            if (possibleDS.includes(lastDS)) {
+            let possibleSet = getPredictionSet(target);
+            if (possibleSet.includes(lastResult)) {
                 matchedOp = op;
                 break;
             }
@@ -134,40 +166,25 @@
         const opUI = document.getElementById('opUI');
 
         if (matchedOp) {
-            // Update Streak Logic
-            if (matchedOp === activeOpName) {
-                streakCount++;
-            } else {
-                activeOpName = matchedOp;
-                streakCount = 1;
-            }
+            if (matchedOp === activeOpName) streakCount++;
+            else { activeOpName = matchedOp; streakCount = 1; }
 
-            // Predict Next: Apply matched operator to LATEST spin
+            // Predict Next
             let nextTarget;
             if (matchedOp === "+10") nextTarget = lastResult + 10;
             else if (matchedOp === "-10") nextTarget = lastResult - 10;
             else if (matchedOp === "+1") nextTarget = lastResult + 1;
             else if (matchedOp === "-1") nextTarget = lastResult - 1;
 
-            let nextDSSet = getOperatorDSSet(nextTarget);
-
-            if (nextDSSet.length > 0 && nextDSSet.length <= 3) {
-                currentBetDS = nextDSSet;
-                opUI.innerHTML = `<span class="op-badge">${matchedOp} MATCH <span class="streak-badge">Streak: ${streakCount}</span></span>`;
-                betListDiv.innerHTML = `<div style="color:#2c3e50; font-size:11px; font-weight:bold; margin-bottom:5px;">PREDICTED FOR NEXT:</div>` + 
-                                       currentBetDS.map(d => `<div class="ds-chip">DS ${d}</div>`).join('');
-            } else {
-                currentBetDS = [];
-                opUI.innerHTML = `<span class="op-badge">${matchedOp} (DS > 3)</span>`;
-                betListDiv.innerHTML = `<span class="waiting-msg">STREETS DETECTED BUT COUNT IS ${nextDSSet.length} (MAX 3).</span>`;
-            }
+            currentBetNums = getPredictionSet(nextTarget);
+            
+            opUI.innerHTML = `<span class="op-badge">${matchedOp} ACTIVE <span style="margin-left:10px; color:#2ecc71;">Streak: ${streakCount}</span></span>`;
+            betListDiv.innerHTML = `<div style="margin-bottom:8px; font-weight:bold; color:#e67e22;">BET STRAIGHT UP (${currentBetNums.length} NOS):</div>` + 
+                                   currentBetNums.sort((a,b)=>a-b).map(n => `<div class="num-chip">${n}</div>`).join('');
         } else {
-            // Reset if no operator explains the transition
-            activeOpName = null;
-            streakCount = 0;
-            currentBetDS = [];
+            activeOpName = null; streakCount = 0; currentBetNums = [];
             opUI.innerHTML = "";
-            betListDiv.innerHTML = `<span class="waiting-msg">NO MATCHING STREETS FOUND. WAITING...</span>`;
+            betListDiv.innerHTML = `<span style="color:#95a5a6; font-style:italic;">NO OPERATOR MATCHED. WAITING...</span>`;
         }
     }
 
@@ -177,14 +194,19 @@
         document.getElementById('statPL').className = sessionPL >= 0 ? 'val-win' : 'val-loss';
         document.getElementById('statOp').innerText = activeOpName || "NONE";
         document.getElementById('statStreak').innerText = streakCount;
+        document.getElementById('statTotalBet').innerText = currentBetNums.length * parseFloat(document.getElementById('inputBase').value);
         document.getElementById('history').innerText = "HISTORY: " + spins.slice(-12).join(" | ");
     }
 
-    function resetSession() {
-        spins = []; currentBetDS = []; sessionPL = 0; activeOpName = null; streakCount = 0;
-        document.getElementById('betList').innerHTML = `<span class="waiting-msg">ENTER NUMBERS TO IDENTIFY OPERATOR STREETS</span>`;
-        document.getElementById('opUI').innerHTML = "";
+    function resetLogic() {
+        activeOpName = null; streakCount = 0; currentBetNums = [];
         updateUI();
+    }
+
+    function resetSession() {
+        spins = []; currentBankroll = parseFloat(document.getElementById('inputBankroll').value);
+        sessionPL = 0; resetLogic();
+        document.getElementById('betList').innerHTML = `<span style="color:#95a5a6; font-style:italic;">ENTER NUMBERS TO DETECT STRAIGHT UP MATCH</span>`;
     }
 </script>
 </body>
