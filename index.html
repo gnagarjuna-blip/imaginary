@@ -2,21 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - DS Operator Tracker</title>
+    <title>BIET - DS Adaptive Broad Match</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 95%; max-width: 1200px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .bankroll-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .bankroll-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
         .stat-card { background: #1a1a1a; color: white; padding: 12px; border-radius: 10px; text-align: center; border-bottom: 4px solid #3498db; }
-        .stat-card span { font-size: 18px; font-weight: bold; display: block; }
-        .signal-box { background: #fff3e0; border: 2px solid #ff9800; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; min-height: 100px; }
-        .op-tag { background: #2c3e50; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; display: inline-block; }
-        .ds-chip { background: #ff9800; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; font-size: 24px; margin: 5px; display: inline-block; box-shadow: 0 4px 0 #bf7100; }
+        .stat-card small { display: block; font-size: 10px; color: #bdc3c7; margin-bottom: 5px; text-transform: uppercase; }
+        .stat-card span { font-size: 18px; font-weight: bold; }
+        .signal-box { background: #fff3e0; border: 2px solid #ff9800; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; min-height: 110px; }
+        .op-badge { background: #2c3e50; color: #fff; padding: 6px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+        .streak-badge { background: #2ecc71; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
+        .ds-chip { background: #ff9800; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; font-size: 24px; margin: 5px; display: inline-block; box-shadow: 0 4px 0 #bf7100; border: none; }
         .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin-bottom: 20px; background: #1a1a1a; padding: 15px; border-radius: 10px; }
-        .num-btn { padding: 12px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
+        .num-btn { padding: 12px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.15s; }
+        .num-btn:active { transform: scale(0.9); }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
-        .history-bar { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; width: 100%; text-align: center; }
-        .waiting-msg { color: #95a5a6; font-style: italic; font-size: 18px; }
+        .history-bar { background: #2c3e50; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; width: 100%; text-align: center; font-family: monospace; }
+        .waiting-msg { color: #95a5a6; font-style: italic; font-size: 18px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -24,22 +27,25 @@
 <div class="container">
     <div class="bankroll-stats">
         <div class="stat-card"><small>Bankroll</small><span id="statBankroll">1500.00</span></div>
-        <div class="stat-card"><small>Profit/Loss</small><span id="statPL">0.00</span></div>
-        <div class="stat-card"><small>Stake/DS</small><span id="statStake">20</span></div>
+        <div class="stat-card"><small>P/L</small><span id="statPL">0.00</span></div>
+        <div class="stat-card"><small>Stake</small><span id="statStake">20</span></div>
         <div class="stat-card"><small>Active Op</small><span id="statOp">NONE</span></div>
+        <div class="stat-card"><small>Streak</small><span id="statStreak">0</span></div>
     </div>
 
     <div class="signal-box" id="signalBox">
-        <div id="opIndicator"></div>
-        <div id="betList"><span class="waiting-msg">ENTER AT LEAST 2 SPINS TO DETECT OPERATOR</span></div>
+        <div id="opUI"></div>
+        <div id="betList"><span class="waiting-msg">ENTER NUMBERS TO IDENTIFY OPERATOR STREETS</span></div>
     </div>
 
     <div class="number-panel" id="numberPanel">
         <button class="num-btn btn-green" onclick="handleSpin(0)">0</button>
     </div>
 
-    <div class="history-bar" id="history">Waiting for data...</div>
-    <button onclick="resetSession()" style="background:#e74c3c; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Reset</button>
+    <div class="history-bar" id="history">Waiting for spins...</div>
+    <div style="text-align: right; width: 100%;">
+        <button onclick="resetSession()" style="background:#e74c3c; color:white; border:none; padding:10px 25px; border-radius:5px; cursor:pointer; font-weight:bold;">RESET SESSION</button>
+    </div>
 </div>
 
 <script>
@@ -57,9 +63,9 @@
     let baseUnit = 20;
     let sessionPL = 0;
     let currentBetDS = [];
-    let lastActiveOp = null;
+    let activeOpName = null;
+    let streakCount = 0;
 
-    // Build Panel
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
         const btn = document.createElement('button');
@@ -73,10 +79,19 @@
         return (num > 0 && num <= 36) ? Math.ceil(num / 6) : null; 
     }
 
+    // New helper to get all DS associated with a target and its terminals
+    function getOperatorDSSet(targetValue) {
+        if (targetValue < 1 || targetValue > 36) return [];
+        let terminals = terminalMap[targetValue] || [];
+        let allNums = [targetValue, ...terminals];
+        return [...new Set(allNums.map(n => getDS(n)))].filter(d => d !== null).sort();
+    }
+
     function handleSpin(val) {
-        // 1. Check Win/Loss
+        const spinDS = getDS(val);
+
+        // Resolve Bet Result
         if (currentBetDS.length > 0) {
-            const spinDS = getDS(val);
             if (currentBetDS.includes(spinDS)) {
                 let profit = (baseUnit * 6) - (currentBetDS.length * baseUnit);
                 sessionPL += profit; currentBankroll += profit;
@@ -87,78 +102,88 @@
         }
 
         spins.push(val);
+        processBroadLogic(val);
         updateUI();
-        processLogic();
     }
 
-    function processLogic() {
+    function processBroadLogic(lastResult) {
         if (spins.length < 2) return;
-
-        const last = spins[spins.length - 1];
-        const prev = spins[spins.length - 2];
+        const prevResult = spins[spins.length - 2];
+        const lastDS = getDS(lastResult);
         
-        // Find which operator connects prev to last
-        const possibleOps = [
-            { name: "+10", target: prev + 10 },
-            { name: "-10", target: prev - 10 },
-            { name: "+1", target: prev + 1 },
-            { name: "-1", target: prev - 1 }
-        ];
+        const operators = ["+10", "-10", "+1", "-1"];
+        let matchedOp = null;
 
-        let detectedOp = null;
-        for (let op of possibleOps) {
-            let terminals = terminalMap[op.target] || [];
-            if (last === op.target || terminals.includes(last)) {
-                detectedOp = op.name;
+        // Broad Match: Check if the LATEST spin falls into ANY DS 
+        // generated by applying the operator to the PREVIOUS spin.
+        for (let op of operators) {
+            let target;
+            if (op === "+10") target = prevResult + 10;
+            else if (op === "-10") target = prevResult - 10;
+            else if (op === "+1") target = prevResult + 1;
+            else if (op === "-1") target = prevResult - 1;
+
+            let possibleDS = getOperatorDSSet(target);
+            if (possibleDS.includes(lastDS)) {
+                matchedOp = op;
                 break;
             }
         }
 
         const betListDiv = document.getElementById('betList');
-        const opIndicator = document.getElementById('opIndicator');
+        const opUI = document.getElementById('opUI');
 
-        if (detectedOp) {
-            lastActiveOp = detectedOp;
-            document.getElementById('statOp').innerText = detectedOp;
-            
-            // Apply detected operator to the LATEST result
+        if (matchedOp) {
+            // Update Streak Logic
+            if (matchedOp === activeOpName) {
+                streakCount++;
+            } else {
+                activeOpName = matchedOp;
+                streakCount = 1;
+            }
+
+            // Predict Next: Apply matched operator to LATEST spin
             let nextTarget;
-            if (detectedOp === "+10") nextTarget = last + 10;
-            else if (detectedOp === "-10") nextTarget = last - 10;
-            else if (detectedOp === "+1") nextTarget = last + 1;
-            else if (detectedOp === "-1") nextTarget = last - 1;
+            if (matchedOp === "+10") nextTarget = lastResult + 10;
+            else if (matchedOp === "-10") nextTarget = lastResult - 10;
+            else if (matchedOp === "+1") nextTarget = lastResult + 1;
+            else if (matchedOp === "-1") nextTarget = lastResult - 1;
 
-            let nextTerminals = terminalMap[nextTarget] || [];
-            let dsSet = [...new Set([nextTarget, ...nextTerminals].map(n => getDS(n)))].filter(d => d !== null);
+            let nextDSSet = getOperatorDSSet(nextTarget);
 
-            if (dsSet.length > 0 && dsSet.length <= 3) {
-                currentBetDS = dsSet;
-                opIndicator.innerHTML = `<span class="op-tag">DETECTED: ${detectedOp}</span>`;
-                betListDiv.innerHTML = `<div style="color:#e65100; font-weight:bold; margin-bottom:5px;">NEXT PREDICTION:</div>` + 
-                                       currentBetDS.sort().map(d => `<div class="ds-chip">DS ${d}</div>`).join('');
+            if (nextDSSet.length > 0 && nextDSSet.length <= 3) {
+                currentBetDS = nextDSSet;
+                opUI.innerHTML = `<span class="op-badge">${matchedOp} MATCH <span class="streak-badge">Streak: ${streakCount}</span></span>`;
+                betListDiv.innerHTML = `<div style="color:#2c3e50; font-size:11px; font-weight:bold; margin-bottom:5px;">PREDICTED FOR NEXT:</div>` + 
+                                       currentBetDS.map(d => `<div class="ds-chip">DS ${d}</div>`).join('');
             } else {
                 currentBetDS = [];
-                opIndicator.innerHTML = `<span class="op-tag">WAITING</span>`;
-                betListDiv.innerHTML = `<span class="waiting-msg">OPERATOR ${detectedOp} YIELDS > 3 DS. SKIPPING.</span>`;
+                opUI.innerHTML = `<span class="op-badge">${matchedOp} (DS > 3)</span>`;
+                betListDiv.innerHTML = `<span class="waiting-msg">STREETS DETECTED BUT COUNT IS ${nextDSSet.length} (MAX 3).</span>`;
             }
         } else {
+            // Reset if no operator explains the transition
+            activeOpName = null;
+            streakCount = 0;
             currentBetDS = [];
-            document.getElementById('statOp').innerText = "NONE";
-            opIndicator.innerHTML = "";
-            betListDiv.innerHTML = `<span class="waiting-msg">NO MATCH FROM PREVIOUS. WAIT FOR NEXT.</span>`;
+            opUI.innerHTML = "";
+            betListDiv.innerHTML = `<span class="waiting-msg">NO MATCHING STREETS FOUND. WAITING...</span>`;
         }
     }
 
     function updateUI() {
         document.getElementById('statBankroll').innerText = currentBankroll.toFixed(2);
         document.getElementById('statPL').innerText = sessionPL.toFixed(2);
-        document.getElementById('history').innerText = "History: " + spins.slice(-10).join(" | ");
+        document.getElementById('statPL').className = sessionPL >= 0 ? 'val-win' : 'val-loss';
+        document.getElementById('statOp').innerText = activeOpName || "NONE";
+        document.getElementById('statStreak').innerText = streakCount;
+        document.getElementById('history').innerText = "HISTORY: " + spins.slice(-12).join(" | ");
     }
 
     function resetSession() {
-        spins = []; currentBetDS = []; sessionPL = 0; lastActiveOp = null;
-        document.getElementById('statOp').innerText = "NONE";
-        document.getElementById('betList').innerHTML = `<span class="waiting-msg">ENTER AT LEAST 2 SPINS</span>`;
+        spins = []; currentBetDS = []; sessionPL = 0; activeOpName = null; streakCount = 0;
+        document.getElementById('betList').innerHTML = `<span class="waiting-msg">ENTER NUMBERS TO IDENTIFY OPERATOR STREETS</span>`;
+        document.getElementById('opUI').innerHTML = "";
         updateUI();
     }
 </script>
