@@ -2,60 +2,59 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Dual Strategy Tracker</title>
+    <title>BIET - Mathematical Roulette Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; padding: 15px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 15px; }
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .card { background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; }
         
-        .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
-        .op-tag { font-size: 24px; font-weight: bold; color: #f1c40f; }
+        .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 15px; border-radius: 10px; border: 1px solid #444; }
+        .op-tag { font-size: 26px; font-weight: bold; color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
 
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .val { font-weight: bold; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; }
+        .val { font-weight: bold; font-family: 'Courier New', monospace; }
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
 
-        .shorthand-box { background: #000; padding: 20px; border-radius: 8px; text-align: center; margin: 15px 0; min-height: 60px; }
-        .notation { font-size: 28px; font-weight: bold; color: #3498db; letter-spacing: 1px; }
-        .unpred-color { color: #9b59b6; }
+        .notation-box { background: #050505; padding: 25px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; }
+        .math-notation { font-size: 32px; font-weight: bold; color: #3498db; }
+        .math-notation span { font-size: 20px; vertical-align: super; color: #9b59b6; margin-left: 2px; }
 
         .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; margin: 15px 0; }
-        .num-btn { padding: 15px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
+        .num-btn { padding: 15px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
-        label { font-size: 12px; color: #888; text-transform: uppercase; }
+        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 5px; width: 60px; border-radius: 4px; font-weight: bold; }
+        label { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
 <div class="grid-main">
     <div class="header-panel">
-        <div><label>Active Operator</label><div id="activeOp" class="op-tag">WAITING</div></div>
+        <div><label>Current Logic</label><div id="activeOp" class="op-tag">DETECTING...</div></div>
         <div style="text-align:right">
-            <label>Neighbors (n)</label><br>
-            <select id="nVal" style="background:#333; color:white; border:none; padding:5px; border-radius:4px;">
+            <label>Neighbor Cap (Max 9)</label><br>
+            <select id="nVal" style="background:#222; color:white; border:1px solid #444; padding:5px; border-radius:4px;">
                 <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
-                <option value="4">4</option><option value="5">5</option>
+                <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
             </select>
         </div>
     </div>
 
-    <div class="card" style="border-top: 4px solid #f1c40f;">
-        <div class="stat-row"><span>PREDICTION (HOT)</span><span id="pStat" class="val">--</span></div>
+    <div class="card">
+        <div class="stat-row"><span>PREDICTED (HOT)</span><span id="pCount">0 Nos</span></div>
+        <div class="stat-row"><label>Starting Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProgression('p')"></div>
         <div class="stat-row"><label>P/L</label><span id="pPL" class="val">0.00</span></div>
-        <div class="stat-row"><label>Next Stake</label><span id="pStake" class="val">5</span></div>
-        <div class="shorthand-box">
-            <div id="pNotation" class="notation">---</div>
-        </div>
+        <div class="stat-row"><label>Current Stake</label><span id="pStake" class="val">10</span></div>
+        <div class="notation-box"><div id="pNotation" class="math-notation">---</div></div>
     </div>
 
-    <div class="card" style="border-top: 4px solid #9b59b6;">
-        <div class="stat-row"><span>UNPREDICTED (GAPS)</span><span id="uStat" class="val">--</span></div>
+    <div class="card">
+        <div class="stat-row"><span>UNPREDICTED (GAPS)</span><span id="uCount">0 Nos</span></div>
+        <div class="stat-row"><label>Starting Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProgression('u')"></div>
         <div class="stat-row"><label>P/L</label><span id="uPL" class="val">0.00</span></div>
-        <div class="stat-row"><label>Next Stake</label><span id="uStake" class="val">5</span></div>
-        <div class="shorthand-box">
-            <div id="uNotation" class="notation unpred-color">---</div>
-        </div>
+        <div class="stat-row"><label>Current Stake</label><span id="uStake" class="val">10</span></div>
+        <div class="notation-box"><div id="uNotation" class="math-notation" style="color:#2aa198">---</div></div>
     </div>
 
     <div class="number-panel" id="numberPanel">
@@ -69,8 +68,8 @@
 
     let spins = [];
     let state = {
-        p: { pl: 0, stake: 5, activeNums: [] },
-        u: { pl: 0, stake: 5, activeNums: [] }
+        p: { pl: 0, stake: 10, active: [] },
+        u: { pl: 0, stake: 10, active: [] }
     };
 
     const panel = document.getElementById('numberPanel');
@@ -82,25 +81,30 @@
         panel.appendChild(btn);
     }
 
+    function resetProgression(side) {
+        let val = parseFloat(document.getElementById(`${side}StartStake`).value);
+        state[side].stake = val;
+        updateUI();
+    }
+
     function handleSpin(val) {
-        // 1. Check Win/Loss for both sides
-        resolveBet('p', val);
-        resolveBet('u', val);
+        // Resolve results
+        ['p', 'u'].forEach(side => {
+            if (state[side].active.length > 0) {
+                let start = parseFloat(document.getElementById(`${side}StartStake`).value);
+                if (state[side].active.includes(val)) {
+                    state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake);
+                    state[side].stake = start;
+                } else {
+                    state[side].pl -= (state[side].active.length * state[side].stake);
+                    state[side].stake += start; // Linear progression based on user input
+                }
+            }
+        });
 
         spins.push(val);
         processLogic();
         updateUI();
-    }
-
-    function resolveBet(side, val) {
-        if (state[side].activeNums.length === 0) return;
-        if (state[side].activeNums.includes(val)) {
-            state[side].pl += (state[side].stake * 36) - (state[side].activeNums.length * state[side].stake);
-            state[side].stake = 5; // Reset progression on win
-        } else {
-            state[side].pl -= (state[side].activeNums.length * state[side].stake);
-            state[side].stake += 5; // Simple linear progression on loss
-        }
     }
 
     function processLogic() {
@@ -115,30 +119,27 @@
         if (!matched) { document.getElementById('activeOp').innerText = "WAITING"; return; }
         document.getElementById('activeOp').innerText = matched.id;
 
-        let nextTarget = matched.id === "+10" ? last+10 : matched.id === "-10" ? last-10 : matched.id === "+1" ? last+1 : last-1;
-        if (nextTarget < 0 || nextTarget > 36) return;
+        let target = matched.id === "+10" ? last+10 : matched.id === "-10" ? last-10 : matched.id === "+1" ? last+1 : last-1;
+        if (target < 0 || target > 36) return;
 
-        // Calculate Predicted Set
-        let pPoints = [nextTarget, ...(terminalMap[nextTarget]||[])];
+        // Prediction side
+        let pPoints = [target, ...(terminalMap[target]||[])];
         let pSet = new Set();
         pPoints.forEach(pt => {
             let idx = wheel.indexOf(pt);
             for(let i=-n; i<=n; i++) pSet.add(wheel[(idx+i+37)%37]);
         });
-        state.p.activeNums = Array.from(pSet);
+        state.p.active = Array.from(pSet);
 
-        // Calculate Unpredicted Set
-        let uSet = wheel.filter(num => !pSet.has(num));
-        state.u.activeNums = uSet;
+        // Unpredicted side
+        state.u.active = wheel.filter(num => !pSet.has(num));
 
-        // Generate Notation
-        document.getElementById('pNotation').innerText = pPoints.map(x => `${x}nsquare${n}`).join(" | ");
-        document.getElementById('uNotation').innerText = getUnpredictedNotation(uSet);
+        // Display Notation
+        document.getElementById('pNotation').innerHTML = pPoints.map(x => `${x}<span>n${n}</span>`).join(" | ");
+        document.getElementById('uNotation').innerHTML = formatUnpredicted(state.u.active);
     }
 
-    function getUnpredictedNotation(nums) {
-        if (nums.length === 0) return "FULL COVER";
-        // Logic to find continuous blocks on the wheel
+    function formatUnpredicted(nums) {
         let indices = nums.map(n => wheel.indexOf(n)).sort((a,b) => a-b);
         let blocks = [];
         if (indices.length > 0) {
@@ -148,16 +149,15 @@
                 else { blocks.push(temp); temp = [indices[i]]; }
             }
             blocks.push(temp);
-            // Wrap check
             if (indices.includes(0) && indices.includes(36)) {
-                let last = blocks.pop(); let first = blocks.shift();
-                blocks.push([...last, ...first]);
+                let l = blocks.pop(); let f = blocks.shift();
+                blocks.push([...l, ...f]);
             }
         }
         return blocks.map(b => {
             let center = wheel[b[Math.floor(b.length/2)]];
-            let nVal = Math.floor((b.length - 1)/2);
-            return `${center}nsquare${nVal}`;
+            let nV = Math.floor((b.length - 1)/2);
+            return `${center}<span>n${nV}</span>`;
         }).join(" | ");
     }
 
@@ -166,7 +166,7 @@
             document.getElementById(`${s}PL`).innerText = state[s].pl.toFixed(2);
             document.getElementById(`${s}PL`).className = `val ${state[s].pl >= 0 ? 'win' : 'loss'}`;
             document.getElementById(`${s}Stake`).innerText = state[s].stake;
-            document.getElementById(`${s}Stat`).innerText = state[s].activeNums.length + " Nos";
+            document.getElementById(`${s}Count`).innerText = state[s].active.length + " Nos";
         });
     }
 </script>
