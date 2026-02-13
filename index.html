@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Precision Dual Tracker</title>
+    <title>BIET - Precision Dual Tracker with Undo</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
@@ -25,9 +25,14 @@
         .num-btn:active { transform: scale(0.95); }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
-        .history-box { grid-column: span 2; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #222; margin-top: 10px; min-height: 40px; word-wrap: break-word; }
+        .history-box { grid-column: span 2; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #222; margin-top: 10px; min-height: 40px; }
         .history-title { font-size: 11px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
         .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-family: monospace; font-weight: bold; }
+
+        .action-btns { grid-column: span 2; display: flex; gap: 10px; margin-top: 15px; }
+        .action-btns button { flex: 1; padding: 12px; cursor: pointer; border-radius: 5px; font-weight: bold; border: 1px solid #333; transition: 0.2s; }
+        .btn-undo { background: #d35400; color: white; border: none !important; }
+        .btn-reset { background: none; color: #555; }
 
         input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 8px; width: 70px; border-radius: 4px; font-weight: bold; font-size: 16px; }
         label { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
@@ -41,7 +46,7 @@
             <div><label>Active Operator</label><div id="activeOp" class="op-tag">--</div></div>
             <div style="text-align:right">
                 <label>Global Neighbors</label>
-                <select id="nVal" style="background:#222; color:white; border:1px solid #444; padding:8px; border-radius:4px; font-weight:bold;">
+                <select id="nVal" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:8px; border-radius:4px; font-weight:bold;">
                     <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
                     <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
                 </select>
@@ -77,7 +82,10 @@
             <div id="historyList"></div>
         </div>
         
-        <button onclick="location.reload()" style="grid-column: span 2; background: none; border: 1px solid #333; color: #555; padding: 10px; cursor: pointer; border-radius: 5px; margin-top:15px;">Reset All Data</button>
+        <div class="action-btns">
+            <button class="btn-undo" onclick="undoLast()">UNDO LAST SPIN</button>
+            <button class="btn-reset" onclick="location.reload()">RESET ALL DATA</button>
+        </div>
     </div>
 </div>
 
@@ -86,6 +94,7 @@
     const terminalMap = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
 
     let spins = [];
+    let snapshots = []; // For Undo functionality
     let state = {
         p: { pl: 0, stake: 10, active: [] },
         u: { pl: 0, stake: 10, active: [] }
@@ -106,6 +115,9 @@
     }
 
     function handleSpin(val) {
+        // Save current state before processing new spin
+        snapshots.push(JSON.stringify({spins, state}));
+        
         ['p', 'u'].forEach(side => {
             if (state[side].active.length > 0) {
                 let base = parseFloat(document.getElementById(`${side}StartStake`).value);
@@ -123,8 +135,23 @@
         updateUI();
     }
 
+    function undoLast() {
+        if (snapshots.length === 0) return;
+        const lastSnapshot = JSON.parse(snapshots.pop());
+        spins = lastSnapshot.spins;
+        state = lastSnapshot.state;
+        process();
+        updateUI();
+    }
+
     function process() {
-        if (spins.length < 2) return;
+        if (spins.length < 2) {
+            document.getElementById('activeOp').innerText = "--";
+            state.p.active = []; state.u.active = [];
+            document.getElementById('pNotation').innerHTML = "--";
+            document.getElementById('uNotation').innerHTML = "--";
+            return;
+        }
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
         const n = parseInt(document.getElementById('nVal').value);
@@ -184,8 +211,6 @@
             document.getElementById(`${s}Stake`).innerText = state[s].stake;
             document.getElementById(`${s}Count`).innerText = state[s].active.length;
         });
-        
-        // Update History View
         document.getElementById('historyList').innerHTML = spins.slice(-20).map(n => `<span class="history-num">${n}</span>`).join("");
     }
 </script>
