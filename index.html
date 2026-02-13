@@ -2,63 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Mathematical Roulette Tracker</title>
+    <title>BIET - Precision Dual Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 15px; }
-        .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1000px; }
+        .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; }
         
-        .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 15px; border-radius: 10px; border: 1px solid #444; }
-        .op-tag { font-size: 26px; font-weight: bold; color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
+        .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 10px; }
+        .op-tag { font-size: 28px; font-weight: bold; color: #f1c40f; }
 
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; }
-        .val { font-weight: bold; font-family: 'Courier New', monospace; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; align-items: center; }
+        .val { font-weight: bold; font-family: monospace; font-size: 18px; }
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
 
-        .notation-box { background: #050505; padding: 25px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; }
-        .math-notation { font-size: 32px; font-weight: bold; color: #3498db; }
-        .math-notation span { font-size: 20px; vertical-align: super; color: #9b59b6; margin-left: 2px; }
+        .notation-box { background: #050505; padding: 30px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 50px; }
+        .math-notation { font-size: 36px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .math-notation span { font-size: 20px; vertical-align: super; color: #9b59b6; margin-left: -5px; }
 
-        .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; margin: 15px 0; }
-        .num-btn { padding: 15px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 20px 0; }
+        .num-btn { padding: 18px 0; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.1s; }
+        .num-btn:active { transform: scale(0.95); }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
-        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 5px; width: 60px; border-radius: 4px; font-weight: bold; }
-        label { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
+        .history-box { grid-column: span 2; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #222; margin-top: 10px; min-height: 40px; word-wrap: break-word; }
+        .history-title { font-size: 11px; color: #555; text-transform: uppercase; margin-bottom: 5px; }
+        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-family: monospace; font-weight: bold; }
+
+        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 8px; width: 70px; border-radius: 4px; font-weight: bold; font-size: 16px; }
+        label { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
-<div class="grid-main">
-    <div class="header-panel">
-        <div><label>Current Logic</label><div id="activeOp" class="op-tag">DETECTING...</div></div>
-        <div style="text-align:right">
-            <label>Neighbor Cap (Max 9)</label><br>
-            <select id="nVal" style="background:#222; color:white; border:1px solid #444; padding:5px; border-radius:4px;">
-                <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
-                <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
-            </select>
+<div class="container">
+    <div class="grid-main">
+        <div class="header-panel">
+            <div><label>Active Operator</label><div id="activeOp" class="op-tag">--</div></div>
+            <div style="text-align:right">
+                <label>Global Neighbors</label>
+                <select id="nVal" style="background:#222; color:white; border:1px solid #444; padding:8px; border-radius:4px; font-weight:bold;">
+                    <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
+                    <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                </select>
+            </div>
         </div>
-    </div>
 
-    <div class="card">
-        <div class="stat-row"><span>PREDICTED (HOT)</span><span id="pCount">0 Nos</span></div>
-        <div class="stat-row"><label>Starting Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProgression('p')"></div>
-        <div class="stat-row"><label>P/L</label><span id="pPL" class="val">0.00</span></div>
-        <div class="stat-row"><label>Current Stake</label><span id="pStake" class="val">10</span></div>
-        <div class="notation-box"><div id="pNotation" class="math-notation">---</div></div>
-    </div>
+        <div class="card" style="border-top: 4px solid #3498db;">
+            <div class="stat-row">
+                <div><label>Starting Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')"></div>
+                <div style="text-align:right"><label>Coverage</label><span id="pCount" class="val">0</span></div>
+            </div>
+            <div class="stat-row"><span>P/L</span><span id="pPL" class="val">0.00</span></div>
+            <div class="stat-row"><span>Current Stake</span><span id="pStake" class="val">10</span></div>
+            <div class="notation-box"><div id="pNotation" class="math-notation">--</div></div>
+        </div>
 
-    <div class="card">
-        <div class="stat-row"><span>UNPREDICTED (GAPS)</span><span id="uCount">0 Nos</span></div>
-        <div class="stat-row"><label>Starting Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProgression('u')"></div>
-        <div class="stat-row"><label>P/L</label><span id="uPL" class="val">0.00</span></div>
-        <div class="stat-row"><label>Current Stake</label><span id="uStake" class="val">10</span></div>
-        <div class="notation-box"><div id="uNotation" class="math-notation" style="color:#2aa198">---</div></div>
-    </div>
+        <div class="card" style="border-top: 4px solid #2aa198;">
+            <div class="stat-row">
+                <div><label>Starting Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')"></div>
+                <div style="text-align:right"><label>Coverage</label><span id="uCount" class="val">0</span></div>
+            </div>
+            <div class="stat-row"><span>P/L</span><span id="uPL" class="val">0.00</span></div>
+            <div class="stat-row"><span>Current Stake</span><span id="uStake" class="val">10</span></div>
+            <div class="notation-box"><div id="uNotation" class="math-notation" style="color:#2aa198">--</div></div>
+        </div>
 
-    <div class="number-panel" id="numberPanel">
-        <button class="num-btn btn-green" onclick="handleSpin(0)">0</button>
+        <div class="number-panel" id="numberPanel">
+            <button class="num-btn btn-green" onclick="handleSpin(0)">0</button>
+        </div>
+
+        <div class="history-box">
+            <div class="history-title">Spin History</div>
+            <div id="historyList"></div>
+        </div>
+        
+        <button onclick="location.reload()" style="grid-column: span 2; background: none; border: 1px solid #333; color: #555; padding: 10px; cursor: pointer; border-radius: 5px; margin-top:15px;">Reset All Data</button>
     </div>
 </div>
 
@@ -81,33 +100,30 @@
         panel.appendChild(btn);
     }
 
-    function resetProgression(side) {
-        let val = parseFloat(document.getElementById(`${side}StartStake`).value);
-        state[side].stake = val;
+    function resetProg(side) {
+        state[side].stake = parseFloat(document.getElementById(`${side}StartStake`).value);
         updateUI();
     }
 
     function handleSpin(val) {
-        // Resolve results
         ['p', 'u'].forEach(side => {
             if (state[side].active.length > 0) {
-                let start = parseFloat(document.getElementById(`${side}StartStake`).value);
+                let base = parseFloat(document.getElementById(`${side}StartStake`).value);
                 if (state[side].active.includes(val)) {
                     state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake);
-                    state[side].stake = start;
+                    state[side].stake = base;
                 } else {
                     state[side].pl -= (state[side].active.length * state[side].stake);
-                    state[side].stake += start; // Linear progression based on user input
+                    state[side].stake += base;
                 }
             }
         });
-
         spins.push(val);
-        processLogic();
+        process();
         updateUI();
     }
 
-    function processLogic() {
+    function process() {
         if (spins.length < 2) return;
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
@@ -116,13 +132,16 @@
         const ops = [{id:"+10", r:prev+10}, {id:"-10", r:prev-10}, {id:"+1", r:prev+1}, {id:"-1", r:prev-1}];
         let matched = ops.find(o => [o.r, ...(terminalMap[o.r]||[])].includes(last));
 
-        if (!matched) { document.getElementById('activeOp').innerText = "WAITING"; return; }
-        document.getElementById('activeOp').innerText = matched.id;
+        if (!matched) { 
+            document.getElementById('activeOp').innerText = "--"; 
+            state.p.active = []; state.u.active = [];
+            return; 
+        }
 
-        let target = matched.id === "+10" ? last+10 : matched.id === "-10" ? last-10 : matched.id === "+1" ? last+1 : last-1;
+        document.getElementById('activeOp').innerText = matched.id;
+        let target = (matched.id === "+10") ? last+10 : (matched.id === "-10") ? last-10 : (matched.id === "+1") ? last+1 : last-1;
         if (target < 0 || target > 36) return;
 
-        // Prediction side
         let pPoints = [target, ...(terminalMap[target]||[])];
         let pSet = new Set();
         pPoints.forEach(pt => {
@@ -130,16 +149,13 @@
             for(let i=-n; i<=n; i++) pSet.add(wheel[(idx+i+37)%37]);
         });
         state.p.active = Array.from(pSet);
-
-        // Unpredicted side
         state.u.active = wheel.filter(num => !pSet.has(num));
 
-        // Display Notation
-        document.getElementById('pNotation').innerHTML = pPoints.map(x => `${x}<span>n${n}</span>`).join(" | ");
-        document.getElementById('uNotation').innerHTML = formatUnpredicted(state.u.active);
+        document.getElementById('pNotation').innerHTML = pPoints.map(x => `<div>${x}<span>n${n}</span></div>`).join("");
+        document.getElementById('uNotation').innerHTML = getShorthand(state.u.active);
     }
 
-    function formatUnpredicted(nums) {
+    function getShorthand(nums) {
         let indices = nums.map(n => wheel.indexOf(n)).sort((a,b) => a-b);
         let blocks = [];
         if (indices.length > 0) {
@@ -156,9 +172,9 @@
         }
         return blocks.map(b => {
             let center = wheel[b[Math.floor(b.length/2)]];
-            let nV = Math.floor((b.length - 1)/2);
-            return `${center}<span>n${nV}</span>`;
-        }).join(" | ");
+            let nv = Math.floor((b.length - 1)/2);
+            return `<div>${center}<span>n${nv}</span></div>`;
+        }).join("");
     }
 
     function updateUI() {
@@ -166,8 +182,11 @@
             document.getElementById(`${s}PL`).innerText = state[s].pl.toFixed(2);
             document.getElementById(`${s}PL`).className = `val ${state[s].pl >= 0 ? 'win' : 'loss'}`;
             document.getElementById(`${s}Stake`).innerText = state[s].stake;
-            document.getElementById(`${s}Count`).innerText = state[s].active.length + " Nos";
+            document.getElementById(`${s}Count`).innerText = state[s].active.length;
         });
+        
+        // Update History View
+        document.getElementById('historyList').innerHTML = spins.slice(-20).map(n => `<span class="history-num">${n}</span>`).join("");
     }
 </script>
 </body>
