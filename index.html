@@ -2,67 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - DS Smart Filter Dashboard</title>
+    <title>BIET - DS Operator Tracker</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 95%; max-width: 1200px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .bankroll-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #ebf2f7; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 11px; font-weight: bold; color: #2c3e50; text-transform: uppercase; }
-        .input-group input { width: 90%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; font-weight: bold; }
         .bankroll-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
         .stat-card { background: #1a1a1a; color: white; padding: 12px; border-radius: 10px; text-align: center; border-bottom: 4px solid #3498db; }
-        .stat-card small { display: block; font-size: 10px; color: #bdc3c7; margin-bottom: 5px; }
-        .stat-card span { font-size: 18px; font-weight: bold; }
-        .signal-box { background: #fff3e0; border: 2px solid #ff9800; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
-        .bet-label { font-weight: bold; color: #e65100; font-size: 13px; margin-bottom: 8px; }
-        .ds-chip { background: #ff9800; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 20px; margin: 0 5px; display: inline-block; box-shadow: 0 3px 0 #bf7100; }
-        .waiting-msg { color: #7f8c8d; font-weight: bold; font-size: 18px; letter-spacing: 1px; }
+        .stat-card span { font-size: 18px; font-weight: bold; display: block; }
+        .signal-box { background: #fff3e0; border: 2px solid #ff9800; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; min-height: 100px; }
+        .op-tag { background: #2c3e50; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; display: inline-block; }
+        .ds-chip { background: #ff9800; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; font-size: 24px; margin: 5px; display: inline-block; box-shadow: 0 4px 0 #bf7100; }
         .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin-bottom: 20px; background: #1a1a1a; padding: 15px; border-radius: 10px; }
-        .num-btn { padding: 12px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 15px; }
-        .btn-green { background: #27ae60; grid-row: span 3; }
-        .btn-red { background: #c0392b; }
-        .btn-black { background: #2c3e50; }
-        .history-bar { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; width: 100%; text-align: center; font-size: 14px; }
-        .reset-btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .val-win { color: #2ecc71; }
-        .val-loss { color: #e74c3c; }
-        .op-status { font-size: 12px; color: #34495e; font-weight: bold; margin-bottom: 5px; }
+        .num-btn { padding: 12px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
+        .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
+        .history-bar { background: #2c3e50; color: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; width: 100%; text-align: center; }
+        .waiting-msg { color: #95a5a6; font-style: italic; font-size: 18px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="bankroll-inputs">
-        <div class="input-group"><label>Bankroll</label><input type="number" id="inputBankroll" value="1500" onchange="initBankroll()"></div>
-        <div class="input-group"><label>Unit /DS</label><input type="number" id="inputBase" value="20" onchange="initBankroll()"></div>
-        <div class="input-group"><label>Target %</label><input type="number" id="inputTarget" value="10" onchange="initBankroll()"></div>
-    </div>
-
     <div class="bankroll-stats">
-        <div class="stat-card"><small>Current Bankroll</small><span id="statBankroll">1500.00</span></div>
-        <div class="stat-card"><small>Session P/L</small><span id="statPL">0.00</span></div>
-        <div class="stat-card"><small>Next Stake/DS</small><span id="statStake">20 (1x)</span></div>
-        <div class="stat-card"><small>Goal</small><span id="statGoal">+150.00</span></div>
+        <div class="stat-card"><small>Bankroll</small><span id="statBankroll">1500.00</span></div>
+        <div class="stat-card"><small>Profit/Loss</small><span id="statPL">0.00</span></div>
+        <div class="stat-card"><small>Stake/DS</small><span id="statStake">20</span></div>
+        <div class="stat-card"><small>Active Op</small><span id="statOp">NONE</span></div>
     </div>
 
     <div class="signal-box" id="signalBox">
-        <div id="opIndicator" class="op-status">NO ACTIVE OPERATOR</div>
-        <div id="betList"><span class="waiting-msg">STANDBY: ENTER NUMBERS</span></div>
+        <div id="opIndicator"></div>
+        <div id="betList"><span class="waiting-msg">ENTER AT LEAST 2 SPINS TO DETECT OPERATOR</span></div>
     </div>
 
     <div class="number-panel" id="numberPanel">
         <button class="num-btn btn-green" onclick="handleSpin(0)">0</button>
     </div>
 
-    <div class="history-bar" id="history">Waiting for spins...</div>
-    
-    <div style="display:flex; justify-content: flex-end; width: 100%; margin-bottom: 15px;">
-        <button class="reset-btn" onclick="resetSession()">Reset Session</button>
-    </div>
+    <div class="history-bar" id="history">Waiting for data...</div>
+    <button onclick="resetSession()" style="background:#e74c3c; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Reset</button>
 </div>
 
 <script>
-    const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+    const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     const terminalMap = {
         1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17],
         11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24],
@@ -74,13 +55,11 @@
     let spins = [];
     let currentBankroll = 1500;
     let baseUnit = 20;
-    let multiplier = 1;
     let sessionPL = 0;
-    
-    // Tracking for logic
-    let activeOperator = null; // {name: "+10", targetValue: 20, predictedDS: [3,4,5]}
     let currentBetDS = [];
+    let lastActiveOp = null;
 
+    // Build Panel
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
         const btn = document.createElement('button');
@@ -90,124 +69,98 @@
         panel.appendChild(btn);
     }
 
-    function initBankroll() {
-        currentBankroll = parseFloat(document.getElementById('inputBankroll').value);
-        baseUnit = parseFloat(document.getElementById('inputBase').value);
-        let targetValue = (currentBankroll * (parseFloat(document.getElementById('inputTarget').value)/100));
-        document.getElementById('statGoal').innerText = "+" + targetValue.toFixed(2);
-        updateBankrollUI();
-    }
-
     function getDS(num) { 
-        if (num <= 0 || num > 36) return null;
-        return Math.ceil(num / 6); 
-    }
-
-    function updateBankrollUI() {
-        document.getElementById('statBankroll').innerText = currentBankroll.toFixed(2);
-        document.getElementById('statPL').innerText = sessionPL.toFixed(2);
-        document.getElementById('statPL').className = sessionPL >= 0 ? 'val-win' : 'val-loss';
-        document.getElementById('statStake').innerText = `${baseUnit * multiplier} (${multiplier}x)`;
+        return (num > 0 && num <= 36) ? Math.ceil(num / 6) : null; 
     }
 
     function handleSpin(val) {
-        const currentDS = getDS(val);
-
-        // 1. Resolve existing bet
+        // 1. Check Win/Loss
         if (currentBetDS.length > 0) {
-            let totalRisk = currentBetDS.length * (baseUnit * multiplier);
-            if (currentBetDS.includes(currentDS)) {
-                let profit = ((baseUnit * multiplier) * 6) - totalRisk;
+            const spinDS = getDS(val);
+            if (currentBetDS.includes(spinDS)) {
+                let profit = (baseUnit * 6) - (currentBetDS.length * baseUnit);
                 sessionPL += profit; currentBankroll += profit;
-                multiplier = 1; 
             } else {
-                sessionPL -= totalRisk; currentBankroll -= totalRisk;
-                multiplier++;
+                let loss = currentBetDS.length * baseUnit;
+                sessionPL -= loss; currentBankroll -= loss;
             }
         }
 
         spins.push(val);
-        updateBankrollUI();
-        document.getElementById('history').innerText = "History: " + spins.slice(-12).join(" | ");
-        
-        calculateNext(val);
+        updateUI();
+        processLogic();
     }
 
-    function calculateNext(lastResult) {
-        const opIndicator = document.getElementById('opIndicator');
-        const betListDiv = document.getElementById('betList');
+    function processLogic() {
+        if (spins.length < 2) return;
+
+        const last = spins[spins.length - 1];
+        const prev = spins[spins.length - 2];
         
-        let foundNewOp = null;
-        const operators = [
-            { name: "+10", calc: lastResult + 10 },
-            { name: "-10", calc: lastResult - 10 },
-            { name: "+1", calc: lastResult + 1 },
-            { name: "-1", calc: lastResult - 1 }
+        // Find which operator connects prev to last
+        const possibleOps = [
+            { name: "+10", target: prev + 10 },
+            { name: "-10", target: prev - 10 },
+            { name: "+1", target: prev + 1 },
+            { name: "-1", target: prev - 1 }
         ];
 
-        // Check if we can continue with the PREVIOUS operator
-        if (activeOperator) {
-            // Find the operator in our list
-            let opObj = operators.find(o => o.name === activeOperator.name);
-            let terminals = terminalMap[activeOperator.targetValue] || [];
-            
-            // If last spin is one of the terminals of the PREVIOUS calculation
-            if (terminals.includes(lastResult) || activeOperator.targetValue === lastResult) {
-                // Keep the operator, update the target based on the NEW last result
-                foundNewOp = {
-                    name: opObj.name,
-                    targetValue: opObj.calc
-                };
-            }
-        } else {
-            // No active operator, try to find one that fits the "Good for" logic
-            // In a fresh start, we pick the first valid operator that provides DS
-            for (let op of operators) {
-                if (op.calc > 0 && op.calc <= 36) {
-                    foundNewOp = { name: op.name, targetValue: op.calc };
-                    break; 
-                }
+        let detectedOp = null;
+        for (let op of possibleOps) {
+            let terminals = terminalMap[op.target] || [];
+            if (last === op.target || terminals.includes(last)) {
+                detectedOp = op.name;
+                break;
             }
         }
 
-        if (foundNewOp) {
-            let terminals = terminalMap[foundNewOp.targetValue] || [];
-            let allNums = [foundNewOp.targetValue, ...terminals];
-            let dsSet = [...new Set(allNums.map(n => getDS(n)))].filter(d => d !== null);
+        const betListDiv = document.getElementById('betList');
+        const opIndicator = document.getElementById('opIndicator');
+
+        if (detectedOp) {
+            lastActiveOp = detectedOp;
+            document.getElementById('statOp').innerText = detectedOp;
             
-            // Limit to MAX 3 DS
+            // Apply detected operator to the LATEST result
+            let nextTarget;
+            if (detectedOp === "+10") nextTarget = last + 10;
+            else if (detectedOp === "-10") nextTarget = last - 10;
+            else if (detectedOp === "+1") nextTarget = last + 1;
+            else if (detectedOp === "-1") nextTarget = last - 1;
+
+            let nextTerminals = terminalMap[nextTarget] || [];
+            let dsSet = [...new Set([nextTarget, ...nextTerminals].map(n => getDS(n)))].filter(d => d !== null);
+
             if (dsSet.length > 0 && dsSet.length <= 3) {
-                activeOperator = foundNewOp;
                 currentBetDS = dsSet;
-                
-                opIndicator.innerText = `ACTIVE OPERATOR: ${activeOperator.name} (Target: ${activeOperator.targetValue})`;
-                betListDiv.innerHTML = `<span class="bet-label">🎯 PLACE BETS:</span><br>` + 
+                opIndicator.innerHTML = `<span class="op-tag">DETECTED: ${detectedOp}</span>`;
+                betListDiv.innerHTML = `<div style="color:#e65100; font-weight:bold; margin-bottom:5px;">NEXT PREDICTION:</div>` + 
                                        currentBetDS.sort().map(d => `<div class="ds-chip">DS ${d}</div>`).join('');
             } else {
-                // DS count too high or zero
-                clearBet("DS LIMIT EXCEEDED (>3)");
+                currentBetDS = [];
+                opIndicator.innerHTML = `<span class="op-tag">WAITING</span>`;
+                betListDiv.innerHTML = `<span class="waiting-msg">OPERATOR ${detectedOp} YIELDS > 3 DS. SKIPPING.</span>`;
             }
         } else {
-            clearBet("WAIT FOR NEXT (NO MATCH)");
+            currentBetDS = [];
+            document.getElementById('statOp').innerText = "NONE";
+            opIndicator.innerHTML = "";
+            betListDiv.innerHTML = `<span class="waiting-msg">NO MATCH FROM PREVIOUS. WAIT FOR NEXT.</span>`;
         }
     }
 
-    function clearBet(msg) {
-        activeOperator = null;
-        currentBetDS = [];
-        document.getElementById('opIndicator').innerText = "STANDBY";
-        document.getElementById('betList').innerHTML = `<span class="waiting-msg">--- ${msg} ---</span>`;
+    function updateUI() {
+        document.getElementById('statBankroll').innerText = currentBankroll.toFixed(2);
+        document.getElementById('statPL').innerText = sessionPL.toFixed(2);
+        document.getElementById('history').innerText = "History: " + spins.slice(-10).join(" | ");
     }
 
     function resetSession() {
-        spins = []; activeOperator = null; currentBetDS = []; multiplier = 1; sessionPL = 0;
-        initBankroll();
-        document.getElementById('opIndicator').innerText = "NO ACTIVE OPERATOR";
-        document.getElementById('betList').innerHTML = `<span class="waiting-msg">STANDBY: ENTER NUMBERS</span>`;
-        document.getElementById('history').innerText = "History: Reset";
+        spins = []; currentBetDS = []; sessionPL = 0; lastActiveOp = null;
+        document.getElementById('statOp').innerText = "NONE";
+        document.getElementById('betList').innerHTML = `<span class="waiting-msg">ENTER AT LEAST 2 SPINS</span>`;
+        updateUI();
     }
-
-    initBankroll();
 </script>
 </body>
 </html>
