@@ -2,177 +2,172 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Unpredicted Zone Tracker</title>
+    <title>BIET - Dual Strategy Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 95%; max-width: 900px; background: #161616; padding: 25px; border-radius: 15px; border: 1px solid #333; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; padding: 15px; }
+        .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        .op-box { background: #222; padding: 10px 20px; border-radius: 8px; border-left: 4px solid #f1c40f; }
-        
-        .bet-area { background: #002b36; border: 2px solid #268bd2; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px; position: relative; }
-        .bet-label { position: absolute; top: -12px; left: 20px; background: #268bd2; color: white; padding: 2px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        
-        .shorthand { font-size: 38px; font-weight: 800; color: #2aa198; letter-spacing: 2px; margin: 15px 0; text-shadow: 0 0 10px rgba(42, 161, 152, 0.5); }
-        .targets { font-size: 14px; color: #859900; font-family: monospace; }
+        .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        .op-tag { font-size: 24px; font-weight: bold; color: #f1c40f; }
 
-        .number-panel { display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin-bottom: 20px; background: #000; padding: 15px; border-radius: 10px; }
-        .num-btn { padding: 15px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.1s; }
-        .num-btn:active { transform: translateY(2px); }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .val { font-weight: bold; }
+        .win { color: #2ecc71; } .loss { color: #e74c3c; }
+
+        .shorthand-box { background: #000; padding: 20px; border-radius: 8px; text-align: center; margin: 15px 0; min-height: 60px; }
+        .notation { font-size: 28px; font-weight: bold; color: #3498db; letter-spacing: 1px; }
+        .unpred-color { color: #9b59b6; }
+
+        .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; margin: 15px 0; }
+        .num-btn { padding: 15px 0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
-        .history { background: #1a1a1a; padding: 12px; border-radius: 8px; text-align: center; color: #666; font-size: 14px; }
-        .settings { margin-bottom: 20px; display: flex; gap: 20px; align-items: center; }
-        select { background: #333; color: white; border: 1px solid #555; padding: 5px 10px; border-radius: 4px; }
+        label { font-size: 12px; color: #888; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div class="settings">
-            <label>Neighbor Count:</label>
-            <select id="nVal">
-                <option value="1">1n</option><option value="2">2n</option><option value="3" selected>3n</option>
-                <option value="4">4n</option><option value="5">5n</option>
+<div class="grid-main">
+    <div class="header-panel">
+        <div><label>Active Operator</label><div id="activeOp" class="op-tag">WAITING</div></div>
+        <div style="text-align:right">
+            <label>Neighbors (n)</label><br>
+            <select id="nVal" style="background:#333; color:white; border:none; padding:5px; border-radius:4px;">
+                <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
+                <option value="4">4</option><option value="5">5</option>
             </select>
-        </div>
-        <div class="op-box">
-            <small style="color:#999">DETECTED OP</small>
-            <div id="activeOp" style="font-size: 20px; font-weight: bold; color: #f1c40f;">NONE</div>
         </div>
     </div>
 
-    <div class="bet-area">
-        <div class="bet-label">UNPREDICTED WHEEL ZONES (FAST INPUT)</div>
-        <div id="shorthandUI" class="shorthand">---</div>
-        <div id="targetUI" class="targets">Wait for input...</div>
+    <div class="card" style="border-top: 4px solid #f1c40f;">
+        <div class="stat-row"><span>PREDICTION (HOT)</span><span id="pStat" class="val">--</span></div>
+        <div class="stat-row"><label>P/L</label><span id="pPL" class="val">0.00</span></div>
+        <div class="stat-row"><label>Next Stake</label><span id="pStake" class="val">5</span></div>
+        <div class="shorthand-box">
+            <div id="pNotation" class="notation">---</div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #9b59b6;">
+        <div class="stat-row"><span>UNPREDICTED (GAPS)</span><span id="uStat" class="val">--</span></div>
+        <div class="stat-row"><label>P/L</label><span id="uPL" class="val">0.00</span></div>
+        <div class="stat-row"><label>Next Stake</label><span id="uStake" class="val">5</span></div>
+        <div class="shorthand-box">
+            <div id="uNotation" class="notation unpred-color">---</div>
+        </div>
     </div>
 
     <div class="number-panel" id="numberPanel">
         <button class="num-btn btn-green" onclick="handleSpin(0)">0</button>
     </div>
-
-    <div class="history" id="history">HISTORY: --</div>
-    <button onclick="resetSession()" style="width:100%; margin-top:10px; background:transparent; border:1px solid #444; color:#666; padding:8px; cursor:pointer; border-radius:5px;">Reset</button>
 </div>
 
 <script>
     const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
-    const red = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-    const terminalMap = {
-        1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17],
-        11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24],
-        18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29],
-        25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26],
-        32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29]
-    };
+    const terminalMap = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
 
     let spins = [];
+    let state = {
+        p: { pl: 0, stake: 5, activeNums: [] },
+        u: { pl: 0, stake: 5, activeNums: [] }
+    };
 
-    // Build buttons
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
         const btn = document.createElement('button');
         btn.innerText = i;
-        btn.className = `num-btn ${red.includes(i) ? 'btn-red' : 'btn-black'}`;
+        btn.className = `num-btn ${[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i) ? 'btn-red' : 'btn-black'}`;
         btn.onclick = () => handleSpin(i);
         panel.appendChild(btn);
     }
 
     function handleSpin(val) {
+        // 1. Check Win/Loss for both sides
+        resolveBet('p', val);
+        resolveBet('u', val);
+
         spins.push(val);
-        document.getElementById('history').innerText = "HISTORY: " + spins.slice(-10).join(" | ");
         processLogic();
+        updateUI();
+    }
+
+    function resolveBet(side, val) {
+        if (state[side].activeNums.length === 0) return;
+        if (state[side].activeNums.includes(val)) {
+            state[side].pl += (state[side].stake * 36) - (state[side].activeNums.length * state[side].stake);
+            state[side].stake = 5; // Reset progression on win
+        } else {
+            state[side].pl -= (state[side].activeNums.length * state[side].stake);
+            state[side].stake += 5; // Simple linear progression on loss
+        }
     }
 
     function processLogic() {
         if (spins.length < 2) return;
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
-        const nAmount = parseInt(document.getElementById('nVal').value);
+        const n = parseInt(document.getElementById('nVal').value);
 
-        const ops = [
-            { id: "+10", res: prev + 10 }, { id: "-10", res: prev - 10 },
-            { id: "+1", res: prev + 1 }, { id: "-1", res: prev - 1 }
-        ];
+        const ops = [{id:"+10", r:prev+10}, {id:"-10", r:prev-10}, {id:"+1", r:prev+1}, {id:"-1", r:prev-1}];
+        let matched = ops.find(o => [o.r, ...(terminalMap[o.r]||[])].includes(last));
 
-        let matchedOp = null;
-        for (let o of ops) {
-            let terms = [o.res, ...(terminalMap[o.res] || [])];
-            if (terms.includes(last)) { matchedOp = o.id; break; }
-        }
+        if (!matched) { document.getElementById('activeOp').innerText = "WAITING"; return; }
+        document.getElementById('activeOp').innerText = matched.id;
 
-        if (!matchedOp) {
-            document.getElementById('activeOp').innerText = "WAITING";
-            return;
-        }
+        let nextTarget = matched.id === "+10" ? last+10 : matched.id === "-10" ? last-10 : matched.id === "+1" ? last+1 : last-1;
+        if (nextTarget < 0 || nextTarget > 36) return;
 
-        document.getElementById('activeOp').innerText = matchedOp;
-
-        // 1. Calculate the Predicted Zone (to avoid)
-        let nextVal;
-        if (matchedOp === "+10") nextVal = last + 10;
-        else if (matchedOp === "-10") nextVal = last - 10;
-        else if (matchedOp === "+1") nextVal = last + 1;
-        else if (matchedOp === "-1") nextVal = last - 1;
-
-        if (nextVal < 0 || nextVal > 36) return;
-
-        let predictPoints = [nextVal, ...(terminalMap[nextVal] || [])];
-        let predictedFullSet = new Set();
-
-        predictPoints.forEach(p => {
-            let idx = wheel.indexOf(p);
-            for (let i = -nAmount; i <= nAmount; i++) {
-                predictedFullSet.add(wheel[(idx + i + 37) % 37]);
-            }
+        // Calculate Predicted Set
+        let pPoints = [nextTarget, ...(terminalMap[nextTarget]||[])];
+        let pSet = new Set();
+        pPoints.forEach(pt => {
+            let idx = wheel.indexOf(pt);
+            for(let i=-n; i<=n; i++) pSet.add(wheel[(idx+i+37)%37]);
         });
+        state.p.activeNums = Array.from(pSet);
 
-        // 2. Identify the Unpredicted Blocks
-        let unpredictedIndices = [];
-        for (let i = 0; i < 37; i++) {
-            if (!predictedFullSet.has(wheel[i])) unpredictedIndices.push(i);
-        }
+        // Calculate Unpredicted Set
+        let uSet = wheel.filter(num => !pSet.has(num));
+        state.u.activeNums = uSet;
 
-        // 3. Convert indices to shorthand notation (find center of blocks)
-        let blocks = [];
-        if (unpredictedIndices.length > 0) {
-            let currentBlock = [unpredictedIndices[0]];
-            for (let i = 1; i < unpredictedIndices.length; i++) {
-                if (unpredictedIndices[i] === unpredictedIndices[i - 1] + 1) {
-                    currentBlock.push(unpredictedIndices[i]);
-                } else {
-                    blocks.push(currentBlock);
-                    currentBlock = [unpredictedIndices[i]];
-                }
-            }
-            // Wrap around check
-            if (unpredictedIndices.includes(0) && unpredictedIndices.includes(36)) {
-                let lastBlock = currentBlock;
-                let firstBlock = blocks.shift();
-                blocks.push([...lastBlock, ...firstBlock]);
-            } else {
-                blocks.push(currentBlock);
-            }
-        }
-
-        // 4. Create shorthand (e.g., 2 p 5n)
-        let resultShorthand = blocks.map(b => {
-            let midIndex = b[Math.floor(b.length / 2)];
-            let nForBlock = Math.floor((b.length - 1) / 2);
-            return `${wheel[midIndex]} p ${nForBlock}n`;
-        });
-
-        document.getElementById('shorthandUI').innerText = resultShorthand.join(" | ");
-        document.getElementById('targetUI').innerText = "AVOIDING ZONES AROUND: " + predictPoints.join(", ");
+        // Generate Notation
+        document.getElementById('pNotation').innerText = pPoints.map(x => `${x}nsquare${n}`).join(" | ");
+        document.getElementById('uNotation').innerText = getUnpredictedNotation(uSet);
     }
 
-    function resetSession() {
-        spins = [];
-        document.getElementById('shorthandUI').innerText = "---";
-        document.getElementById('activeOp').innerText = "NONE";
-        document.getElementById('targetUI').innerText = "Wait for input...";
+    function getUnpredictedNotation(nums) {
+        if (nums.length === 0) return "FULL COVER";
+        // Logic to find continuous blocks on the wheel
+        let indices = nums.map(n => wheel.indexOf(n)).sort((a,b) => a-b);
+        let blocks = [];
+        if (indices.length > 0) {
+            let temp = [indices[0]];
+            for(let i=1; i<indices.length; i++) {
+                if(indices[i] === indices[i-1]+1) temp.push(indices[i]);
+                else { blocks.push(temp); temp = [indices[i]]; }
+            }
+            blocks.push(temp);
+            // Wrap check
+            if (indices.includes(0) && indices.includes(36)) {
+                let last = blocks.pop(); let first = blocks.shift();
+                blocks.push([...last, ...first]);
+            }
+        }
+        return blocks.map(b => {
+            let center = wheel[b[Math.floor(b.length/2)]];
+            let nVal = Math.floor((b.length - 1)/2);
+            return `${center}nsquare${nVal}`;
+        }).join(" | ");
+    }
+
+    function updateUI() {
+        ['p', 'u'].forEach(s => {
+            document.getElementById(`${s}PL`).innerText = state[s].pl.toFixed(2);
+            document.getElementById(`${s}PL`).className = `val ${state[s].pl >= 0 ? 'win' : 'loss'}`;
+            document.getElementById(`${s}Stake`).innerText = state[s].stake;
+            document.getElementById(`${s}Stat`).innerText = state[s].activeNums.length + " Nos";
+        });
     }
 </script>
 </body>
