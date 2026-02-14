@@ -2,44 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Adaptive Operator Tracker</title>
+    <title>BIET - Deep Scan Operator Tracker</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
         
-        .last-number-display { background: #222; border: 2px solid #f1c40f; border-radius: 10px; padding: 10px 30px; text-align: center; min-width: 80px; }
-        .last-number-display small { font-size: 10px; color: #888; text-transform: uppercase; display: block; }
+        .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 10px; }
+        .op-tag { font-size: 28px; font-weight: bold; color: #f1c40f; }
+        .last-number-display { background: #222; border: 2px solid #f1c40f; border-radius: 10px; padding: 10px 30px; text-align: center; }
         .last-number-display div { font-size: 32px; font-weight: bold; }
 
-        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; transition: 0.3s; }
-        .active-card { border-color: #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.1); }
-        
-        .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 10px; }
-        .op-tag { font-size: 28px; font-weight: bold; color: #f1c40f; min-width: 100px; }
-
+        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; }
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; align-items: center; }
         .val { font-weight: bold; font-family: monospace; font-size: 18px; }
-        .win { color: #2ecc71; } .loss { color: #e74c3c; }
-
-        .notation-box { background: #050505; padding: 30px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 50px; }
+        
+        .notation-box { background: #050505; padding: 30px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 60px; }
         .math-notation { font-size: 36px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-        .math-notation span { font-size: 22px; vertical-align: super; color: #9b59b6; margin-left: 2px; font-weight: bold; }
+        .math-notation span { font-size: 22px; vertical-align: super; color: #9b59b6; margin-left: 2px; }
 
         .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 20px 0; }
-        .num-btn { padding: 18px 0; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.1s; }
-        .num-btn:active { transform: scale(0.95); }
+        .num-btn { padding: 18px 0; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 18px; }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
-        .history-box { grid-column: span 2; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #222; margin-top: 10px; }
+        .history-box { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; margin-top: 10px; }
         .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-family: monospace; font-weight: bold; }
 
-        .action-btns { grid-column: span 2; display: flex; gap: 10px; margin-top: 15px; }
-        .action-btns button { flex: 1; padding: 12px; cursor: pointer; border-radius: 5px; font-weight: bold; border: 1px solid #333; }
-        .btn-undo { background: #d35400; color: white; border: none !important; }
-
-        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 8px; width: 70px; border-radius: 4px; font-weight: bold; }
-        label { font-size: 11px; color: #777; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 8px; width: 70px; border-radius: 4px; }
+        label { font-size: 11px; color: #777; text-transform: uppercase; display: block; }
     </style>
 </head>
 <body>
@@ -47,54 +37,35 @@
 <div class="container">
     <div class="grid-main">
         <div class="header-panel">
-            <div><label>Current Operator</label><div id="activeOp" class="op-tag">WAIT...</div></div>
-            
-            <div class="last-number-display">
-                <small>Last Entry</small>
-                <div id="lastNumBox">--</div>
-            </div>
-
+            <div><label>Active Operator</label><div id="activeOp" class="op-tag">--</div></div>
+            <div class="last-number-display"><small>HIT</small><div id="lastNumBox">--</div></div>
             <div style="text-align:right">
-                <label>N-Exponent (Max 9)</label>
+                <label>N-Exponent</label>
                 <select id="nVal" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:8px; border-radius:4px; font-weight:bold;">
                     <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
-                    <option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                    <option value="4">4</option><option value="5">5</option>
                 </select>
             </div>
         </div>
 
-        <div class="card" id="pCard" style="border-top: 4px solid #3498db;">
-            <div class="stat-row">
-                <div><label>Start Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')"></div>
-                <div style="text-align:right"><label>Covered</label><span id="pCount" class="val">0</span></div>
-            </div>
+        <div class="card" style="border-top: 4px solid #3498db;">
+            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')"></div><span id="pCount" class="val">0</span></div>
             <div class="stat-row"><span>P/L</span><span id="pPL" class="val">0.00</span></div>
             <div class="stat-row"><span>Next Bet</span><span id="pStake" class="val">10</span></div>
             <div class="notation-box"><div id="pNotation" class="math-notation">--</div></div>
         </div>
 
-        <div class="card" id="uCard" style="border-top: 4px solid #2aa198;">
-            <div class="stat-row">
-                <div><label>Start Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')"></div>
-                <div style="text-align:right"><label>Covered</label><span id="uCount" class="val">0</span></div>
-            </div>
+        <div class="card" style="border-top: 4px solid #2aa198;">
+            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')"></div><span id="uCount" class="val">0</span></div>
             <div class="stat-row"><span>P/L</span><span id="uPL" class="val">0.00</span></div>
             <div class="stat-row"><span>Next Bet</span><span id="uStake" class="val">10</span></div>
             <div class="notation-box"><div id="uNotation" class="math-notation" style="color:#2aa198">--</div></div>
         </div>
 
-        <div class="number-panel" id="numberPanel">
-            <button class="num-btn btn-green" onclick="handleSpin(0)">0</button>
-        </div>
-
-        <div class="history-box">
-            <div id="historyList"></div>
-        </div>
-        
-        <div class="action-btns">
-            <button class="btn-undo" onclick="undoLast()">UNDO</button>
-            <button onclick="location.reload()">RESET ALL</button>
-        </div>
+        <div class="number-panel" id="numberPanel"><button class="num-btn btn-green" onclick="handleSpin(0)">0</button></div>
+        <div class="history-box" id="historyList"></div>
+        <button onclick="undoLast()" style="grid-column: span 1; background: #d35400; color:white; padding:15px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">UNDO</button>
+        <button onclick="location.reload()" style="grid-column: span 1; background: #333; color:white; padding:15px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">RESET</button>
     </div>
 </div>
 
@@ -104,11 +75,7 @@
 
     let spins = [];
     let snapshots = [];
-    let currentOp = null;
-    let state = {
-        p: { pl: 0, stake: 10, active: [] },
-        u: { pl: 0, stake: 10, active: [] }
-    };
+    let state = { p: { pl: 0, stake: 10, active: [] }, u: { pl: 0, stake: 10, active: [] } };
 
     const panel = document.getElementById('numberPanel');
     for (let i = 1; i <= 36; i++) {
@@ -119,86 +86,63 @@
         panel.appendChild(btn);
     }
 
-    function resetProg(side) {
-        state[side].stake = parseFloat(document.getElementById(`${side}StartStake`).value);
-        updateUI();
-    }
+    function resetProg(side) { state[side].stake = parseFloat(document.getElementById(`${side}StartStake`).value); updateUI(); }
 
     function handleSpin(val) {
-        snapshots.push(JSON.stringify({spins, state, currentOp}));
-        
+        snapshots.push(JSON.stringify({spins, state}));
         ['p', 'u'].forEach(side => {
             if (state[side].active.length > 0) {
                 let base = parseFloat(document.getElementById(`${side}StartStake`).value);
-                if (state[side].active.includes(val)) {
-                    state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake);
-                    state[side].stake = base;
-                } else {
-                    state[side].pl -= (state[side].active.length * state[side].stake);
-                    state[side].stake += base;
-                }
+                if (state[side].active.includes(val)) { state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake); state[side].stake = base; }
+                else { state[side].pl -= (state[side].active.length * state[side].stake); state[side].stake += base; }
             }
         });
-        spins.push(val);
-        process();
-        updateUI();
+        spins.push(val); process(); updateUI();
     }
 
-    function undoLast() {
-        if (snapshots.length === 0) return;
-        const snap = JSON.parse(snapshots.pop());
-        spins = snap.spins; state = snap.state; currentOp = snap.currentOp;
-        process(); updateUI();
+    function undoLast() { if (snapshots.length > 0) { const snap = JSON.parse(snapshots.pop()); spins = snap.spins; state = snap.state; process(); updateUI(); } }
+
+    function getFullRange(target, n) {
+        let set = new Set();
+        let points = [target, ...(terminalMap[target]||[])];
+        points.forEach(p => {
+            let idx = wheel.indexOf(p);
+            for(let i=-n; i<=n; i++) set.add(wheel[(idx+i+37)%37]);
+        });
+        return Array.from(set);
     }
 
     function process() {
-        if (spins.length < 2) {
-            document.getElementById('activeOp').innerText = "WAIT...";
-            state.p.active = []; state.u.active = [];
-            return;
-        }
-
+        if (spins.length < 2) return;
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
         const n = parseInt(document.getElementById('nVal').value);
+        
+        // DEEP SCAN: Check if 'last' exists in the neighbor range of any operator's target
+        const ops = ["+10", "-10", "+1", "-1"];
+        let foundOp = null;
 
-        // Identify Operator based on last move
-        const ops = [{id:"+10", r:prev+10}, {id:"-10", r:prev-10}, {id:"+1", r:prev+1}, {id:"-1", r:prev-1}];
-        let matched = ops.find(o => [o.r, ...(terminalMap[o.r]||[])].includes(last));
-
-        if (matched) {
-            currentOp = matched.id;
-            document.getElementById('activeOp').innerText = currentOp;
-        } else {
-            document.getElementById('activeOp').innerText = "RE-SYNC";
-            state.p.active = []; state.u.active = [];
-            return;
+        for (let opId of ops) {
+            let target = (opId === "+10") ? prev+10 : (opId === "-10") ? prev-10 : (opId === "+1") ? prev+1 : prev-1;
+            if (target >= 0 && target <= 36) {
+                let coverage = getFullRange(target, n); 
+                if (coverage.includes(last)) { foundOp = opId; break; }
+            }
         }
 
-        // Apply detected operator to current last number to predict next
-        let targetNum;
-        if (currentOp === "+10") targetNum = last + 10;
-        else if (currentOp === "-10") targetNum = last - 10;
-        else if (currentOp === "+1") targetNum = last + 1;
-        else if (currentOp === "-1") targetNum = last - 1;
+        if (!foundOp) { document.getElementById('activeOp').innerText = "--"; state.p.active = []; state.u.active = []; return; }
 
-        if (targetNum < 0 || targetNum > 36) {
-            state.p.active = []; state.u.active = [];
-            return;
+        document.getElementById('activeOp').innerText = foundOp;
+        let nextTarget = (foundOp === "+10") ? last+10 : (foundOp === "-10") ? last-10 : (foundOp === "+1") ? last+1 : last-1;
+        
+        if (nextTarget >= 0 && nextTarget <= 36) {
+            state.p.active = getFullRange(nextTarget, n);
+            state.u.active = wheel.filter(num => !state.p.active.includes(num));
+            
+            let pPoints = [nextTarget, ...(terminalMap[nextTarget]||[])];
+            document.getElementById('pNotation').innerHTML = pPoints.map(x => `<div>${x}<span>n${n}</span></div>`).join("");
+            document.getElementById('uNotation').innerHTML = getShorthand(state.u.active);
         }
-
-        // Predicted set
-        let pPoints = [targetNum, ...(terminalMap[targetNum]||[])];
-        let pSet = new Set();
-        pPoints.forEach(pt => {
-            let idx = wheel.indexOf(pt);
-            for(let i=-n; i<=n; i++) pSet.add(wheel[(idx+i+37)%37]);
-        });
-        state.p.active = Array.from(pSet);
-        state.u.active = wheel.filter(num => !pSet.has(num));
-
-        document.getElementById('pNotation').innerHTML = pPoints.map(x => `<div>${x}<span>n${n}</span></div>`).join("");
-        document.getElementById('uNotation').innerHTML = getShorthand(state.u.active);
     }
 
     function getShorthand(nums) {
@@ -212,8 +156,7 @@
             }
             blocks.push(temp);
             if (indices.includes(0) && indices.includes(36)) {
-                let l = blocks.pop(); let f = blocks.shift();
-                blocks.push([...l, ...f]);
+                let l = blocks.pop(); let f = blocks.shift(); blocks.push([...l, ...f]);
             }
         }
         return blocks.map(b => {
@@ -231,9 +174,7 @@
             document.getElementById(`${s}Count`).innerText = state[s].active.length;
         });
         const lastNum = spins.length > 0 ? spins[spins.length - 1] : "--";
-        const box = document.getElementById('lastNumBox');
-        box.innerText = lastNum;
-        box.style.color = (lastNum === 0) ? "#27ae60" : ([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(lastNum) ? "#c0392b" : "#3498db");
+        document.getElementById('lastNumBox').innerText = lastNum;
         document.getElementById('historyList').innerHTML = spins.slice(-15).map(n => `<span class="history-num">${n}</span>`).join("");
     }
 </script>
