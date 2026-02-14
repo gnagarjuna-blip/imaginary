@@ -2,41 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - High Precision Dual Tracker</title>
+    <title>BIET - Hard Volume Lock Tracker</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
         
         .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 10px; }
-        .op-display { display: flex; align-items: center; gap: 10px; }
-        .op-tag { font-size: 28px; font-weight: bold; color: #f1c40f; padding: 5px 15px; border-radius: 5px; }
-        .best-op { background: rgba(241, 196, 15, 0.2); border: 1px solid #f1c40f; box-shadow: 0 0 10px #f1c40f; }
-        
-        .lock-btn { cursor: pointer; background: #333; border: 1px solid #555; color: #aaa; padding: 8px 12px; border-radius: 4px; font-weight: bold; }
-        .lock-btn.active { background: #d35400; color: white; border-color: #e67e22; }
+        .op-tag { font-size: 28px; font-weight: bold; color: #f1c40f; padding: 5px 15px; border-radius: 5px; border: 1px solid transparent; }
+        .best-op { background: rgba(241, 196, 15, 0.15); border-color: #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.3); }
 
-        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; }
-        .disabled-card { opacity: 0.3; pointer-events: none; }
-        .disabled-tag { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); background: #e74c3c; color: white; padding: 5px 15px; font-weight: bold; border-radius: 4px; z-index: 10; }
+        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; min-height: 300px; }
+        .disabled-card { opacity: 0.15; filter: grayscale(1); pointer-events: none; }
+        .disabled-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 20; }
+        .disabled-msg { background: #e74c3c; color: white; padding: 10px 20px; font-weight: bold; border-radius: 5px; transform: rotate(-10deg); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; }
         .val { font-weight: bold; font-family: monospace; font-size: 18px; }
-        .pct { font-size: 14px; color: #9b59b6; margin-left: 5px; }
-        
-        .notation-box { background: #050505; padding: 25px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 60px; }
-        .math-notation { font-size: 32px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-        .math-notation span { font-size: 18px; vertical-align: super; color: #9b59b6; }
+        .win { color: #2ecc71; } .loss { color: #e74c3c; }
+
+        .notation-box { background: #050505; padding: 20px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 80px; }
+        .math-notation { font-size: 28px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .math-notation span { font-size: 16px; vertical-align: super; color: #9b59b6; margin-left: 2px; }
 
         .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 20px 0; }
         .num-btn { padding: 18px 0; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 18px; }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
-        .history-box { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; }
-        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-weight: bold; }
+        .history-box { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; margin-bottom: 10px; }
+        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-weight: bold; border: 1px solid #333; }
 
-        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 6px; width: 60px; border-radius: 4px; }
-        label { font-size: 10px; color: #777; text-transform: uppercase; display: block; }
+        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 6px; width: 60px; border-radius: 4px; font-weight: bold; }
+        label { font-size: 10px; color: #777; text-transform: uppercase; display: block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
@@ -44,40 +41,46 @@
 <div class="container">
     <div class="grid-main">
         <div class="header-panel">
-            <div class="op-display">
-                <div><label>Operator</label><div id="activeOp" class="op-tag">--</div></div>
-                <button id="lockBtn" class="lock-btn" onclick="toggleLock()">🔓 UNLOCKED</button>
+            <div>
+                <label>Active Logic</label>
+                <div id="activeOp" class="op-tag">--</div>
             </div>
-            <div style="text-align:center"><label>Hit</label><div id="lastNumBox" style="font-size:32px; font-weight:bold;">--</div></div>
+            <div style="text-align:center">
+                <label>Last Hit</label>
+                <div id="lastNumBox" style="font-size:32px; font-weight:bold;">--</div>
+            </div>
             <div style="text-align:right">
-                <label>N-Exponent</label>
-                <select id="nVal" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:8px; border-radius:4px; font-weight:bold;">
-                    <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
-                    <option value="4">4</option>
-                </select>
+                <button id="lockBtn" style="background:#333; color:#aaa; border:1px solid #555; padding:8px 15px; border-radius:5px; cursor:pointer;" onclick="toggleLock()">🔓 AUTO-SCAN</button>
             </div>
         </div>
 
         <div class="card" id="pCard" style="border-top: 4px solid #3498db;">
-            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')"></div><span class="val"><span id="pCount">0</span> <span id="pPct" class="pct">0%</span></span></div>
-            <div class="stat-row"><span>P/L</span><span id="pPL" class="val">0.00</span></div>
-            <div class="stat-row"><span>Next Bet</span><span id="pStake" class="val">10</span></div>
+            <div class="stat-row">
+                <div><label>Min Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')"></div>
+                <div style="text-align:right"><label>Coverage</label><span id="pCount" class="val">0</span> <span id="pPct" style="color:#9b59b6; font-size:12px;">0%</span></div>
+            </div>
+            <div class="stat-row"><span>Profit/Loss</span><span id="pPL" class="val">0.00</span></div>
+            <div class="stat-row"><span>Current Stake</span><span id="pStake" class="val">10</span></div>
             <div class="notation-box"><div id="pNotation" class="math-notation">--</div></div>
         </div>
 
         <div class="card" id="uCard" style="border-top: 4px solid #2aa198;">
-            <div id="uDisabledTag" class="disabled-tag" style="display:none">MAX COVERAGE REACHED</div>
-            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')"></div><span class="val"><span id="uCount">0</span> <span id="uPct" class="pct">0%</span></span></div>
-            <div class="stat-row"><span>P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="stat-row"><span>Next Bet</span><span id="uStake" class="val">10</span></div>
+            <div id="uOverlay" class="disabled-overlay" style="display:none"><div class="disabled-msg">ZONE DISABLED (5+ TARGETS)</div></div>
+            <div class="stat-row">
+                <div><label>Min Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')"></div>
+                <div style="text-align:right"><label>Coverage</label><span id="uCount" class="val">0</span> <span id="uPct" style="color:#9b59b6; font-size:12px;">0%</span></div>
+            </div>
+            <div class="stat-row"><span>Profit/Loss</span><span id="uPL" class="val">0.00</span></div>
+            <div class="stat-row"><span>Current Stake</span><span id="uStake" class="val">10</span></div>
             <div class="notation-box"><div id="uNotation" class="math-notation" style="color:#2aa198">--</div></div>
         </div>
 
         <div class="number-panel" id="numberPanel"><button class="num-btn btn-green" onclick="handleSpin(0)">0</button></div>
         <div class="history-box" id="historyList"></div>
-        <div style="grid-column: span 2; display:flex; gap:10px; margin-top:10px;">
-            <button onclick="undoLast()" style="flex:1; background:#d35400; color:white; padding:15px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">UNDO</button>
-            <button onclick="location.reload()" style="flex:1; background:#333; color:white; padding:15px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">RESET ALL</button>
+        
+        <div style="grid-column: span 2; display:flex; gap:10px;">
+            <button onclick="undoLast()" style="flex:1; background:#d35400; color:white; padding:15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">UNDO ERROR</button>
+            <button onclick="location.reload()" style="flex:1; background:#333; color:white; padding:15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">NEW SESSION</button>
         </div>
     </div>
 </div>
@@ -91,7 +94,7 @@
     let isLocked = false;
     let lockedOp = null;
     let opStats = {"+10":0, "-10":0, "+1":0, "-1":0};
-    let winStats = {p:0, u:0, totalBets:0};
+    let sessionWins = {p:0, u:0, total:0};
     let state = { p: { pl: 0, stake: 10, active: [] }, u: { pl: 0, stake: 10, active: [] } };
 
     const panel = document.getElementById('numberPanel');
@@ -104,7 +107,7 @@
     }
 
     function toggleLock() {
-        if (!lockedOp && !isLocked) return; 
+        if (!lockedOp) return;
         isLocked = !isLocked;
         updateUI();
     }
@@ -112,16 +115,16 @@
     function resetProg(side) { state[side].stake = parseFloat(document.getElementById(`${side}StartStake`).value); updateUI(); }
 
     function handleSpin(val) {
-        snapshots.push(JSON.stringify({spins, state, isLocked, lockedOp, opStats, winStats}));
+        snapshots.push(JSON.stringify({spins, state, isLocked, lockedOp, opStats, sessionWins}));
         
         ['p', 'u'].forEach(side => {
             if (state[side].active.length > 0) {
-                winStats.totalBets++;
+                if(side === 'p') sessionWins.total++;
                 let base = parseFloat(document.getElementById(`${side}StartStake`).value);
                 if (state[side].active.includes(val)) {
                     state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake);
                     state[side].stake = base;
-                    winStats[side]++;
+                    sessionWins[side]++;
                 } else {
                     state[side].pl -= (state[side].active.length * state[side].stake);
                     state[side].stake += base;
@@ -131,37 +134,29 @@
         spins.push(val); process(); updateUI();
     }
 
-    function undoLast() { if (snapshots.length > 0) { const snap = JSON.parse(snapshots.pop()); spins = snap.spins; state = snap.state; isLocked = snap.isLocked; lockedOp = snap.lockedOp; opStats = snap.opStats; winStats = snap.winStats; process(); updateUI(); } }
+    function undoLast() { if (snapshots.length > 0) { const s = JSON.parse(snapshots.pop()); spins=s.spins; state=s.state; isLocked=s.isLocked; lockedOp=s.lockedOp; opStats=s.opStats; sessionWins=s.sessionWins; process(); updateUI(); } }
 
-    function getFullRange(target, n) {
+    function getFullRange(target, n=3) {
         let set = new Set();
-        let points = [target, ...(terminalMap[target]||[])];
-        points.forEach(p => {
+        let pts = [target, ...(terminalMap[target]||[])];
+        pts.forEach(p => {
             let idx = wheel.indexOf(p);
             for(let i=-n; i<=n; i++) set.add(wheel[(idx+i+37)%37]);
         });
-        return Array.from(set);
+        return { pts: pts, full: Array.from(set) };
     }
 
     function process() {
         if (spins.length < 2) return;
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
-        const n = parseInt(document.getElementById('nVal').value);
         
         let foundOp = isLocked ? lockedOp : null;
-
         if (!isLocked) {
             const ops = ["+10", "-10", "+1", "-1"];
-            for (let opId of ops) {
-                let target = (opId === "+10") ? prev+10 : (opId === "-10") ? prev-10 : (opId === "+1") ? prev+1 : prev-1;
-                if (target >= 0 && target <= 36) {
-                    if (getFullRange(target, n).includes(last)) { 
-                        foundOp = opId; 
-                        opStats[opId]++; // Track hits for consistency highlight
-                        break; 
-                    }
-                }
+            for (let op of ops) {
+                let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
+                if (t>=0 && t<=36 && getFullRange(t).full.includes(last)) { foundOp = op; opStats[op]++; break; }
             }
         }
 
@@ -172,53 +167,44 @@
         }
 
         lockedOp = foundOp;
-        document.getElementById('activeOp').innerText = foundOp;
-        
-        // Highlight logic
-        const maxHits = Math.max(...Object.values(opStats));
-        if (opStats[foundOp] === maxHits && maxHits > 0) document.getElementById('activeOp').classList.add('best-op');
-        else document.getElementById('activeOp').classList.remove('best-op');
-
-        let nextTarget = (foundOp === "+10") ? last+10 : (foundOp === "-10") ? last-10 : (foundOp === "+1") ? last+1 : last-1;
+        const nextTarget = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
         
         if (nextTarget >= 0 && nextTarget <= 36) {
-            state.p.active = getFullRange(nextTarget, n);
+            const data = getFullRange(nextTarget);
+            state.p.active = data.full;
             
-            // Logic for High Coverage Filter
-            if (state.p.active.length >= 25) {
+            // Hard Lock Logic: If targets >= 5, kill Unpredicted
+            if (data.pts.length >= 5) {
                 state.u.active = [];
                 document.getElementById('uCard').classList.add('disabled-card');
-                document.getElementById('uDisabledTag').style.display = 'block';
+                document.getElementById('uOverlay').style.display = 'flex';
             } else {
                 state.u.active = wheel.filter(num => !state.p.active.includes(num));
                 document.getElementById('uCard').classList.remove('disabled-card');
-                document.getElementById('uDisabledTag').style.display = 'none';
+                document.getElementById('uOverlay').style.display = 'none';
             }
 
-            let pPoints = [nextTarget, ...(terminalMap[nextTarget]||[])];
-            document.getElementById('pNotation').innerHTML = pPoints.map(x => `<div>${x}<span>n${n}</span></div>`).join("");
+            document.getElementById('pNotation').innerHTML = data.pts.map(x => `<div>${x}<span>n3</span></div>`).join("");
             document.getElementById('uNotation').innerHTML = state.u.active.length > 0 ? getShorthand(state.u.active) : "--";
         }
     }
 
     function getShorthand(nums) {
-        let indices = nums.map(n => wheel.indexOf(n)).sort((a,b) => a-b);
+        let idxs = nums.map(n => wheel.indexOf(n)).sort((a,b) => a-b);
         let blocks = [];
-        if (indices.length > 0) {
-            let temp = [indices[0]];
-            for(let i=1; i<indices.length; i++) {
-                if(indices[i] === indices[i-1]+1) temp.push(indices[i]);
-                else { blocks.push(temp); temp = [indices[i]]; }
+        if (idxs.length > 0) {
+            let temp = [idxs[0]];
+            for(let i=1; i<idxs.length; i++) {
+                if(idxs[i] === idxs[i-1]+1) temp.push(idxs[i]);
+                else { blocks.push(temp); temp = [idxs[i]]; }
             }
             blocks.push(temp);
-            if (indices.includes(0) && indices.includes(36)) {
-                let l = blocks.pop(); let f = blocks.shift(); blocks.push([...l, ...f]);
-            }
+            if (idxs.includes(0) && idxs.includes(36)) { let l=blocks.pop(); let f=blocks.shift(); blocks.push([...l, ...f]); }
         }
         return blocks.map(b => {
-            let center = wheel[b[Math.floor(b.length/2)]];
+            let c = wheel[b[Math.floor(b.length/2)]];
             let nv = Math.floor((b.length - 1)/2);
-            return `<div>${center}<span>n${nv}</span></div>`;
+            return `<div>${c}<span>n${nv}</span></div>`;
         }).join("");
     }
 
@@ -228,16 +214,21 @@
             document.getElementById(`${s}PL`).className = `val ${state[s].pl >= 0 ? 'win' : 'loss'}`;
             document.getElementById(`${s}Stake`).innerText = state[s].stake;
             document.getElementById(`${s}Count`).innerText = state[s].active.length;
-            
-            let winRate = winStats.totalBets > 0 ? ((winStats[s] / winStats.totalBets) * 100).toFixed(0) : 0;
-            document.getElementById(`${s}Pct`).innerText = winRate + "%";
+            document.getElementById(`${s}Pct`).innerText = sessionWins.total > 0 ? ((sessionWins[s]/sessionWins.total)*100).toFixed(0) + "%" : "0%";
         });
-        document.getElementById('lastNumBox').innerText = spins.length > 0 ? spins[spins.length - 1] : "--";
+        document.getElementById('lastNumBox').innerText = spins.length > 0 ? spins[spins.length-1] : "--";
         document.getElementById('historyList').innerHTML = spins.slice(-15).map(n => `<span class="history-num">${n}</span>`).join("");
         
-        const btn = document.getElementById('lockBtn');
-        btn.innerText = isLocked ? "🔒 LOCKED" : "🔓 UNLOCKED";
-        btn.className = isLocked ? "lock-btn active" : "lock-btn";
+        const opTag = document.getElementById('activeOp');
+        opTag.innerText = lockedOp || "--";
+        const maxH = Math.max(...Object.values(opStats));
+        if (lockedOp && opStats[lockedOp] === maxH && maxH > 0) opTag.className = "op-tag best-op";
+        else opTag.className = "op-tag";
+
+        const lBtn = document.getElementById('lockBtn');
+        lBtn.innerText = isLocked ? "🔒 LOCKED" : "🔓 AUTO-SCAN";
+        lBtn.style.background = isLocked ? "#d35400" : "#333";
+        lBtn.style.color = isLocked ? "white" : "#aaa";
     }
 </script>
 </body>
