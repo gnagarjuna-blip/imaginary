@@ -2,121 +2,193 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Gap-Free Roulette Tracker</title>
+    <title>BIET - Absolute Logic Pro</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; }
-        .container { max-width: 1000px; margin: auto; }
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .header { grid-column: span 2; background: #1a1a1a; padding: 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1000px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
-        .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; min-height: 250px; }
-        .p-border { border-top: 5px solid #3498db; }
-        .u-border { border-top: 5px solid #e67e22; }
+        /* Header & Controls */
+        .header { grid-column: span 2; background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .op-display { font-size: 24px; font-weight: bold; color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
+        .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .scan-on { background: rgba(39, 174, 96, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
         
-        .stat { font-size: 14px; color: #888; margin-bottom: 5px; }
-        .val { font-size: 24px; font-weight: bold; font-family: monospace; color: #fff; }
+        /* Cards */
+        .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; min-height: 300px; transition: 0.3s; }
+        .p-card { border-top: 5px solid #3498db; }
+        .u-card { border-top: 5px solid #e67e22; }
+        .locked { opacity: 0.2; filter: grayscale(1); pointer-events: none; }
         
-        .notation-display { background: #000; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 80px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-        .block { background: #1a1a1a; padding: 8px 12px; border-radius: 5px; border: 1px solid #333; font-size: 20px; font-weight: bold; position: relative; }
-        .block span { font-size: 12px; color: #9b59b6; vertical-align: super; margin-left: 2px; }
-        .block-pockets { display: block; font-size: 9px; color: #555; text-align: center; margin-top: 2px; }
+        /* Lock Overlay */
+        .lock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; background: rgba(0,0,0,0.6); border-radius: 12px; }
+        .lock-msg { background: #e74c3c; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
 
-        .btn-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; margin: 20px 0; }
-        .num-btn { padding: 15px 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; }
+        /* Notation */
+        .notation-area { background: #000; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 100px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start; }
+        .n-block { background: #1a1a1a; padding: 10px; border-radius: 6px; border: 1px solid #333; font-size: 22px; font-weight: bold; text-align: center; min-width: 60px; }
+        .n-block span { font-size: 13px; color: #9b59b6; vertical-align: super; }
+        
+        /* Number Grid */
+        .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 20px 0; }
+        .n-btn { padding: 18px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 18px; transition: 0.2s; }
+        .n-btn:active { transform: scale(0.95); }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
         
-        .audit-bar { grid-column: span 2; background: rgba(39, 174, 96, 0.1); border: 1px solid #27ae60; padding: 10px; border-radius: 5px; text-align: center; font-size: 13px; font-weight: bold; }
-        .error { background: rgba(231, 76, 60, 0.1); border-color: #e74c3c; color: #e74c3c; }
+        /* Footer */
+        .footer-tools { grid-column: span 2; display: flex; gap: 15px; }
+        .tool-btn { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 14px; }
+        .btn-undo { background: #d35400; }
+        .btn-reset { background: #333; }
+        
+        .audit-info { grid-column: span 2; text-align: center; padding: 10px; font-size: 12px; color: #555; letter-spacing: 1px; }
+        .history-strip { grid-column: span 2; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; overflow-x: auto; white-space: nowrap; font-family: monospace; }
+        .hist-item { display: inline-block; background: #222; padding: 4px 10px; margin-right: 5px; border-radius: 4px; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="dashboard">
+    <div class="grid">
         <div class="header">
-            <div><label class="stat">MODE</label><div style="color:#f1c40f; font-weight:bold;">n9 MAX EXPANSION</div></div>
-            <div style="text-align:center"><label class="stat">LAST HIT</label><div id="lastN" class="val">--</div></div>
-            <div style="text-align:right">
-                <label class="stat">LIMIT</label>
-                <select id="maxN" onchange="processSpins()" style="background:#222; color:#fff; border:1px solid #444; padding:5px;">
-                    <option value="3">n3</option><option value="5">n5</option><option value="9" selected>n9</option>
+            <div>
+                <span class="status-pill scan-on">Auto-Scan Active</span>
+                <div id="opTag" class="op-display" style="margin-top:8px;">SCANNING...</div>
+            </div>
+            <div style="text-align:center">
+                <div style="font-size:10px; color:#666; text-transform:uppercase;">Last Result</div>
+                <div id="lastNum" style="font-size:32px; font-weight:bold;">--</div>
+            </div>
+            <div>
+                <select id="nExp" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:8px; border-radius:6px;">
+                    <option value="3" selected>EXP: n3</option>
+                    <option value="5">EXP: n5</option>
+                    <option value="9">EXP: n9</option>
                 </select>
             </div>
         </div>
 
-        <div class="card p-border">
-            <div class="stat">PREDICTED UNIQUE POCKETS</div>
-            <div id="pCount" class="val">0</div>
-            <div class="notation-display" id="pNot"></div>
+        <div class="card p-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; color:#888;">PREDICTED ZONE</span>
+                <b id="pCount">0 nos</b>
+            </div>
+            <div class="notation-area" id="pNot"></div>
         </div>
 
-        <div class="card u-border">
-            <div class="stat">UNPREDICTED (REMAINING)</div>
-            <div id="uCount" class="val">0</div>
-            <div class="notation-display" id="uNot"></div>
+        <div class="card u-card" id="uCard">
+            <div id="uLock" class="lock-overlay" style="display:none;">
+                <div id="lockReason" class="lock-msg">VOLUME > 19</div>
+                <span style="font-size:10px; color:#888; margin-top:8px;">STAKE SUSPENDED</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; color:#888;">UNPREDICTED ZONE</span>
+                <b id="uCount">0 nos</b>
+            </div>
+            <div class="notation-area" id="uNot"></div>
         </div>
 
-        <div class="btn-grid" id="grid">
-            <button class="num-btn green" onclick="press(0)">0</button>
+        <div class="num-grid" id="grid">
+            <button class="n-btn green" onclick="inputNum(0)">0</button>
         </div>
 
-        <div id="audit" class="audit-bar">WHEEL SYNC: 0/37 (STABLE)</div>
+        <div class="history-strip" id="histStrip">History: Waiting for data...</div>
+
+        <div class="footer-tools">
+            <button class="tool-btn btn-undo" onclick="undo()">UNDO LAST RESULT</button>
+            <button class="tool-btn btn-reset" onclick="resetSession()">RESET SESSION</button>
+        </div>
+
+        <div class="audit-info" id="syncStatus">WHEEL SYNC: 0/37 (INITIALIZING)</div>
     </div>
 </div>
 
 <script>
     const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
-    const terms = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
+    const neighbors = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
 
-    let spins = [];
-    let currentP = [], currentU = [];
+    let history = [];
+    let stateHistory = [];
+    let pList = [], uList = [];
 
+    // Initialize Grid
     const g = document.getElementById('grid');
-    for(let i=1; i<=36; i++){
+    for(let i=1; i<=36; i++) {
         let b = document.createElement('button');
         b.innerText = i;
-        b.className = `num-btn ${[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i)?'red':'black'}`;
-        b.onclick = () => press(i);
+        b.className = `n-btn ${[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i)?'red':'black'}`;
+        b.onclick = () => inputNum(i);
         g.appendChild(b);
     }
 
-    function press(n) { spins.push(n); processSpins(); }
-
-    function processSpins() {
-        if(spins.length < 2) return;
-        const last = spins[spins.length-1];
-        const prev = spins[spins.length-2];
-        const nLimit = parseInt(document.getElementById('maxN').value);
-        
-        let activeOp = null;
-        for(let op of ["+10","-10","+1","-1"]) {
-            let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-            if(t>=0 && t<=36 && getCloud(t, nLimit).includes(last)) { activeOp = op; break; }
-        }
-
-        if(!activeOp) { clear(); return; }
-
-        let target = (activeOp==="+10")?last+10:(activeOp==="-10")?last-10:(activeOp==="+1")?last+1:last-1;
-        if(target < 0 || target > 36) { clear(); return; }
-
-        // Logic: Calculate Unique Predicted Numbers
-        let pSet = new Set();
-        let roots = [target, ...(terms[target]||[])];
-        roots.forEach(r => {
-            let idx = wheel.indexOf(r);
-            for(let i=-nLimit; i<=nLimit; i++) pSet.add(wheel[(idx+i+37)%37]);
-        });
-        currentP = Array.from(pSet);
-
-        // Logic: Calculate Remaining (Unpredicted) Numbers
-        currentU = wheel.filter(n => !currentP.includes(n));
-
-        updateUI(last, roots, nLimit);
+    function inputNum(n) {
+        stateHistory.push(JSON.stringify({history, pList, uList}));
+        history.push(n);
+        process();
     }
 
-    function getCloud(t, n) {
+    function undo() {
+        if(stateHistory.length > 0) {
+            let prev = JSON.parse(stateHistory.pop());
+            history = prev.history;
+            pList = prev.pList;
+            uList = prev.uList;
+            process();
+        }
+    }
+
+    function resetSession() {
+        if(confirm("Clear all data and reset wheel?")) location.reload();
+    }
+
+    function process() {
+        if(history.length < 1) { clearAll(); return; }
+        const last = history[history.length-1];
+        document.getElementById('lastNum').innerText = last;
+        updateHist();
+
+        if(history.length < 2) return;
+        const prev = history[history.length-2];
+        const nVal = parseInt(document.getElementById('nExp').value);
+
+        // Auto-Scan Operators
+        let foundOp = null;
+        for(let op of ["+10","-10","+1","-1"]) {
+            let testT = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
+            if(testT >=0 && testT <= 36) {
+                if(getCluster(testT, nVal).includes(last)) { foundOp = op; break; }
+            }
+        }
+
+        if(!foundOp) {
+            document.getElementById('opTag').innerText = "NO MATCH";
+            clearZones();
+            return;
+        }
+
+        document.getElementById('opTag').innerText = foundOp;
+        let nextTarget = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
+
+        if(nextTarget >= 0 && nextTarget <= 36) {
+            let roots = [nextTarget, ...(neighbors[nextTarget]||[])];
+            let pSet = new Set();
+            roots.forEach(r => {
+                let idx = wheel.indexOf(r);
+                for(let i=-nVal; i<=nVal; i++) pSet.add(wheel[(idx+i+37)%37]);
+            });
+            
+            pList = Array.from(pSet);
+            uList = wheel.filter(num => !pList.includes(num));
+
+            renderOutput(roots, nVal);
+        } else {
+            clearZones();
+        }
+    }
+
+    function getCluster(t, n) {
         let s = new Set();
-        let pts = [t, ...(terms[t]||[])];
+        let pts = [t, ...(neighbors[t]||[])];
         pts.forEach(p => {
             let idx = wheel.indexOf(p);
             for(let i=-n; i<=n; i++) s.add(wheel[(idx+i+37)%37]);
@@ -124,45 +196,74 @@
         return Array.from(s);
     }
 
-    function getNotation(nums) {
+    function renderOutput(roots, n) {
+        document.getElementById('pCount').innerText = `${pList.length} nos`;
+        document.getElementById('uCount').innerText = `${uList.length} nos`;
+        
+        document.getElementById('pNot').innerHTML = roots.map(r => `<div class="n-block">${r}<span>n${n}</span></div>`).join("");
+        document.getElementById('uNot').innerHTML = getShorthand(uList);
+
+        // LOCKING LOGIC
+        const uLock = document.getElementById('uLock');
+        const reason = document.getElementById('lockReason');
+        const uCard = document.getElementById('uCard');
+
+        if(roots.length >= 5) {
+            uLock.style.display = "flex";
+            reason.innerText = "PREDICTED HEAVY";
+            uCard.classList.add('locked');
+        } else if(uList.length > 19) {
+            uLock.style.display = "flex";
+            reason.innerText = "VOLUME > 19";
+            uCard.classList.add('locked');
+        } else {
+            uLock.style.display = "none";
+            uCard.classList.remove('locked');
+        }
+
+        let total = pList.length + uList.length;
+        document.getElementById('syncStatus').innerText = `WHEEL SYNC: ${total}/37 (STABLE)`;
+        document.getElementById('syncStatus').style.color = (total===37)?"#27ae60":"#e74c3c";
+    }
+
+    function getShorthand(nums) {
         if(nums.length === 0) return "";
         let idxs = nums.map(n => wheel.indexOf(n)).sort((a,b)=>a-b);
         let blocks = [];
-        if(idxs.length > 0) {
-            let tmp = [idxs[0]];
-            for(let i=1; i<idxs.length; i++) {
-                if(idxs[i] === idxs[i-1]+1) tmp.push(idxs[i]);
-                else { blocks.push(tmp); tmp = [idxs[i]]; }
-            }
-            blocks.push(tmp);
-            if(idxs.includes(0) && idxs.includes(36) && blocks.length > 1) {
-                let l = blocks.pop(); let f = blocks.shift(); blocks.push([...l, ...f]);
-            }
+        let tmp = [idxs[0]];
+        for(let i=1; i<idxs.length; i++) {
+            if(idxs[i] === idxs[i-1]+1) tmp.push(idxs[i]);
+            else { blocks.push(tmp); tmp = [idxs[i]]; }
+        }
+        blocks.push(tmp);
+        if(idxs.includes(0) && idxs.includes(36) && blocks.length > 1) {
+            let l = blocks.pop(); let f = blocks.shift(); blocks.push([...l, ...f]);
         }
         return blocks.map(b => {
-            let mid = b[Math.floor(b.length/2)];
-            let nVal = Math.floor((b.length-1)/2);
-            return `<div class="block">${wheel[mid]}<span>n${nVal}</span><small class="block-pockets">(${b.length} pockets)</small></div>`;
+            let m = b[Math.floor(b.length/2)];
+            let nv = Math.floor((b.length-1)/2);
+            return `<div class="n-block">${wheel[m]}<span>n${nv}</span></div>`;
         }).join("");
     }
 
-    function updateUI(last, roots, n) {
-        document.getElementById('lastN').innerText = last;
-        document.getElementById('pCount').innerText = currentP.length;
-        document.getElementById('uCount').innerText = currentU.length;
-        
-        document.getElementById('pNot').innerHTML = roots.map(r => `<div class="block">${r}<span>n${n}</span></div>`).join("");
-        document.getElementById('uNot').innerHTML = getNotation(currentU);
-        
-        let total = currentP.length + currentU.length;
-        let audit = document.getElementById('audit');
-        audit.innerText = `WHEEL SYNC: ${total}/37 NUMBERS (NO GAPS)`;
-        audit.className = (total === 37) ? "audit-bar" : "audit-bar error";
+    function updateHist() {
+        document.getElementById('histStrip').innerHTML = "History: " + history.slice(-15).map(x => `<span class="hist-item">${x}</span>`).join("");
     }
 
-    function clear() {
-        document.getElementById('pNot').innerHTML = "SCANNING...";
-        document.getElementById('uNot').innerHTML = "SCANNING...";
+    function clearZones() {
+        pList = []; uList = [];
+        document.getElementById('pNot').innerHTML = "";
+        document.getElementById('uNot').innerHTML = "";
+        document.getElementById('pCount').innerText = "0 nos";
+        document.getElementById('uCount').innerText = "0 nos";
+        document.getElementById('uLock').style.display = "none";
+        document.getElementById('uCard').classList.remove('locked');
+    }
+
+    function clearAll() {
+        document.getElementById('lastNum').innerText = "--";
+        document.getElementById('opTag').innerText = "SCANNING...";
+        clearZones();
     }
 </script>
 </body>
