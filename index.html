@@ -2,34 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Deep Scan Operator Tracker</title>
+    <title>BIET - High Precision Dual Tracker</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
         
         .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 10px; }
-        .op-tag { font-size: 28px; font-weight: bold; color: #f1c40f; }
-        .last-number-display { background: #222; border: 2px solid #f1c40f; border-radius: 10px; padding: 10px 30px; text-align: center; }
-        .last-number-display div { font-size: 32px; font-weight: bold; }
-
-        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; align-items: center; }
-        .val { font-weight: bold; font-family: monospace; font-size: 18px; }
+        .op-display { display: flex; align-items: center; gap: 10px; }
+        .op-tag { font-size: 28px; font-weight: bold; color: #f1c40f; padding: 5px 15px; border-radius: 5px; }
+        .best-op { background: rgba(241, 196, 15, 0.2); border: 1px solid #f1c40f; box-shadow: 0 0 10px #f1c40f; }
         
-        .notation-box { background: #050505; padding: 30px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 60px; }
-        .math-notation { font-size: 36px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-        .math-notation span { font-size: 22px; vertical-align: super; color: #9b59b6; margin-left: 2px; }
+        .lock-btn { cursor: pointer; background: #333; border: 1px solid #555; color: #aaa; padding: 8px 12px; border-radius: 4px; font-weight: bold; }
+        .lock-btn.active { background: #d35400; color: white; border-color: #e67e22; }
+
+        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; }
+        .disabled-card { opacity: 0.3; pointer-events: none; }
+        .disabled-tag { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); background: #e74c3c; color: white; padding: 5px 15px; font-weight: bold; border-radius: 4px; z-index: 10; }
+
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; }
+        .val { font-weight: bold; font-family: monospace; font-size: 18px; }
+        .pct { font-size: 14px; color: #9b59b6; margin-left: 5px; }
+        
+        .notation-box { background: #050505; padding: 25px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 60px; }
+        .math-notation { font-size: 32px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        .math-notation span { font-size: 18px; vertical-align: super; color: #9b59b6; }
 
         .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 20px 0; }
         .num-btn { padding: 18px 0; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 18px; }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
-        .history-box { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; margin-top: 10px; }
-        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-family: monospace; font-weight: bold; }
+        .history-box { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; }
+        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-weight: bold; }
 
-        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 8px; width: 70px; border-radius: 4px; }
-        label { font-size: 11px; color: #777; text-transform: uppercase; display: block; }
+        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 6px; width: 60px; border-radius: 4px; }
+        label { font-size: 10px; color: #777; text-transform: uppercase; display: block; }
     </style>
 </head>
 <body>
@@ -37,26 +44,30 @@
 <div class="container">
     <div class="grid-main">
         <div class="header-panel">
-            <div><label>Active Operator</label><div id="activeOp" class="op-tag">--</div></div>
-            <div class="last-number-display"><small>HIT</small><div id="lastNumBox">--</div></div>
+            <div class="op-display">
+                <div><label>Operator</label><div id="activeOp" class="op-tag">--</div></div>
+                <button id="lockBtn" class="lock-btn" onclick="toggleLock()">🔓 UNLOCKED</button>
+            </div>
+            <div style="text-align:center"><label>Hit</label><div id="lastNumBox" style="font-size:32px; font-weight:bold;">--</div></div>
             <div style="text-align:right">
                 <label>N-Exponent</label>
                 <select id="nVal" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:8px; border-radius:4px; font-weight:bold;">
                     <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option>
-                    <option value="4">4</option><option value="5">5</option>
+                    <option value="4">4</option>
                 </select>
             </div>
         </div>
 
-        <div class="card" style="border-top: 4px solid #3498db;">
-            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')"></div><span id="pCount" class="val">0</span></div>
+        <div class="card" id="pCard" style="border-top: 4px solid #3498db;">
+            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')"></div><span class="val"><span id="pCount">0</span> <span id="pPct" class="pct">0%</span></span></div>
             <div class="stat-row"><span>P/L</span><span id="pPL" class="val">0.00</span></div>
             <div class="stat-row"><span>Next Bet</span><span id="pStake" class="val">10</span></div>
             <div class="notation-box"><div id="pNotation" class="math-notation">--</div></div>
         </div>
 
-        <div class="card" style="border-top: 4px solid #2aa198;">
-            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')"></div><span id="uCount" class="val">0</span></div>
+        <div class="card" id="uCard" style="border-top: 4px solid #2aa198;">
+            <div id="uDisabledTag" class="disabled-tag" style="display:none">MAX COVERAGE REACHED</div>
+            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')"></div><span class="val"><span id="uCount">0</span> <span id="uPct" class="pct">0%</span></span></div>
             <div class="stat-row"><span>P/L</span><span id="uPL" class="val">0.00</span></div>
             <div class="stat-row"><span>Next Bet</span><span id="uStake" class="val">10</span></div>
             <div class="notation-box"><div id="uNotation" class="math-notation" style="color:#2aa198">--</div></div>
@@ -64,8 +75,10 @@
 
         <div class="number-panel" id="numberPanel"><button class="num-btn btn-green" onclick="handleSpin(0)">0</button></div>
         <div class="history-box" id="historyList"></div>
-        <button onclick="undoLast()" style="grid-column: span 1; background: #d35400; color:white; padding:15px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">UNDO</button>
-        <button onclick="location.reload()" style="grid-column: span 1; background: #333; color:white; padding:15px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">RESET</button>
+        <div style="grid-column: span 2; display:flex; gap:10px; margin-top:10px;">
+            <button onclick="undoLast()" style="flex:1; background:#d35400; color:white; padding:15px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">UNDO</button>
+            <button onclick="location.reload()" style="flex:1; background:#333; color:white; padding:15px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">RESET ALL</button>
+        </div>
     </div>
 </div>
 
@@ -75,6 +88,10 @@
 
     let spins = [];
     let snapshots = [];
+    let isLocked = false;
+    let lockedOp = null;
+    let opStats = {"+10":0, "-10":0, "+1":0, "-1":0};
+    let winStats = {p:0, u:0, totalBets:0};
     let state = { p: { pl: 0, stake: 10, active: [] }, u: { pl: 0, stake: 10, active: [] } };
 
     const panel = document.getElementById('numberPanel');
@@ -86,21 +103,35 @@
         panel.appendChild(btn);
     }
 
+    function toggleLock() {
+        if (!lockedOp && !isLocked) return; 
+        isLocked = !isLocked;
+        updateUI();
+    }
+
     function resetProg(side) { state[side].stake = parseFloat(document.getElementById(`${side}StartStake`).value); updateUI(); }
 
     function handleSpin(val) {
-        snapshots.push(JSON.stringify({spins, state}));
+        snapshots.push(JSON.stringify({spins, state, isLocked, lockedOp, opStats, winStats}));
+        
         ['p', 'u'].forEach(side => {
             if (state[side].active.length > 0) {
+                winStats.totalBets++;
                 let base = parseFloat(document.getElementById(`${side}StartStake`).value);
-                if (state[side].active.includes(val)) { state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake); state[side].stake = base; }
-                else { state[side].pl -= (state[side].active.length * state[side].stake); state[side].stake += base; }
+                if (state[side].active.includes(val)) {
+                    state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake);
+                    state[side].stake = base;
+                    winStats[side]++;
+                } else {
+                    state[side].pl -= (state[side].active.length * state[side].stake);
+                    state[side].stake += base;
+                }
             }
         });
         spins.push(val); process(); updateUI();
     }
 
-    function undoLast() { if (snapshots.length > 0) { const snap = JSON.parse(snapshots.pop()); spins = snap.spins; state = snap.state; process(); updateUI(); } }
+    function undoLast() { if (snapshots.length > 0) { const snap = JSON.parse(snapshots.pop()); spins = snap.spins; state = snap.state; isLocked = snap.isLocked; lockedOp = snap.lockedOp; opStats = snap.opStats; winStats = snap.winStats; process(); updateUI(); } }
 
     function getFullRange(target, n) {
         let set = new Set();
@@ -118,30 +149,55 @@
         const prev = spins[spins.length - 2];
         const n = parseInt(document.getElementById('nVal').value);
         
-        // DEEP SCAN: Check if 'last' exists in the neighbor range of any operator's target
-        const ops = ["+10", "-10", "+1", "-1"];
-        let foundOp = null;
+        let foundOp = isLocked ? lockedOp : null;
 
-        for (let opId of ops) {
-            let target = (opId === "+10") ? prev+10 : (opId === "-10") ? prev-10 : (opId === "+1") ? prev+1 : prev-1;
-            if (target >= 0 && target <= 36) {
-                let coverage = getFullRange(target, n); 
-                if (coverage.includes(last)) { foundOp = opId; break; }
+        if (!isLocked) {
+            const ops = ["+10", "-10", "+1", "-1"];
+            for (let opId of ops) {
+                let target = (opId === "+10") ? prev+10 : (opId === "-10") ? prev-10 : (opId === "+1") ? prev+1 : prev-1;
+                if (target >= 0 && target <= 36) {
+                    if (getFullRange(target, n).includes(last)) { 
+                        foundOp = opId; 
+                        opStats[opId]++; // Track hits for consistency highlight
+                        break; 
+                    }
+                }
             }
         }
 
-        if (!foundOp) { document.getElementById('activeOp').innerText = "--"; state.p.active = []; state.u.active = []; return; }
+        if (!foundOp) { 
+            document.getElementById('activeOp').innerText = "--"; 
+            state.p.active = []; state.u.active = []; 
+            return; 
+        }
 
+        lockedOp = foundOp;
         document.getElementById('activeOp').innerText = foundOp;
+        
+        // Highlight logic
+        const maxHits = Math.max(...Object.values(opStats));
+        if (opStats[foundOp] === maxHits && maxHits > 0) document.getElementById('activeOp').classList.add('best-op');
+        else document.getElementById('activeOp').classList.remove('best-op');
+
         let nextTarget = (foundOp === "+10") ? last+10 : (foundOp === "-10") ? last-10 : (foundOp === "+1") ? last+1 : last-1;
         
         if (nextTarget >= 0 && nextTarget <= 36) {
             state.p.active = getFullRange(nextTarget, n);
-            state.u.active = wheel.filter(num => !state.p.active.includes(num));
             
+            // Logic for High Coverage Filter
+            if (state.p.active.length >= 25) {
+                state.u.active = [];
+                document.getElementById('uCard').classList.add('disabled-card');
+                document.getElementById('uDisabledTag').style.display = 'block';
+            } else {
+                state.u.active = wheel.filter(num => !state.p.active.includes(num));
+                document.getElementById('uCard').classList.remove('disabled-card');
+                document.getElementById('uDisabledTag').style.display = 'none';
+            }
+
             let pPoints = [nextTarget, ...(terminalMap[nextTarget]||[])];
             document.getElementById('pNotation').innerHTML = pPoints.map(x => `<div>${x}<span>n${n}</span></div>`).join("");
-            document.getElementById('uNotation').innerHTML = getShorthand(state.u.active);
+            document.getElementById('uNotation').innerHTML = state.u.active.length > 0 ? getShorthand(state.u.active) : "--";
         }
     }
 
@@ -172,10 +228,16 @@
             document.getElementById(`${s}PL`).className = `val ${state[s].pl >= 0 ? 'win' : 'loss'}`;
             document.getElementById(`${s}Stake`).innerText = state[s].stake;
             document.getElementById(`${s}Count`).innerText = state[s].active.length;
+            
+            let winRate = winStats.totalBets > 0 ? ((winStats[s] / winStats.totalBets) * 100).toFixed(0) : 0;
+            document.getElementById(`${s}Pct`).innerText = winRate + "%";
         });
-        const lastNum = spins.length > 0 ? spins[spins.length - 1] : "--";
-        document.getElementById('lastNumBox').innerText = lastNum;
+        document.getElementById('lastNumBox').innerText = spins.length > 0 ? spins[spins.length - 1] : "--";
         document.getElementById('historyList').innerHTML = spins.slice(-15).map(n => `<span class="history-num">${n}</span>`).join("");
+        
+        const btn = document.getElementById('lockBtn');
+        btn.innerText = isLocked ? "🔒 LOCKED" : "🔓 UNLOCKED";
+        btn.className = isLocked ? "lock-btn active" : "lock-btn";
     }
 </script>
 </body>
