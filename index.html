@@ -2,48 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Absolute Logic Pro</title>
+    <title>BIET - D'Alembert Absolute Logic</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
-        /* Header & Controls */
         .header { grid-column: span 2; background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .op-display { font-size: 24px; font-weight: bold; color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
-        .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-        .scan-on { background: rgba(39, 174, 96, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
-        
-        /* Cards */
-        .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; min-height: 300px; transition: 0.3s; }
+        .op-display { font-size: 24px; font-weight: bold; color: #f1c40f; }
+
+        .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; min-height: 380px; }
         .p-card { border-top: 5px solid #3498db; }
         .u-card { border-top: 5px solid #e67e22; }
-        .locked { opacity: 0.2; filter: grayscale(1); pointer-events: none; }
+        .locked { opacity: 0.15; filter: grayscale(1); pointer-events: none; }
         
-        /* Lock Overlay */
-        .lock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; background: rgba(0,0,0,0.6); border-radius: 12px; }
-        .lock-msg { background: #e74c3c; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .lock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; background: rgba(0,0,0,0.7); border-radius: 12px; }
+        .lock-msg { background: #e74c3c; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 13px; }
 
-        /* Notation */
-        .notation-area { background: #000; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 100px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start; }
-        .n-block { background: #1a1a1a; padding: 10px; border-radius: 6px; border: 1px solid #333; font-size: 22px; font-weight: bold; text-align: center; min-width: 60px; }
-        .n-block span { font-size: 13px; color: #9b59b6; vertical-align: super; }
+        .fin-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
+        .val { font-family: monospace; font-weight: bold; font-size: 18px; }
+        .win { color: #2ecc71; } .loss { color: #e74c3c; }
+
+        .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 100px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .n-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 20px; font-weight: bold; }
+        .n-block span { font-size: 12px; color: #9b59b6; vertical-align: super; }
         
-        /* Number Grid */
-        .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 20px 0; }
-        .n-btn { padding: 18px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 18px; transition: 0.2s; }
-        .n-btn:active { transform: scale(0.95); }
+        .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
+        .n-btn { padding: 15px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
         
-        /* Footer */
-        .footer-tools { grid-column: span 2; display: flex; gap: 15px; }
-        .tool-btn { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 14px; }
-        .btn-undo { background: #d35400; }
-        .btn-reset { background: #333; }
+        .footer-tools { grid-column: span 2; display: flex; gap: 10px; }
+        .tool-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .btn-undo { background: #d35400; } .btn-reset { background: #333; }
         
-        .audit-info { grid-column: span 2; text-align: center; padding: 10px; font-size: 12px; color: #555; letter-spacing: 1px; }
-        .history-strip { grid-column: span 2; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; overflow-x: auto; white-space: nowrap; font-family: monospace; }
-        .hist-item { display: inline-block; background: #222; padding: 4px 10px; margin-right: 5px; border-radius: 4px; border: 1px solid #333; }
+        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; width: 55px; text-align: center; border-radius: 4px; padding: 2px; }
+        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; white-space: nowrap; overflow-x: auto; }
     </style>
 </head>
 <body>
@@ -51,55 +45,47 @@
 <div class="container">
     <div class="grid">
         <div class="header">
+            <div><span class="label">Logic Strategy</span><div id="opTag" class="op-display">SCANNING...</div></div>
+            <div style="text-align:center"><span class="label">Last Hit</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
             <div>
-                <span class="status-pill scan-on">Auto-Scan Active</span>
-                <div id="opTag" class="op-display" style="margin-top:8px;">SCANNING...</div>
-            </div>
-            <div style="text-align:center">
-                <div style="font-size:10px; color:#666; text-transform:uppercase;">Last Result</div>
-                <div id="lastNum" style="font-size:32px; font-weight:bold;">--</div>
-            </div>
-            <div>
-                <select id="nExp" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:8px; border-radius:6px;">
-                    <option value="3" selected>EXP: n3</option>
-                    <option value="5">EXP: n5</option>
-                    <option value="9">EXP: n9</option>
+                <select id="nExp" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:5px; border-radius:4px;">
+                    <option value="3" selected>Expansion n3</option>
+                    <option value="5">Expansion n5</option>
+                    <option value="9">Expansion n9</option>
                 </select>
             </div>
         </div>
 
         <div class="card p-card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; color:#888;">PREDICTED ZONE</span>
-                <b id="pCount">0 nos</b>
+            <div class="fin-row">
+                <div><span class="label">Base Unit</span><br><input type="number" id="pBase" value="10" onchange="resetFin('p')"></div>
+                <div style="text-align:right"><span class="label">Success %</span><br><span id="pPct" class="val">0%</span></div>
             </div>
+            <div class="fin-row"><span class="label">Total P/L</span><span id="pPL" class="val">0.00</span></div>
+            <div class="fin-row"><span class="label">D'Alembert Stake</span><span id="pStake" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Pockets Covered</span><span id="pCount" class="val">0</span></div>
             <div class="notation-area" id="pNot"></div>
         </div>
 
         <div class="card u-card" id="uCard">
-            <div id="uLock" class="lock-overlay" style="display:none;">
-                <div id="lockReason" class="lock-msg">VOLUME > 19</div>
-                <span style="font-size:10px; color:#888; margin-top:8px;">STAKE SUSPENDED</span>
+            <div id="uLock" class="lock-overlay" style="display:none;"><div id="lockReason" class="lock-msg">VOLUME > 19</div></div>
+            <div class="fin-row">
+                <div><span class="label">Base Unit</span><br><input type="number" id="uBase" value="10" onchange="resetFin('u')"></div>
+                <div style="text-align:right"><span class="label">Success %</span><br><span id="uPct" class="val">0%</span></div>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; color:#888;">UNPREDICTED ZONE</span>
-                <b id="uCount">0 nos</b>
-            </div>
+            <div class="fin-row"><span class="label">Total P/L</span><span id="uPL" class="val">0.00</span></div>
+            <div class="fin-row"><span class="label">D'Alembert Stake</span><span id="uStake" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Remaining Pockets</span><span id="uCount" class="val">0</span></div>
             <div class="notation-area" id="uNot"></div>
         </div>
 
-        <div class="num-grid" id="grid">
-            <button class="n-btn green" onclick="inputNum(0)">0</button>
-        </div>
-
-        <div class="history-strip" id="histStrip">History: Waiting for data...</div>
-
+        <div class="num-grid" id="grid"><button class="n-btn green" onclick="inputNum(0)">0</button></div>
+        <div class="history-strip" id="histStrip">History: ...</div>
         <div class="footer-tools">
-            <button class="tool-btn btn-undo" onclick="undo()">UNDO LAST RESULT</button>
-            <button class="tool-btn btn-reset" onclick="resetSession()">RESET SESSION</button>
+            <button class="tool-btn btn-undo" onclick="undo()">UNDO LAST</button>
+            <button class="tool-btn btn-reset" onclick="location.reload()">RESET ALL</button>
         </div>
-
-        <div class="audit-info" id="syncStatus">WHEEL SYNC: 0/37 (INITIALIZING)</div>
+        <div style="grid-column: span 2; text-align: center; font-size: 11px; color: #444;" id="syncStatus">WHEEL SYNC: 0/37</div>
     </div>
 </div>
 
@@ -107,22 +93,45 @@
     const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     const neighbors = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
 
-    let history = [];
-    let stateHistory = [];
-    let pList = [], uList = [];
+    let history = [], stateHistory = [];
+    let fin = { 
+        p: { pl: 0, stake: 10, wins: 0, active: [] }, 
+        u: { pl: 0, stake: 10, wins: 0, active: [], locked: false },
+        totalBets: 0 
+    };
 
-    // Initialize Grid
     const g = document.getElementById('grid');
     for(let i=1; i<=36; i++) {
         let b = document.createElement('button');
-        b.innerText = i;
-        b.className = `n-btn ${[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i)?'red':'black'}`;
-        b.onclick = () => inputNum(i);
-        g.appendChild(b);
+        b.innerText = i; b.className = `n-btn ${[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(i)?'red':'black'}`;
+        b.onclick = () => inputNum(i); g.appendChild(b);
     }
 
+    function resetFin(side) { fin[side].stake = parseInt(document.getElementById(side+'Base').value); updateUI(); }
+
     function inputNum(n) {
-        stateHistory.push(JSON.stringify({history, pList, uList}));
+        stateHistory.push(JSON.stringify({history, fin}));
+        
+        ['p', 'u'].forEach(side => {
+            if (fin[side].active.length > 0 && !(side === 'u' && fin.u.locked)) {
+                if(side === 'p') fin.totalBets++;
+                let base = parseInt(document.getElementById(side+'Base').value);
+                
+                if (fin[side].active.includes(n)) {
+                    // Win Logic
+                    fin[side].pl += (fin[side].stake * 36) - (fin[side].active.length * fin[side].stake);
+                    fin[side].wins++;
+                    // D'Alembert: Decrease by 1 unit
+                    fin[side].stake = Math.max(base, fin[side].stake - base);
+                } else {
+                    // Loss Logic
+                    fin[side].pl -= (fin[side].active.length * fin[side].stake);
+                    // D'Alembert: Increase by 1 unit
+                    fin[side].stake += base;
+                }
+            }
+        });
+
         history.push(n);
         process();
     }
@@ -130,60 +139,43 @@
     function undo() {
         if(stateHistory.length > 0) {
             let prev = JSON.parse(stateHistory.pop());
-            history = prev.history;
-            pList = prev.pList;
-            uList = prev.uList;
-            process();
+            history = prev.history; fin = prev.fin; process();
         }
-    }
-
-    function resetSession() {
-        if(confirm("Clear all data and reset wheel?")) location.reload();
     }
 
     function process() {
-        if(history.length < 1) { clearAll(); return; }
+        if(history.length < 1) { clearZones(); return; }
         const last = history[history.length-1];
         document.getElementById('lastNum').innerText = last;
-        updateHist();
-
-        if(history.length < 2) return;
+        if(history.length < 2) { updateUI(); return; }
+        
         const prev = history[history.length-2];
         const nVal = parseInt(document.getElementById('nExp').value);
-
-        // Auto-Scan Operators
         let foundOp = null;
+
         for(let op of ["+10","-10","+1","-1"]) {
-            let testT = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-            if(testT >=0 && testT <= 36) {
-                if(getCluster(testT, nVal).includes(last)) { foundOp = op; break; }
-            }
+            let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
+            if(t >=0 && t <= 36 && getCluster(t, nVal).includes(last)) { foundOp = op; break; }
         }
 
-        if(!foundOp) {
-            document.getElementById('opTag').innerText = "NO MATCH";
-            clearZones();
-            return;
-        }
-
+        if(!foundOp) { document.getElementById('opTag').innerText = "NO MATCH"; clearZones(); return; }
         document.getElementById('opTag').innerText = foundOp;
-        let nextTarget = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
 
-        if(nextTarget >= 0 && nextTarget <= 36) {
-            let roots = [nextTarget, ...(neighbors[nextTarget]||[])];
+        let target = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
+        if(target >= 0 && target <= 36) {
+            let roots = [target, ...(neighbors[target]||[])];
             let pSet = new Set();
             roots.forEach(r => {
                 let idx = wheel.indexOf(r);
                 for(let i=-nVal; i<=nVal; i++) pSet.add(wheel[(idx+i+37)%37]);
             });
+            fin.p.active = Array.from(pSet);
+            fin.u.active = wheel.filter(num => !fin.p.active.includes(num));
             
-            pList = Array.from(pSet);
-            uList = wheel.filter(num => !pList.includes(num));
-
-            renderOutput(roots, nVal);
-        } else {
-            clearZones();
+            fin.u.locked = (roots.length >= 5 || fin.u.active.length > 19);
+            renderNotation(roots, nVal);
         }
+        updateUI();
     }
 
     function getCluster(t, n) {
@@ -196,41 +188,15 @@
         return Array.from(s);
     }
 
-    function renderOutput(roots, n) {
-        document.getElementById('pCount').innerText = `${pList.length} nos`;
-        document.getElementById('uCount').innerText = `${uList.length} nos`;
-        
+    function renderNotation(roots, n) {
         document.getElementById('pNot').innerHTML = roots.map(r => `<div class="n-block">${r}<span>n${n}</span></div>`).join("");
-        document.getElementById('uNot').innerHTML = getShorthand(uList);
-
-        // LOCKING LOGIC
-        const uLock = document.getElementById('uLock');
-        const reason = document.getElementById('lockReason');
-        const uCard = document.getElementById('uCard');
-
-        if(roots.length >= 5) {
-            uLock.style.display = "flex";
-            reason.innerText = "PREDICTED HEAVY";
-            uCard.classList.add('locked');
-        } else if(uList.length > 19) {
-            uLock.style.display = "flex";
-            reason.innerText = "VOLUME > 19";
-            uCard.classList.add('locked');
-        } else {
-            uLock.style.display = "none";
-            uCard.classList.remove('locked');
-        }
-
-        let total = pList.length + uList.length;
-        document.getElementById('syncStatus').innerText = `WHEEL SYNC: ${total}/37 (STABLE)`;
-        document.getElementById('syncStatus').style.color = (total===37)?"#27ae60":"#e74c3c";
+        document.getElementById('uNot').innerHTML = getShorthand(fin.u.active);
     }
 
     function getShorthand(nums) {
         if(nums.length === 0) return "";
         let idxs = nums.map(n => wheel.indexOf(n)).sort((a,b)=>a-b);
-        let blocks = [];
-        let tmp = [idxs[0]];
+        let blocks = [], tmp = [idxs[0]];
         for(let i=1; i<idxs.length; i++) {
             if(idxs[i] === idxs[i-1]+1) tmp.push(idxs[i]);
             else { blocks.push(tmp); tmp = [idxs[i]]; }
@@ -246,24 +212,33 @@
         }).join("");
     }
 
-    function updateHist() {
-        document.getElementById('histStrip').innerHTML = "History: " + history.slice(-15).map(x => `<span class="hist-item">${x}</span>`).join("");
+    function updateUI() {
+        ['p', 'u'].forEach(s => {
+            document.getElementById(`${s}PL`).innerText = fin[s].pl.toFixed(2);
+            document.getElementById(`${s}PL`).className = `val ${fin[s].pl >= 0 ? 'win' : 'loss'}`;
+            document.getElementById(`${s}Stake`).innerText = fin[s].stake;
+            document.getElementById(`${s}Count`).innerText = fin[s].active.length;
+            document.getElementById(`${s}Pct`).innerText = fin.totalBets > 0 ? Math.round((fin[s].wins/fin.totalBets)*100) + "%" : "0%";
+        });
+        
+        const uLock = document.getElementById('uLock');
+        const uCard = document.getElementById('uCard');
+        if(fin.u.locked) { 
+            uLock.style.display = "flex"; uCard.classList.add('locked'); 
+            document.getElementById('lockReason').innerText = (fin.p.active.length > 25) ? "PREDICTED HEAVY" : "VOLUME > 19";
+        }
+        else { uLock.style.display = "none"; uCard.classList.remove('locked'); }
+
+        document.getElementById('histStrip').innerText = "History: " + history.slice(-15).join(" | ");
+        let total = fin.p.active.length + fin.u.active.length;
+        document.getElementById('syncStatus').innerText = `WHEEL SYNC: ${total}/37`;
+        document.getElementById('syncStatus').style.color = (total === 37) ? "#27ae60" : "#e74c3c";
     }
 
     function clearZones() {
-        pList = []; uList = [];
-        document.getElementById('pNot').innerHTML = "";
-        document.getElementById('uNot').innerHTML = "";
-        document.getElementById('pCount').innerText = "0 nos";
-        document.getElementById('uCount').innerText = "0 nos";
-        document.getElementById('uLock').style.display = "none";
-        document.getElementById('uCard').classList.remove('locked');
-    }
-
-    function clearAll() {
-        document.getElementById('lastNum').innerText = "--";
-        document.getElementById('opTag').innerText = "SCANNING...";
-        clearZones();
+        fin.p.active = []; fin.u.active = [];
+        document.getElementById('pNot').innerHTML = ""; document.getElementById('uNot').innerHTML = "";
+        updateUI();
     }
 </script>
 </body>
