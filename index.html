@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Strict Operator Matcher</title>
+    <title>BIET - n9 Advanced Operator Tracker</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
@@ -13,23 +13,25 @@
         .no-match { color: #e74c3c; border: 1px solid #e74c3c; background: rgba(231, 76, 60, 0.1); }
         .best-op { background: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.3); }
 
-        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; min-height: 320px; }
+        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; min-height: 350px; }
         .disabled-card { opacity: 0.1; filter: grayscale(1); pointer-events: none; }
-        .empty-state { color: #555; display: flex; align-items: center; justify-content: center; height: 100px; font-style: italic; font-size: 14px; }
+        .empty-state { color: #555; display: flex; align-items: center; justify-content: center; height: 120px; font-style: italic; font-size: 14px; text-align: center; }
         
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; }
         .val { font-weight: bold; font-family: monospace; font-size: 18px; }
         
-        .notation-box { background: #050505; padding: 20px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 100px; }
-        .math-notation { font-size: 24px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .math-notation span { font-size: 14px; vertical-align: super; color: #9b59b6; }
+        .notation-box { background: #050505; padding: 20px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 120px; overflow-y: auto; max-height: 200px; }
+        .math-notation { font-size: 26px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        .math-notation span { font-size: 15px; vertical-align: super; color: #9b59b6; margin-left: 1px; }
 
         .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 20px 0; }
         .num-btn { padding: 18px 0; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 18px; }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
         .history-box { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; margin-bottom: 10px; }
-        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-weight: bold; }
+        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-weight: bold; font-family: monospace; }
+        
+        select { background: #222; color: #fff; border: 1px solid #444; padding: 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -37,28 +39,34 @@
 <div class="container">
     <div class="grid-main">
         <div class="header-panel">
-            <div><label>Logic Status</label><div id="activeOp" class="op-tag">WAIT...</div></div>
-            <div style="text-align:center"><label>Last Number</label><div id="lastNumBox" style="font-size:32px; font-weight:bold;">--</div></div>
-            <div style="text-align:right"><button id="lockBtn" style="background:#333; color:#aaa; padding:8px 15px; border-radius:5px; cursor:pointer;" onclick="toggleLock()">🔓 AUTO-SCAN</button></div>
+            <div><label>Active Operator</label><div id="activeOp" class="op-tag">--</div></div>
+            <div style="text-align:center"><label>Last Hit</label><div id="lastNumBox" style="font-size:32px; font-weight:bold;">--</div></div>
+            <div style="text-align:right">
+                <label>N-Limit</label>
+                <select id="nLimit" onchange="process()">
+                    <option value="1">n1</option><option value="2">n2</option><option value="3" selected>n3</option>
+                    <option value="4">n4</option><option value="5">n5</option><option value="7">n7</option><option value="9">n9</option>
+                </select>
+            </div>
         </div>
 
         <div class="card" id="pCard" style="border-top: 4px solid #3498db;">
-            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')" style="background:#222; color:#fff; border:1px solid #444; width:60px;"></div><span class="val"><span id="pCount">0</span> <span id="pPct" style="color:#9b59b6; font-size:12px;">0%</span></span></div>
+            <div class="stat-row"><div><label>Base Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')" style="width:60px; background:#222; color:#fff; border:1px solid #444;"></div><span class="val"><span id="pCount">0</span> <small id="pPct" style="color:#9b59b6">0%</small></span></div>
             <div class="stat-row"><span>P/L</span><span id="pPL" class="val">0.00</span></div>
-            <div class="stat-row"><span>Stake</span><span id="pStake" class="val">10</span></div>
-            <div class="notation-box" id="pBox"><div class="empty-state">Waiting for operator match...</div></div>
+            <div class="stat-row"><span>Bet</span><span id="pStake" class="val">10</span></div>
+            <div class="notation-box" id="pBox"><div class="empty-state">Scan for match...</div></div>
         </div>
 
         <div class="card" id="uCard" style="border-top: 4px solid #2aa198;">
-            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')" style="background:#222; color:#fff; border:1px solid #444; width:60px;"></div><span class="val"><span id="uCount">0</span> <span id="uPct" style="color:#9b59b6; font-size:12px;">0%</span></span></div>
+            <div class="stat-row"><div><label>Base Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')" style="width:60px; background:#222; color:#fff; border:1px solid #444;"></div><span class="val"><span id="uCount">0</span> <small id="uPct" style="color:#9b59b6">0%</small></span></div>
             <div class="stat-row"><span>P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="stat-row"><span>Stake</span><span id="uStake" class="val">10</span></div>
-            <div class="notation-box" id="uBox"><div class="empty-state">Waiting for operator match...</div></div>
+            <div class="stat-row"><span>Bet</span><span id="uStake" class="val">10</span></div>
+            <div class="notation-box" id="uBox"><div class="empty-state">Scan for match...</div></div>
         </div>
 
         <div class="number-panel" id="numberPanel"><button class="num-btn btn-green" onclick="handleSpin(0)">0</button></div>
         <div class="history-box" id="historyList"></div>
-        <button onclick="undoLast()" style="grid-column: span 2; background:#d35400; color:white; padding:15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">UNDO LAST SPIN</button>
+        <button onclick="undoLast()" style="grid-column: span 2; background:#d35400; color:white; padding:15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">UNDO ERROR</button>
     </div>
 </div>
 
@@ -68,10 +76,9 @@
 
     let spins = [];
     let snapshots = [];
-    let isLocked = false;
     let currentOp = null;
     let opHits = {"+10":0, "-10":0, "+1":0, "-1":0};
-    let winCounters = {p:0, u:0, total:0};
+    let globalStats = {p:0, u:0, total:0};
     let state = { p: { pl: 0, stake: 10, active: [] }, u: { pl: 0, stake: 10, active: [] } };
 
     const panel = document.getElementById('numberPanel');
@@ -83,18 +90,17 @@
         panel.appendChild(btn);
     }
 
-    function toggleLock() { if(currentOp) { isLocked = !isLocked; updateUI(); } }
     function resetProg(side) { state[side].stake = parseFloat(document.getElementById(`${side}StartStake`).value); updateUI(); }
 
     function handleSpin(val) {
-        snapshots.push(JSON.stringify({spins, state, isLocked, currentOp, opHits, winCounters}));
+        snapshots.push(JSON.stringify({spins, state, currentOp, opHits, globalStats}));
         ['p', 'u'].forEach(side => {
             if (state[side].active.length > 0) {
-                if(side === 'p') winCounters.total++;
+                if(side === 'p') globalStats.total++;
                 let base = parseFloat(document.getElementById(`${side}StartStake`).value);
                 if (state[side].active.includes(val)) {
                     state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake);
-                    state[side].stake = base; winCounters[side]++;
+                    state[side].stake = base; globalStats[side]++;
                 } else {
                     state[side].pl -= (state[side].active.length * state[side].stake);
                     state[side].stake += base;
@@ -104,9 +110,10 @@
         spins.push(val); process(); updateUI();
     }
 
-    function undoLast() { if (snapshots.length > 0) { const s = JSON.parse(snapshots.pop()); spins=s.spins; state=s.state; isLocked=s.isLocked; currentOp=s.currentOp; opHits=s.opHits; winCounters=s.winCounters; process(); updateUI(); } }
+    function undoLast() { if (snapshots.length > 0) { const s = JSON.parse(snapshots.pop()); spins=s.spins; state=s.state; currentOp=s.currentOp; opHits=s.opHits; globalStats=s.globalStats; process(); updateUI(); } }
 
-    function getCoverage(target, n=3) {
+    function getCoverage(target) {
+        let n = parseInt(document.getElementById('nLimit').value);
         let targets = [target, ...(terminalMap[target]||[])];
         let set = new Set();
         targets.forEach(t => {
@@ -120,29 +127,20 @@
         if (spins.length < 2) return;
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
+        const n = parseInt(document.getElementById('nLimit').value);
         
-        let matchFound = null;
-        if (!isLocked) {
-            const rules = ["+10", "-10", "+1", "-1"];
-            for (let op of rules) {
-                let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-                if (t>=0 && t<=36 && getCoverage(t).full.includes(last)) { 
-                    matchFound = op; opHits[op]++; break; 
-                }
+        let validOp = null;
+        const rules = ["+10", "-10", "+1", "-1"];
+        for (let op of rules) {
+            let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
+            if (t>=0 && t<=36 && getCoverage(t).full.includes(last)) { 
+                validOp = op; opHits[op]++; break; 
             }
-        } else {
-            // If locked, we check if the hit matches the locked operator's cloud
-            let t = (currentOp==="+10")?prev+10:(currentOp==="-10")?prev-10:(currentOp==="+1")?prev+1:prev-1;
-            if (t>=0 && t<=36 && getCoverage(t).full.includes(last)) matchFound = currentOp;
         }
 
-        if (!matchFound) {
-            currentOp = null;
-            state.p.active = []; state.u.active = [];
-            return;
-        }
+        if (!validOp) { currentOp = null; state.p.active = []; state.u.active = []; return; }
 
-        currentOp = matchFound;
+        currentOp = validOp;
         const nextTarget = (currentOp==="+10")?last+10:(currentOp==="-10")?last-10:(currentOp==="+1")?last+1:last-1;
         
         if (nextTarget >= 0 && nextTarget <= 36) {
@@ -170,8 +168,8 @@
 
         return blocks.map(b => {
             let center = wheel[b[Math.floor(b.length/2)]];
-            let nVal = Math.floor((b.length - 1)/2);
-            return `<div>${center}<span>n${nVal}</span></div>`;
+            let nv = Math.floor((b.length - 1)/2);
+            return `<div>${center}<span>n${nv > 9 ? 9 : nv}</span></div>`;
         }).join("");
     }
 
@@ -179,22 +177,24 @@
         const opTag = document.getElementById('activeOp');
         const pBox = document.getElementById('pBox');
         const uBox = document.getElementById('uBox');
+        const n = document.getElementById('nLimit').value;
 
         if (!currentOp) {
-            opTag.innerText = "NO MATCH";
-            opTag.className = "op-tag no-match";
-            pBox.innerHTML = '<div class="empty-state">No operator match found for this hit. Zones cleared.</div>';
-            uBox.innerHTML = '<div class="empty-state">Scan for new operator...</div>';
+            opTag.innerText = "NO MATCH"; opTag.className = "op-tag no-match";
+            pBox.innerHTML = '<div class="empty-state">Last hit did not suit any operator rule.</div>';
+            uBox.innerHTML = '<div class="empty-state">Waiting for new trend...</div>';
         } else {
             opTag.innerText = currentOp;
             const maxH = Math.max(...Object.values(opHits));
             opTag.className = (opHits[currentOp] === maxH && maxH > 0) ? "op-tag best-op" : "op-tag";
             
-            const data = getCoverage((currentOp==="+10")?spins[spins.length-1]+10:(currentOp==="-10")?spins[spins.length-1]-10:(currentOp==="+1")?spins[spins.length-1]+1:spins[spins.length-1]-1);
-            pBox.innerHTML = `<div class="math-notation">${data.targets.map(x => `<div>${x}<span>n3</span></div>`).join("")}</div>`;
+            const lastNum = spins[spins.length-1];
+            const nextT = (currentOp==="+10")?lastNum+10:(currentOp==="-10")?lastNum-10:(currentOp==="+1")?lastNum+1:lastNum-1;
+            const data = getCoverage(nextT);
             
+            pBox.innerHTML = `<div class="math-notation">${data.targets.map(x => `<div>${x}<span>n${n}</span></div>`).join("")}</div>`;
             if (data.targets.length >= 5) {
-                uBox.innerHTML = '<div class="empty-state" style="color:#e74c3c">ZONE DISABLED (5+ TARGETS)</div>';
+                uBox.innerHTML = '<div class="empty-state" style="color:#e74c3c">ZONE DISABLED<br>(5+ Predicted Targets)</div>';
             } else {
                 uBox.innerHTML = `<div class="math-notation" style="color:#2aa198">${getShorthand(state.u.active)}</div>`;
             }
@@ -205,15 +205,10 @@
             document.getElementById(`${s}PL`).className = `val ${state[s].pl >= 0 ? 'win' : 'loss'}`;
             document.getElementById(`${s}Stake`).innerText = state[s].stake;
             document.getElementById(`${s}Count`).innerText = state[s].active.length;
-            document.getElementById(`${s}Pct`).innerText = winCounters.total > 0 ? ((winCounters[s]/winCounters.total)*100).toFixed(0) + "%" : "0%";
+            document.getElementById(`${s}Pct`).innerText = globalStats.total > 0 ? ((globalStats[s]/globalStats.total)*100).toFixed(0) + "%" : "0%";
         });
         document.getElementById('lastNumBox').innerText = spins.length > 0 ? spins[spins.length-1] : "--";
         document.getElementById('historyList').innerHTML = spins.slice(-15).map(n => `<span class="history-num">${n}</span>`).join("");
-        
-        const lBtn = document.getElementById('lockBtn');
-        lBtn.innerText = isLocked ? "🔒 LOCKED" : "🔓 AUTO-SCAN";
-        lBtn.style.background = isLocked ? "#d35400" : "#333";
-        lBtn.style.color = isLocked ? "white" : "#aaa";
     }
 </script>
 </body>
