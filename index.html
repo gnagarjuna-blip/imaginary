@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - D'Alembert Absolute Logic</title>
+    <title>BIET - D'Alembert 21-Volume Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
@@ -17,7 +17,7 @@
         .locked { opacity: 0.15; filter: grayscale(1); pointer-events: none; }
         
         .lock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; background: rgba(0,0,0,0.7); border-radius: 12px; }
-        .lock-msg { background: #e74c3c; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        .lock-msg { background: #e74c3c; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 13px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
 
         .fin-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 5px; }
         .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
@@ -29,7 +29,8 @@
         .n-block span { font-size: 12px; color: #9b59b6; vertical-align: super; }
         
         .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
-        .n-btn { padding: 15px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
+        .n-btn { padding: 15px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; transition: 0.1s; }
+        .n-btn:active { transform: scale(0.95); }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
         
         .footer-tools { grid-column: span 2; display: flex; gap: 10px; }
@@ -37,7 +38,8 @@
         .btn-undo { background: #d35400; } .btn-reset { background: #333; }
         
         input[type="number"] { background: #222; color: #fff; border: 1px solid #444; width: 55px; text-align: center; border-radius: 4px; padding: 2px; }
-        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; white-space: nowrap; overflow-x: auto; }
+        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; white-space: nowrap; overflow-x: auto; font-size: 14px; }
+        .hist-item { color: #f1c40f; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -45,8 +47,8 @@
 <div class="container">
     <div class="grid">
         <div class="header">
-            <div><span class="label">Logic Strategy</span><div id="opTag" class="op-display">SCANNING...</div></div>
-            <div style="text-align:center"><span class="label">Last Hit</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
+            <div><span class="label">Auto-Scan Strategy</span><div id="opTag" class="op-display">SCANNING...</div></div>
+            <div style="text-align:center"><span class="label">Last Ball</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
             <div>
                 <select id="nExp" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:5px; border-radius:4px;">
                     <option value="3" selected>Expansion n3</option>
@@ -58,32 +60,32 @@
 
         <div class="card p-card">
             <div class="fin-row">
-                <div><span class="label">Base Unit</span><br><input type="number" id="pBase" value="10" onchange="resetFin('p')"></div>
+                <div><span class="label">Unit</span><br><input type="number" id="pBase" value="10" onchange="resetFin('p')"></div>
                 <div style="text-align:right"><span class="label">Success %</span><br><span id="pPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">Total P/L</span><span id="pPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">D'Alembert Stake</span><span id="pStake" class="val">10</span></div>
-            <div class="fin-row"><span class="label">Pockets Covered</span><span id="pCount" class="val">0</span></div>
+            <div class="fin-row"><span class="label">Stake</span><span id="pStake" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Pockets</span><span id="pCount" class="val">0</span></div>
             <div class="notation-area" id="pNot"></div>
         </div>
 
         <div class="card u-card" id="uCard">
-            <div id="uLock" class="lock-overlay" style="display:none;"><div id="lockReason" class="lock-msg">VOLUME > 21</div></div>
+            <div id="uLock" class="lock-overlay" style="display:none;"><div id="lockReason" class="lock-msg">VOLUME &ge; 21</div></div>
             <div class="fin-row">
-                <div><span class="label">Base Unit</span><br><input type="number" id="uBase" value="10" onchange="resetFin('u')"></div>
+                <div><span class="label">Unit</span><br><input type="number" id="uBase" value="10" onchange="resetFin('u')"></div>
                 <div style="text-align:right"><span class="label">Success %</span><br><span id="uPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">Total P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">D'Alembert Stake</span><span id="uStake" class="val">10</span></div>
-            <div class="fin-row"><span class="label">Remaining Pockets</span><span id="uCount" class="val">0</span></div>
+            <div class="fin-row"><span class="label">Stake</span><span id="uStake" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Remaining</span><span id="uCount" class="val">0</span></div>
             <div class="notation-area" id="uNot"></div>
         </div>
 
         <div class="num-grid" id="grid"><button class="n-btn green" onclick="inputNum(0)">0</button></div>
-        <div class="history-strip" id="histStrip">History: ...</div>
+        <div class="history-strip" id="histStrip">History: Waiting...</div>
         <div class="footer-tools">
             <button class="tool-btn btn-undo" onclick="undo()">UNDO LAST</button>
-            <button class="tool-btn btn-reset" onclick="location.reload()">RESET ALL</button>
+            <button class="tool-btn btn-reset" onclick="location.reload()">RESET SESSION</button>
         </div>
         <div style="grid-column: span 2; text-align: center; font-size: 11px; color: #444;" id="syncStatus">WHEEL SYNC: 0/37</div>
     </div>
@@ -118,15 +120,11 @@
                 let base = parseInt(document.getElementById(side+'Base').value);
                 
                 if (fin[side].active.includes(n)) {
-                    // Win Logic
                     fin[side].pl += (fin[side].stake * 36) - (fin[side].active.length * fin[side].stake);
                     fin[side].wins++;
-                    // D'Alembert: Decrease by 1 unit
                     fin[side].stake = Math.max(base, fin[side].stake - base);
                 } else {
-                    // Loss Logic
                     fin[side].pl -= (fin[side].active.length * fin[side].stake);
-                    // D'Alembert: Increase by 1 unit
                     fin[side].stake += base;
                 }
             }
@@ -172,7 +170,8 @@
             fin.p.active = Array.from(pSet);
             fin.u.active = wheel.filter(num => !fin.p.active.includes(num));
             
-            fin.u.locked = (roots.length >= 5 || fin.u.active.length > 19);
+            // NEW THRESHOLD: LOCK AT 21 OR GREATER
+            fin.u.locked = (roots.length >= 5 || fin.u.active.length >= 21);
             renderNotation(roots, nVal);
         }
         updateUI();
@@ -225,11 +224,11 @@
         const uCard = document.getElementById('uCard');
         if(fin.u.locked) { 
             uLock.style.display = "flex"; uCard.classList.add('locked'); 
-            document.getElementById('lockReason').innerText = (fin.p.active.length > 25) ? "PREDICTED HEAVY" : "VOLUME > 21";
+            document.getElementById('lockReason').innerText = (fin.p.active.length > 25) ? "PREDICTED HEAVY" : "VOLUME \u2265 21";
         }
         else { uLock.style.display = "none"; uCard.classList.remove('locked'); }
 
-        document.getElementById('histStrip').innerText = "History: " + history.slice(-15).join(" | ");
+        document.getElementById('histStrip').innerHTML = "History: " + history.slice(-15).map(x => `<span class="hist-item">${x}</span>`).join(" | ");
         let total = fin.p.active.length + fin.u.active.length;
         document.getElementById('syncStatus').innerText = `WHEEL SYNC: ${total}/37`;
         document.getElementById('syncStatus').style.color = (total === 37) ? "#27ae60" : "#e74c3c";
