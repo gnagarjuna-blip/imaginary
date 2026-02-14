@@ -225,7 +225,7 @@
         const uCard = document.getElementById('uCard');
         if(fin.u.locked) { 
             uLock.style.display = "flex"; uCard.classList.add('locked'); 
-            document.getElementById('lockReason').innerText = (fin.p.active.length > 25) ? "PREDICTED HEAVY" : "VOLUME > 19";
+            document.getElementById('lockReason').innerText = (fin.p.active.length > 25) ? "PREDICTED HEAVY" : "VOLUME > 21";
         }
         else { uLock.style.display = "none"; uCard.classList.remove('locked'); }
 
