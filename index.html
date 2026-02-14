@@ -2,38 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Hard Volume Lock Tracker</title>
+    <title>BIET - Strict Operator Matcher</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #eee; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
         .grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
         
         .header-panel { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 10px; }
-        .op-tag { font-size: 28px; font-weight: bold; color: #f1c40f; padding: 5px 15px; border-radius: 5px; border: 1px solid transparent; }
-        .best-op { background: rgba(241, 196, 15, 0.15); border-color: #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.3); }
+        .op-tag { font-size: 26px; font-weight: bold; color: #f1c40f; padding: 5px 15px; border-radius: 5px; min-width: 120px; text-align: center; }
+        .no-match { color: #e74c3c; border: 1px solid #e74c3c; background: rgba(231, 76, 60, 0.1); }
+        .best-op { background: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.3); }
 
-        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; min-height: 300px; }
-        .disabled-card { opacity: 0.15; filter: grayscale(1); pointer-events: none; }
-        .disabled-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 20; }
-        .disabled-msg { background: #e74c3c; color: white; padding: 10px 20px; font-weight: bold; border-radius: 5px; transform: rotate(-10deg); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-
+        .card { background: #161616; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; min-height: 320px; }
+        .disabled-card { opacity: 0.1; filter: grayscale(1); pointer-events: none; }
+        .empty-state { color: #555; display: flex; align-items: center; justify-content: center; height: 100px; font-style: italic; font-size: 14px; }
+        
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; }
         .val { font-weight: bold; font-family: monospace; font-size: 18px; }
-        .win { color: #2ecc71; } .loss { color: #e74c3c; }
-
-        .notation-box { background: #050505; padding: 20px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 80px; }
-        .math-notation { font-size: 28px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .math-notation span { font-size: 16px; vertical-align: super; color: #9b59b6; margin-left: 2px; }
+        
+        .notation-box { background: #050505; padding: 20px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px inset #333; min-height: 100px; }
+        .math-notation { font-size: 24px; font-weight: bold; color: #3498db; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .math-notation span { font-size: 14px; vertical-align: super; color: #9b59b6; }
 
         .number-panel { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 20px 0; }
         .num-btn { padding: 18px 0; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; font-size: 18px; }
         .btn-red { background: #c0392b; } .btn-black { background: #2c3e50; } .btn-green { background: #27ae60; grid-row: span 3; }
         
         .history-box { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; margin-bottom: 10px; }
-        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-weight: bold; border: 1px solid #333; }
-
-        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; padding: 6px; width: 60px; border-radius: 4px; font-weight: bold; }
-        label { font-size: 10px; color: #777; text-transform: uppercase; display: block; margin-bottom: 2px; }
+        .history-num { display: inline-block; background: #222; padding: 4px 8px; border-radius: 4px; margin: 2px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -41,47 +37,28 @@
 <div class="container">
     <div class="grid-main">
         <div class="header-panel">
-            <div>
-                <label>Active Logic</label>
-                <div id="activeOp" class="op-tag">--</div>
-            </div>
-            <div style="text-align:center">
-                <label>Last Hit</label>
-                <div id="lastNumBox" style="font-size:32px; font-weight:bold;">--</div>
-            </div>
-            <div style="text-align:right">
-                <button id="lockBtn" style="background:#333; color:#aaa; border:1px solid #555; padding:8px 15px; border-radius:5px; cursor:pointer;" onclick="toggleLock()">🔓 AUTO-SCAN</button>
-            </div>
+            <div><label>Logic Status</label><div id="activeOp" class="op-tag">WAIT...</div></div>
+            <div style="text-align:center"><label>Last Number</label><div id="lastNumBox" style="font-size:32px; font-weight:bold;">--</div></div>
+            <div style="text-align:right"><button id="lockBtn" style="background:#333; color:#aaa; padding:8px 15px; border-radius:5px; cursor:pointer;" onclick="toggleLock()">🔓 AUTO-SCAN</button></div>
         </div>
 
         <div class="card" id="pCard" style="border-top: 4px solid #3498db;">
-            <div class="stat-row">
-                <div><label>Min Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')"></div>
-                <div style="text-align:right"><label>Coverage</label><span id="pCount" class="val">0</span> <span id="pPct" style="color:#9b59b6; font-size:12px;">0%</span></div>
-            </div>
-            <div class="stat-row"><span>Profit/Loss</span><span id="pPL" class="val">0.00</span></div>
-            <div class="stat-row"><span>Current Stake</span><span id="pStake" class="val">10</span></div>
-            <div class="notation-box"><div id="pNotation" class="math-notation">--</div></div>
+            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="pStartStake" value="10" onchange="resetProg('p')" style="background:#222; color:#fff; border:1px solid #444; width:60px;"></div><span class="val"><span id="pCount">0</span> <span id="pPct" style="color:#9b59b6; font-size:12px;">0%</span></span></div>
+            <div class="stat-row"><span>P/L</span><span id="pPL" class="val">0.00</span></div>
+            <div class="stat-row"><span>Stake</span><span id="pStake" class="val">10</span></div>
+            <div class="notation-box" id="pBox"><div class="empty-state">Waiting for operator match...</div></div>
         </div>
 
         <div class="card" id="uCard" style="border-top: 4px solid #2aa198;">
-            <div id="uOverlay" class="disabled-overlay" style="display:none"><div class="disabled-msg">ZONE DISABLED (5+ TARGETS)</div></div>
-            <div class="stat-row">
-                <div><label>Min Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')"></div>
-                <div style="text-align:right"><label>Coverage</label><span id="uCount" class="val">0</span> <span id="uPct" style="color:#9b59b6; font-size:12px;">0%</span></div>
-            </div>
-            <div class="stat-row"><span>Profit/Loss</span><span id="uPL" class="val">0.00</span></div>
-            <div class="stat-row"><span>Current Stake</span><span id="uStake" class="val">10</span></div>
-            <div class="notation-box"><div id="uNotation" class="math-notation" style="color:#2aa198">--</div></div>
+            <div class="stat-row"><div><label>Start Stake</label><input type="number" id="uStartStake" value="10" onchange="resetProg('u')" style="background:#222; color:#fff; border:1px solid #444; width:60px;"></div><span class="val"><span id="uCount">0</span> <span id="uPct" style="color:#9b59b6; font-size:12px;">0%</span></span></div>
+            <div class="stat-row"><span>P/L</span><span id="uPL" class="val">0.00</span></div>
+            <div class="stat-row"><span>Stake</span><span id="uStake" class="val">10</span></div>
+            <div class="notation-box" id="uBox"><div class="empty-state">Waiting for operator match...</div></div>
         </div>
 
         <div class="number-panel" id="numberPanel"><button class="num-btn btn-green" onclick="handleSpin(0)">0</button></div>
         <div class="history-box" id="historyList"></div>
-        
-        <div style="grid-column: span 2; display:flex; gap:10px;">
-            <button onclick="undoLast()" style="flex:1; background:#d35400; color:white; padding:15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">UNDO ERROR</button>
-            <button onclick="location.reload()" style="flex:1; background:#333; color:white; padding:15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">NEW SESSION</button>
-        </div>
+        <button onclick="undoLast()" style="grid-column: span 2; background:#d35400; color:white; padding:15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">UNDO LAST SPIN</button>
     </div>
 </div>
 
@@ -92,9 +69,9 @@
     let spins = [];
     let snapshots = [];
     let isLocked = false;
-    let lockedOp = null;
-    let opStats = {"+10":0, "-10":0, "+1":0, "-1":0};
-    let sessionWins = {p:0, u:0, total:0};
+    let currentOp = null;
+    let opHits = {"+10":0, "-10":0, "+1":0, "-1":0};
+    let winCounters = {p:0, u:0, total:0};
     let state = { p: { pl: 0, stake: 10, active: [] }, u: { pl: 0, stake: 10, active: [] } };
 
     const panel = document.getElementById('numberPanel');
@@ -106,25 +83,18 @@
         panel.appendChild(btn);
     }
 
-    function toggleLock() {
-        if (!lockedOp) return;
-        isLocked = !isLocked;
-        updateUI();
-    }
-
+    function toggleLock() { if(currentOp) { isLocked = !isLocked; updateUI(); } }
     function resetProg(side) { state[side].stake = parseFloat(document.getElementById(`${side}StartStake`).value); updateUI(); }
 
     function handleSpin(val) {
-        snapshots.push(JSON.stringify({spins, state, isLocked, lockedOp, opStats, sessionWins}));
-        
+        snapshots.push(JSON.stringify({spins, state, isLocked, currentOp, opHits, winCounters}));
         ['p', 'u'].forEach(side => {
             if (state[side].active.length > 0) {
-                if(side === 'p') sessionWins.total++;
+                if(side === 'p') winCounters.total++;
                 let base = parseFloat(document.getElementById(`${side}StartStake`).value);
                 if (state[side].active.includes(val)) {
                     state[side].pl += (state[side].stake * 36) - (state[side].active.length * state[side].stake);
-                    state[side].stake = base;
-                    sessionWins[side]++;
+                    state[side].stake = base; winCounters[side]++;
                 } else {
                     state[side].pl -= (state[side].active.length * state[side].stake);
                     state[side].stake += base;
@@ -134,16 +104,16 @@
         spins.push(val); process(); updateUI();
     }
 
-    function undoLast() { if (snapshots.length > 0) { const s = JSON.parse(snapshots.pop()); spins=s.spins; state=s.state; isLocked=s.isLocked; lockedOp=s.lockedOp; opStats=s.opStats; sessionWins=s.sessionWins; process(); updateUI(); } }
+    function undoLast() { if (snapshots.length > 0) { const s = JSON.parse(snapshots.pop()); spins=s.spins; state=s.state; isLocked=s.isLocked; currentOp=s.currentOp; opHits=s.opHits; winCounters=s.winCounters; process(); updateUI(); } }
 
-    function getFullRange(target, n=3) {
+    function getCoverage(target, n=3) {
+        let targets = [target, ...(terminalMap[target]||[])];
         let set = new Set();
-        let pts = [target, ...(terminalMap[target]||[])];
-        pts.forEach(p => {
-            let idx = wheel.indexOf(p);
+        targets.forEach(t => {
+            let idx = wheel.indexOf(t);
             for(let i=-n; i<=n; i++) set.add(wheel[(idx+i+37)%37]);
         });
-        return { pts: pts, full: Array.from(set) };
+        return { targets, full: Array.from(set) };
     }
 
     function process() {
@@ -151,80 +121,95 @@
         const last = spins[spins.length - 1];
         const prev = spins[spins.length - 2];
         
-        let foundOp = isLocked ? lockedOp : null;
+        let matchFound = null;
         if (!isLocked) {
-            const ops = ["+10", "-10", "+1", "-1"];
-            for (let op of ops) {
+            const rules = ["+10", "-10", "+1", "-1"];
+            for (let op of rules) {
                 let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-                if (t>=0 && t<=36 && getFullRange(t).full.includes(last)) { foundOp = op; opStats[op]++; break; }
+                if (t>=0 && t<=36 && getCoverage(t).full.includes(last)) { 
+                    matchFound = op; opHits[op]++; break; 
+                }
             }
+        } else {
+            // If locked, we check if the hit matches the locked operator's cloud
+            let t = (currentOp==="+10")?prev+10:(currentOp==="-10")?prev-10:(currentOp==="+1")?prev+1:prev-1;
+            if (t>=0 && t<=36 && getCoverage(t).full.includes(last)) matchFound = currentOp;
         }
 
-        if (!foundOp) { 
-            document.getElementById('activeOp').innerText = "--"; 
-            state.p.active = []; state.u.active = []; 
-            return; 
+        if (!matchFound) {
+            currentOp = null;
+            state.p.active = []; state.u.active = [];
+            return;
         }
 
-        lockedOp = foundOp;
-        const nextTarget = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
+        currentOp = matchFound;
+        const nextTarget = (currentOp==="+10")?last+10:(currentOp==="-10")?last-10:(currentOp==="+1")?last+1:last-1;
         
         if (nextTarget >= 0 && nextTarget <= 36) {
-            const data = getFullRange(nextTarget);
+            const data = getCoverage(nextTarget);
             state.p.active = data.full;
-            
-            // Hard Lock Logic: If targets >= 5, kill Unpredicted
-            if (data.pts.length >= 5) {
+            if (data.targets.length >= 5) {
                 state.u.active = [];
-                document.getElementById('uCard').classList.add('disabled-card');
-                document.getElementById('uOverlay').style.display = 'flex';
             } else {
-                state.u.active = wheel.filter(num => !state.p.active.includes(num));
-                document.getElementById('uCard').classList.remove('disabled-card');
-                document.getElementById('uOverlay').style.display = 'none';
+                state.u.active = Array.from({length: 37}, (_, i) => i).filter(num => !state.p.active.includes(num));
             }
-
-            document.getElementById('pNotation').innerHTML = data.pts.map(x => `<div>${x}<span>n3</span></div>`).join("");
-            document.getElementById('uNotation').innerHTML = state.u.active.length > 0 ? getShorthand(state.u.active) : "--";
         }
     }
 
     function getShorthand(nums) {
+        if (nums.length === 0) return "";
         let idxs = nums.map(n => wheel.indexOf(n)).sort((a,b) => a-b);
         let blocks = [];
-        if (idxs.length > 0) {
-            let temp = [idxs[0]];
-            for(let i=1; i<idxs.length; i++) {
-                if(idxs[i] === idxs[i-1]+1) temp.push(idxs[i]);
-                else { blocks.push(temp); temp = [idxs[i]]; }
-            }
-            blocks.push(temp);
-            if (idxs.includes(0) && idxs.includes(36)) { let l=blocks.pop(); let f=blocks.shift(); blocks.push([...l, ...f]); }
+        let temp = [idxs[0]];
+        for(let i=1; i<idxs.length; i++) {
+            if(idxs[i] === idxs[i-1]+1) temp.push(idxs[i]);
+            else { blocks.push(temp); temp = [idxs[i]]; }
         }
+        blocks.push(temp);
+        if (idxs.includes(0) && idxs.includes(36)) { let l = blocks.pop(); let f = blocks.shift(); blocks.push([...l, ...f]); }
+
         return blocks.map(b => {
-            let c = wheel[b[Math.floor(b.length/2)]];
-            let nv = Math.floor((b.length - 1)/2);
-            return `<div>${c}<span>n${nv}</span></div>`;
+            let center = wheel[b[Math.floor(b.length/2)]];
+            let nVal = Math.floor((b.length - 1)/2);
+            return `<div>${center}<span>n${nVal}</span></div>`;
         }).join("");
     }
 
     function updateUI() {
+        const opTag = document.getElementById('activeOp');
+        const pBox = document.getElementById('pBox');
+        const uBox = document.getElementById('uBox');
+
+        if (!currentOp) {
+            opTag.innerText = "NO MATCH";
+            opTag.className = "op-tag no-match";
+            pBox.innerHTML = '<div class="empty-state">No operator match found for this hit. Zones cleared.</div>';
+            uBox.innerHTML = '<div class="empty-state">Scan for new operator...</div>';
+        } else {
+            opTag.innerText = currentOp;
+            const maxH = Math.max(...Object.values(opHits));
+            opTag.className = (opHits[currentOp] === maxH && maxH > 0) ? "op-tag best-op" : "op-tag";
+            
+            const data = getCoverage((currentOp==="+10")?spins[spins.length-1]+10:(currentOp==="-10")?spins[spins.length-1]-10:(currentOp==="+1")?spins[spins.length-1]+1:spins[spins.length-1]-1);
+            pBox.innerHTML = `<div class="math-notation">${data.targets.map(x => `<div>${x}<span>n3</span></div>`).join("")}</div>`;
+            
+            if (data.targets.length >= 5) {
+                uBox.innerHTML = '<div class="empty-state" style="color:#e74c3c">ZONE DISABLED (5+ TARGETS)</div>';
+            } else {
+                uBox.innerHTML = `<div class="math-notation" style="color:#2aa198">${getShorthand(state.u.active)}</div>`;
+            }
+        }
+
         ['p', 'u'].forEach(s => {
             document.getElementById(`${s}PL`).innerText = state[s].pl.toFixed(2);
             document.getElementById(`${s}PL`).className = `val ${state[s].pl >= 0 ? 'win' : 'loss'}`;
             document.getElementById(`${s}Stake`).innerText = state[s].stake;
             document.getElementById(`${s}Count`).innerText = state[s].active.length;
-            document.getElementById(`${s}Pct`).innerText = sessionWins.total > 0 ? ((sessionWins[s]/sessionWins.total)*100).toFixed(0) + "%" : "0%";
+            document.getElementById(`${s}Pct`).innerText = winCounters.total > 0 ? ((winCounters[s]/winCounters.total)*100).toFixed(0) + "%" : "0%";
         });
         document.getElementById('lastNumBox').innerText = spins.length > 0 ? spins[spins.length-1] : "--";
         document.getElementById('historyList').innerHTML = spins.slice(-15).map(n => `<span class="history-num">${n}</span>`).join("");
         
-        const opTag = document.getElementById('activeOp');
-        opTag.innerText = lockedOp || "--";
-        const maxH = Math.max(...Object.values(opStats));
-        if (lockedOp && opStats[lockedOp] === maxH && maxH > 0) opTag.className = "op-tag best-op";
-        else opTag.className = "op-tag";
-
         const lBtn = document.getElementById('lockBtn');
         lBtn.innerText = isLocked ? "🔒 LOCKED" : "🔓 AUTO-SCAN";
         lBtn.style.background = isLocked ? "#d35400" : "#333";
