@@ -2,17 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Operator Scanner & Neighborhood Pro</title>
+    <title>BIET - Operator Lock & Frequency Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .header { grid-column: span 2; background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .header { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center; }
         .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; min-height: 350px; }
         .p-card { border-top: 5px solid #3498db; }
         .u-card { border-top: 5px solid #e67e22; }
         
-        /* Frequency Box Style */
         .freq-box { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-around; align-items: center; }
         .freq-item { text-align: center; }
         .freq-val { font-size: 20px; font-weight: bold; color: #f1c40f; display: block; }
@@ -23,18 +22,18 @@
         .val { font-family: monospace; font-weight: bold; font-size: 18px; }
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
         
-        .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 100px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-        .n-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 16px; font-weight: bold; color: #3498db; }
-        .u-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 16px; font-weight: bold; color: #e67e22; }
+        .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 100px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start; }
+        .n-block { background: #1a1a1a; padding: 6px; border-radius: 6px; border: 1px solid #333; font-size: 14px; font-weight: bold; color: #3498db; }
+        .u-block { background: #1a1a1a; padding: 6px; border-radius: 6px; border: 1px solid #333; font-size: 14px; font-weight: bold; color: #e67e22; }
 
         .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
-        .n-btn { padding: 15px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
+        .n-btn { padding: 12px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
         .footer-tools { grid-column: span 2; display: flex; gap: 10px; }
         .tool-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
         .btn-undo { background: #d35400; } .btn-reset { background: #333; }
-        select, input[type="number"] { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 5px; }
-        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; overflow-x: auto; }
+        select, input[type="number"] { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 5px; width: 100%; }
+        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; overflow-x: auto; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -42,21 +41,28 @@
 <div class="container">
     <div class="grid">
         <div class="header">
-            <div><span class="label">Mode</span><br>
+            <div><span class="label">Bet Mode</span><br>
                 <select id="betType" onchange="fullReset()">
                     <option value="straight">Straight Up (Nbr)</option>
                     <option value="streets">Streets (Acc)</option>
                     <option value="double" selected>Double Streets (No Acc)</option>
                 </select>
             </div>
-            <div style="text-align:center"><span class="label">Last</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
-            <div>
-                <span class="label">Exp</span><br>
+            <div><span class="label">Op Lock</span><br>
+                <select id="opLock" onchange="process()">
+                    <option value="AUTO">AUTO SCAN</option>
+                    <option value="+10">+10 Lock</option>
+                    <option value="-10">-10 Lock</option>
+                    <option value="+1">+1 Lock</option>
+                    <option value="-1">-1 Lock</option>
+                </select>
+            </div>
+            <div style="text-align:center"><span class="label">Last Ball</span><div id="lastNum" style="font-size:24px; font-weight:bold; color:#f1c40f">--</div></div>
+            <div><span class="label">Exp</span><br>
                 <select id="nExp" onchange="process()">
                     <option value="0">n0</option><option value="1">n1</option><option value="2" selected>n2</option>
                     <option value="3">n3</option><option value="4">n4</option><option value="5">n5</option>
                 </select>
-                <div id="opTag" style="color:#f1c40f; font-weight:bold; font-size:12px;">SCANNING...</div>
             </div>
         </div>
 
@@ -70,29 +76,29 @@
 
         <div class="card p-card">
             <div class="fin-row">
-                <div><span class="label">Unit</span><br><input type="number" id="pBase" value="10" style="width:50px"></div>
+                <div style="width:40%"><span class="label">Unit Stake</span><br><input type="number" id="pBase" value="10"></div>
                 <div style="text-align:right"><span class="label">Win%</span><br><span id="pPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">P/L</span><span id="pPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Active</span><span id="pCount" class="val">0</span></div>
+            <div class="fin-row"><span class="label">Active Count</span><span id="pCount" class="val">0</span></div>
             <div class="notation-area" id="pNot"></div>
         </div>
 
         <div class="card u-card">
             <div class="fin-row">
-                <div><span class="label">Unit</span><br><input type="number" id="uBase" value="10" style="width:50px"></div>
+                <div style="width:40%"><span class="label">Unit Stake</span><br><input type="number" id="uBase" value="10"></div>
                 <div style="text-align:right"><span class="label">Win%</span><br><span id="uPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Opposite</span><span id="uCount" class="val">0</span></div>
+            <div class="fin-row"><span class="label">Opposite Count</span><span id="uCount" class="val">0</span></div>
             <div class="notation-area" id="uNot"></div>
         </div>
 
         <div class="num-grid" id="grid"><button class="n-btn green" onclick="inputNum(0)">0</button></div>
         <div class="history-strip" id="histStrip">History: ...</div>
         <div class="footer-tools">
-            <button class="tool-btn btn-undo" onclick="undo()">UNDO</button>
-            <button class="tool-btn btn-reset" onclick="location.reload()">RESET</button>
+            <button class="tool-btn btn-undo" onclick="undo()">UNDO LAST</button>
+            <button class="tool-btn btn-reset" onclick="location.reload()">RESET SESSION</button>
         </div>
     </div>
 </div>
@@ -150,11 +156,11 @@
 
     function calculateFreq() {
         let ops = {"+10":0, "-10":0, "+1":0, "-1":0};
-        let sample = history.slice(-15); // need 15 to check 14 gaps
+        let sample = history.slice(-15);
         for(let i=0; i < sample.length - 1; i++) {
             let prev = sample[i];
             let curr = sample[i+1];
-            for(let op of Object.keys(ops)) {
+            for(let op in ops) {
                 let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
                 if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(curr)) ops[op]++;
             }
@@ -164,24 +170,29 @@
     }
 
     function process() {
-        if(history.length < 2) { updateUI(); return; }
+        if(history.length < 2) { 
+            if(history.length === 1) document.getElementById('lastNum').innerText = history[0];
+            updateUI(); return; 
+        }
         const last = history[history.length-1];
         const prev = history[history.length-2];
         const nVal = parseInt(document.getElementById('nExp').value);
         const mode = document.getElementById('betType').value;
+        const lock = document.getElementById('opLock').value;
+        document.getElementById('lastNum').innerText = last;
 
         let foundOp = null;
-        for(let op of ["+10","-10","+1","-1"]) {
+        let scanList = (lock === "AUTO") ? ["+10","-10","+1","-1"] : [lock];
+
+        for(let op of scanList) {
             let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
             if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(last)) { foundOp = op; break; }
         }
 
         if(!foundOp) { 
-            document.getElementById('opTag').innerText = "SCANNING..."; 
             if (mode !== 'streets') { fin.p.activeNumbers = []; fin.p.activeGroups = []; fin.p.activeRoots = []; }
             syncUnpredicted(mode); renderNotations(mode); updateUI(); return; 
         }
-        document.getElementById('opTag').innerText = "HIT: " + foundOp;
 
         let target = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
         
@@ -208,7 +219,7 @@
                 fin.p.activeGroups = Array.from(newGroups).sort((a,b)=>a-b);
             } else {
                 fin.p.activeNumbers = Array.from(newNumbers);
-                fin.p.activeRoots = roots; // Store roots for neighborhood display
+                fin.p.activeRoots = roots;
             }
 
             if(mode !== 'straight') {
