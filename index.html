@@ -13,7 +13,9 @@
         .u-card { border-top: 5px solid #e67e22; }
         
         .freq-box { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-around; align-items: center; }
-        .freq-item { text-align: center; }
+        .freq-item { text-align: center; padding: 5px 15px; border-radius: 6px; transition: all 0.3s; border: 1px solid transparent; }
+        /* Highlight Class */
+        .freq-active { background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
         .freq-val { font-size: 20px; font-weight: bold; color: #f1c40f; display: block; }
         .freq-lbl { font-size: 10px; color: #777; text-transform: uppercase; }
 
@@ -32,8 +34,9 @@
         .footer-tools { grid-column: span 2; display: flex; gap: 10px; }
         .tool-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
         .btn-undo { background: #d35400; } .btn-reset { background: #333; }
-        select, input[type="number"] { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 5px; width: 100%; }
+        select, input[type="number"] { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 5px; width: 100%; font-size: 12px; }
         .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; overflow-x: auto; font-size: 12px; }
+        .prog-settings { display: flex; gap: 5px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -67,30 +70,58 @@
         </div>
 
         <div class="freq-box">
-            <div class="freq-item"><span class="freq-lbl">+10 Hit</span><span id="f+10" class="freq-val">0</span></div>
-            <div class="freq-item"><span class="freq-lbl">-10 Hit</span><span id="f-10" class="freq-val">0</span></div>
-            <div class="freq-item"><span class="freq-lbl">+1 Hit</span><span id="f+1" class="freq-val">0</span></div>
-            <div class="freq-item"><span class="freq-lbl">-1 Hit</span><span id="f-1" class="freq-val">0</span></div>
+            <div id="box+10" class="freq-item"><span class="freq-lbl">+10 Hit</span><span id="f+10" class="freq-val">0</span></div>
+            <div id="box-10" class="freq-item"><span class="freq-lbl">-10 Hit</span><span id="f-10" class="freq-val">0</span></div>
+            <div id="box+1" class="freq-item"><span class="freq-lbl">+1 Hit</span><span id="f+1" class="freq-val">0</span></div>
+            <div id="box-1" class="freq-item"><span class="freq-lbl">-1 Hit</span><span id="f-1" class="freq-val">0</span></div>
             <div class="freq-item"><span class="freq-lbl">Sample</span><span id="fSamp" class="freq-val">0/14</span></div>
         </div>
 
         <div class="card p-card">
             <div class="fin-row">
-                <div style="width:40%"><span class="label">Unit Stake</span><br><input type="number" id="pBase" value="10"></div>
-                <div style="text-align:right"><span class="label">Win%</span><br><span id="pPct" class="val">0%</span></div>
+                <div style="width:100%">
+                    <span class="label">Stake Controls</span>
+                    <div class="prog-settings">
+                        <input type="number" id="pBase" value="10" title="Base Unit">
+                        <select id="pLossProg" title="Loss Progression Step">
+                            <option value="0">L: 0 (Flat)</option>
+                            <option value="1" selected>L: +1</option><option value="2">L: +2</option><option value="3">L: +3</option>
+                            <option value="4">L: +4</option><option value="5">L: +5</option><option value="6">L: +6</option>
+                            <option value="8">L: +8</option><option value="10">L: +10</option><option value="12">L: +12</option>
+                        </select>
+                        <select id="pWinProg" title="Win Reduction Step">
+                            <option value="0">W: Reset</option>
+                            <option value="1">W: -1</option><option value="2">W: -2</option><option value="3">W: -3</option>
+                            <option value="4">W: -4</option><option value="5">W: -5</option><option value="6">W: -6</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="fin-row"><span class="label">P/L</span><span id="pPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Active Count</span><span id="pCount" class="val">0</span></div>
+            <div class="fin-row"><span class="label">Stake</span><span id="pStakeDisp" class="val" style="color:#3498db">10</span></div>
+            <div class="fin-row"><span class="label">Win%</span><span id="pPct" class="val">0%</span></div>
             <div class="notation-area" id="pNot"></div>
         </div>
 
         <div class="card u-card">
             <div class="fin-row">
-                <div style="width:40%"><span class="label">Unit Stake</span><br><input type="number" id="uBase" value="10"></div>
-                <div style="text-align:right"><span class="label">Win%</span><br><span id="uPct" class="val">0%</span></div>
+                <div style="width:100%">
+                    <span class="label">Stake Controls</span>
+                    <div class="prog-settings">
+                        <input type="number" id="uBase" value="10">
+                        <select id="uLossProg">
+                            <option value="0">L: 0</option><option value="1" selected>L: +1</option><option value="2">L: +2</option>
+                            <option value="4">L: +4</option><option value="6">L: +6</option><option value="12">L: +12</option>
+                        </select>
+                        <select id="uWinProg">
+                            <option value="0">W: Reset</option><option value="1">W: -1</option><option value="6">W: -6</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="fin-row"><span class="label">P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Opposite Count</span><span id="uCount" class="val">0</span></div>
+            <div class="fin-row"><span class="label">Stake</span><span id="uStakeDisp" class="val" style="color:#e67e22">10</span></div>
+            <div class="fin-row"><span class="label">Win%</span><span id="uPct" class="val">0%</span></div>
             <div class="notation-area" id="uNot"></div>
         </div>
 
@@ -130,21 +161,29 @@
         ['p', 'u'].forEach(side => {
             if (fin[side].activeNumbers.length > 0) {
                 if(side === 'p') fin.totalBets++;
+                
                 let base = parseInt(document.getElementById(side+'Base').value);
+                let lossStep = parseInt(document.getElementById(side+'LossProg').value);
+                let winStep = parseInt(document.getElementById(side+'WinProg').value);
+                
                 let multiplier = (mode === 'straight') ? 36 : (mode === 'streets' ? 12 : 6);
                 let betCount = (mode === 'straight') ? fin[side].activeNumbers.length : fin[side].activeGroups.length;
 
                 if (fin[side].activeNumbers.includes(n)) {
                     fin[side].pl += (fin[side].stake * multiplier) - (betCount * fin[side].stake);
                     fin[side].wins++;
-                    fin[side].stake = Math.max(base, fin[side].stake - base);
+                    // Win Logic: If winStep is 0, reset to base. Else subtract step.
+                    if(winStep === 0) fin[side].stake = base;
+                    else fin[side].stake = Math.max(base, fin[side].stake - (base * winStep));
                 } else {
                     fin[side].pl -= (betCount * fin[side].stake);
-                    fin[side].stake += base;
+                    // Loss Logic: Add base * lossStep
+                    fin[side].stake += (base * lossStep);
                 }
             }
         });
 
+        // Auto-clear logic for Predicted side on hit
         if (fin.p.activeNumbers.includes(n)) {
             fin.p.activeNumbers = []; fin.p.activeGroups = []; fin.p.activeRoots = [];
         }
@@ -170,6 +209,9 @@
     }
 
     function process() {
+        // Clear previous highlights
+        document.querySelectorAll('.freq-item').forEach(el => el.classList.remove('freq-active'));
+
         if(history.length < 2) { 
             if(history.length === 1) document.getElementById('lastNum').innerText = history[0];
             updateUI(); return; 
@@ -186,7 +228,12 @@
 
         for(let op of scanList) {
             let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-            if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(last)) { foundOp = op; break; }
+            if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(last)) { 
+                foundOp = op; 
+                // Highlight the operator box
+                document.getElementById('box' + op).classList.add('freq-active');
+                break; 
+            }
         }
 
         if(!foundOp) { 
@@ -228,7 +275,7 @@
                     let size = (mode === 'streets') ? 3 : 6;
                     for(let i=0; i<size; i++) {
                         let n = (gid === 0) ? 0 : (gid*size)-i;
-                        if(n>=0) pNums.add(n);
+                        if(n>=0 && n<=36) pNums.add(n);
                     }
                 });
                 fin.p.activeNumbers = Array.from(pNums);
@@ -262,7 +309,7 @@
         const nVal = document.getElementById('nExp').value;
         ['p', 'u'].forEach(side => {
             let html = "";
-            if (mode === 'straight' && side === 'p') {
+            if (mode === 'straight' && side === 'p' && fin.p.activeRoots.length > 0) {
                 fin.p.activeRoots.forEach(r => html += `<div class="n-block">${r}n${nVal}</div>`);
             } else {
                 let data = (mode === 'straight') ? fin[side].activeNumbers : fin[side].activeGroups;
@@ -280,7 +327,7 @@
         ['p', 'u'].forEach(s => {
             document.getElementById(`${s}PL`).innerText = fin[s].pl.toFixed(2);
             document.getElementById(`${s}PL`).className = `val ${fin[s].pl >= 0 ? 'win' : 'loss'}`;
-            document.getElementById(`${s}Count`).innerText = (mode === 'straight') ? fin[s].activeNumbers.length : fin[s].activeGroups.length;
+            document.getElementById(`${s}StakeDisp`).innerText = fin[s].stake;
             document.getElementById(`${s}Pct`).innerText = fin.totalBets > 0 ? Math.round((fin[s].wins/fin.totalBets)*100) + "%" : "0%";
         });
         document.getElementById('histStrip').innerHTML = "History: " + history.slice(-12).join(" | ");
