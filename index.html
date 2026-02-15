@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - D'Alembert 21-Volume Pro</title>
+    <title>BIET - D'Alembert Pro Multi-Mode</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
@@ -25,8 +25,8 @@
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
 
         .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 100px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-        .n-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 20px; font-weight: bold; }
-        .n-block span { font-size: 12px; color: #9b59b6; vertical-align: super; }
+        .n-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 16px; font-weight: bold; }
+        .n-block span { font-size: 10px; color: #9b59b6; vertical-align: super; margin-left: 2px;}
         
         .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
         .n-btn { padding: 15px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; transition: 0.1s; }
@@ -37,7 +37,7 @@
         .tool-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
         .btn-undo { background: #d35400; } .btn-reset { background: #333; }
         
-        input[type="number"] { background: #222; color: #fff; border: 1px solid #444; width: 55px; text-align: center; border-radius: 4px; padding: 2px; }
+        select, input[type="number"] { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 5px; }
         .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; white-space: nowrap; overflow-x: auto; font-size: 14px; }
         .hist-item { color: #f1c40f; font-weight: bold; }
     </style>
@@ -47,14 +47,22 @@
 <div class="container">
     <div class="grid">
         <div class="header">
-            <div><span class="label">Auto-Scan Strategy</span><div id="opTag" class="op-display">SCANNING...</div></div>
-            <div style="text-align:center"><span class="label">Last Ball</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
-            <div>
-                <select id="nExp" onchange="process()" style="background:#222; color:white; border:1px solid #444; padding:5px; border-radius:4px;">
-                    <option value="3" selected>Expansion n3</option>
-                    <option value="5">Expansion n5</option>
-                    <option value="9">Expansion n9</option>
+            <div><span class="label">Mode</span><br>
+                <select id="betType" onchange="clearZones(); process();">
+                    <option value="straight">Straight Up</option>
+                    <option value="streets">Streets (3)</option>
+                    <option value="double">Double Streets (6)</option>
                 </select>
+            </div>
+            <div style="text-align:center"><span class="label">Last Ball</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
+            <div style="text-align:right">
+                <span class="label">Expansion</span><br>
+                <select id="nExp" onchange="process()">
+                    <option value="3" selected>n3</option>
+                    <option value="5">n5</option>
+                    <option value="9">n9</option>
+                </select>
+                <div id="opTag" class="op-display" style="font-size: 14px;">SCANNING...</div>
             </div>
         </div>
 
@@ -70,14 +78,14 @@
         </div>
 
         <div class="card u-card" id="uCard">
-            <div id="uLock" class="lock-overlay" style="display:none;"><div id="lockReason" class="lock-msg">VOLUME &ge; 21</div></div>
+            <div id="uLock" class="lock-overlay" style="display:none;"><div id="lockReason" class="lock-msg">LOCKED</div></div>
             <div class="fin-row">
                 <div><span class="label">Unit</span><br><input type="number" id="uBase" value="10" onchange="resetFin('u')"></div>
                 <div style="text-align:right"><span class="label">Success %</span><br><span id="uPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">Total P/L</span><span id="uPL" class="val">0.00</span></div>
             <div class="fin-row"><span class="label">Stake</span><span id="uStake" class="val">10</span></div>
-            <div class="fin-row"><span class="label">Remaining</span><span id="uCount" class="val">0</span></div>
+            <div class="fin-row"><span class="label">Opposite</span><span id="uCount" class="val">0</span></div>
             <div class="notation-area" id="uNot"></div>
         </div>
 
@@ -102,6 +110,20 @@
         totalBets: 0 
     };
 
+    // Street Mapping
+    const getStreet = (n) => {
+        if (n === 0) return [0];
+        const row = Math.ceil(n / 3);
+        return [(row*3)-2, (row*3)-1, (row*3)];
+    };
+    const getDoubleStreet = (n) => {
+        if (n === 0) return [0, 1, 2, 3];
+        const street = Math.ceil(n / 3);
+        const doubleRow = Math.ceil(street / 2);
+        const start = (doubleRow * 6) - 5;
+        return [start, start+1, start+2, start+3, start+4, start+5];
+    };
+
     const g = document.getElementById('grid');
     for(let i=1; i<=36; i++) {
         let b = document.createElement('button');
@@ -113,7 +135,9 @@
 
     function inputNum(n) {
         stateHistory.push(JSON.stringify({history, fin}));
-        
+        const mode = document.getElementById('betType').value;
+        const isWin = fin.p.active.includes(n);
+
         ['p', 'u'].forEach(side => {
             if (fin[side].active.length > 0 && !(side === 'u' && fin.u.locked)) {
                 if(side === 'p') fin.totalBets++;
@@ -129,6 +153,11 @@
                 }
             }
         });
+
+        // Accumulation Logic for Streets/Double Streets
+        if ((mode === 'streets' || mode === 'double') && isWin) {
+            fin.p.active = []; // Clear on win
+        }
 
         history.push(n);
         process();
@@ -149,6 +178,7 @@
         
         const prev = history[history.length-2];
         const nVal = parseInt(document.getElementById('nExp').value);
+        const mode = document.getElementById('betType').value;
         let foundOp = null;
 
         for(let op of ["+10","-10","+1","-1"]) {
@@ -156,22 +186,43 @@
             if(t >=0 && t <= 36 && getCluster(t, nVal).includes(last)) { foundOp = op; break; }
         }
 
-        if(!foundOp) { document.getElementById('opTag').innerText = "NO MATCH"; clearZones(); return; }
-        document.getElementById('opTag').innerText = foundOp;
+        if(!foundOp) { 
+            document.getElementById('opTag').innerText = "NO MATCH"; 
+            if (mode === 'straight') clearZones(); 
+            return; 
+        }
+        document.getElementById('opTag').innerText = "OP: " + foundOp;
 
         let target = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
+        
         if(target >= 0 && target <= 36) {
             let roots = [target, ...(neighbors[target]||[])];
-            let pSet = new Set();
+            let newPockets = new Set();
+            
             roots.forEach(r => {
                 let idx = wheel.indexOf(r);
-                for(let i=-nVal; i<=nVal; i++) pSet.add(wheel[(idx+i+37)%37]);
+                for(let i=-nVal; i<=nVal; i++) {
+                    let num = wheel[(idx+i+37)%37];
+                    if (mode === 'straight') newPockets.add(num);
+                    else if (mode === 'streets') getStreet(num).forEach(s => newPockets.add(s));
+                    else if (mode === 'double') getDoubleStreet(num).forEach(ds => newPockets.add(ds));
+                }
             });
-            fin.p.active = Array.from(pSet);
-            fin.u.active = wheel.filter(num => !fin.p.active.includes(num));
+
+            // Logic Adjustment: Streets/Double Streets Keep Adding until Win
+            if (mode === 'straight') {
+                fin.p.active = Array.from(newPockets);
+                fin.u.active = wheel.filter(num => !fin.p.active.includes(num));
+                // Lock logic active for Straight Up
+                fin.u.locked = (roots.length >= 5 || fin.u.active.length >= 21 || fin.p.active.length > 25);
+            } else {
+                // Combine existing active with new predictions
+                let combined = new Set([...fin.p.active, ...newPockets]);
+                fin.p.active = Array.from(combined);
+                fin.u.active = []; // No Opposite for Street accumulation modes
+                fin.u.locked = false; // Disable locks for Streets
+            }
             
-            // NEW THRESHOLD: LOCK AT 21 OR GREATER
-            fin.u.locked = (roots.length >= 5 || fin.u.active.length >= 21);
             renderNotation(roots, nVal);
         }
         updateUI();
