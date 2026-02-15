@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - D'Alembert Pro Multi-Mode</title>
+    <title>BIET - D'Alembert Expansion Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
@@ -45,7 +45,12 @@
             </div>
             <div style="text-align:center"><span class="label">Last Ball</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
             <div>
-                <span class="label">Detection</span><br>
+                <span class="label">Expansion</span><br>
+                <select id="nExp" onchange="process()">
+                    <option value="3" selected>n3</option>
+                    <option value="5">n5</option>
+                    <option value="9">n9</option>
+                </select>
                 <div id="opTag" class="op-display" style="font-size: 14px;">SCANNING...</div>
             </div>
         </div>
@@ -118,7 +123,7 @@
                 if(side === 'p') fin.totalBets++;
                 let base = parseInt(document.getElementById(side+'Base').value);
                 let multiplier = (mode === 'straight') ? 36 : (mode === 'streets' ? 12 : 6);
-                let betCount = (mode === 'straight') ? fin[side].activeNumbers.length : (side === 'p' ? fin.p.activeGroups.length : fin.u.activeNumbers.length);
+                let betCount = (side === 'p' && mode !== 'straight') ? fin.p.activeGroups.length : fin[side].activeNumbers.length;
 
                 if (fin[side].activeNumbers.includes(n)) {
                     fin[side].pl += (fin[side].stake * multiplier) - (betCount * fin[side].stake);
@@ -131,7 +136,6 @@
             }
         });
 
-        // Reset P list on win for accumulation modes
         if ((mode === 'streets' || mode === 'double') && isWin) {
             fin.p.activeNumbers = [];
             fin.p.activeGroups = [];
@@ -139,13 +143,6 @@
 
         history.push(n);
         process();
-    }
-
-    function undo() {
-        if(stateHistory.length > 0) {
-            let prev = JSON.parse(stateHistory.pop());
-            history = prev.history; fin = prev.fin; process();
-        }
     }
 
     function process() {
@@ -156,22 +153,14 @@
         
         const last = history[history.length-1];
         const prev = history[history.length-2];
+        const nVal = parseInt(document.getElementById('nExp').value);
         const mode = document.getElementById('betType').value;
         document.getElementById('lastNum').innerText = last;
 
         let foundOp = null;
         for(let op of ["+10","-10","+1","-1"]) {
             let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-            // For Streets/DS, we check if the target number's group contains the last ball
-            if(t >=0 && t <= 36) {
-                if(mode === 'straight') {
-                    if(getCluster(t, 3).includes(last)) { foundOp = op; break; }
-                } else if(mode === 'streets') {
-                    if(getStreetID(t) === getStreetID(last)) { foundOp = op; break; }
-                } else {
-                    if(getDSID(t) === getDSID(last)) { foundOp = op; break; }
-                }
-            }
+            if(t >=0 && t <= 36 && getCluster(t, nVal).includes(last)) { foundOp = op; break; }
         }
 
         if(!foundOp) { 
@@ -184,28 +173,41 @@
         let target = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
         
         if(target >= 0 && target <= 36) {
+            let roots = [target, ...(neighbors[target]||[])];
+            let newNumbers = new Set();
+            let newGroups = new Set();
+            
+            roots.forEach(r => {
+                let idx = wheel.indexOf(r);
+                for(let i=-nVal; i<=nVal; i++) {
+                    let num = wheel[(idx+i+37)%37];
+                    if (mode === 'straight') {
+                        newNumbers.add(num);
+                    } else if (mode === 'streets') {
+                        let id = getStreetID(num);
+                        newGroups.add(id);
+                        getStreetNums(id).forEach(sn => newNumbers.add(sn));
+                    } else if (mode === 'double') {
+                        let id = getDSID(num);
+                        newGroups.add(id);
+                        getDSNums(id).forEach(dn => newNumbers.add(dn));
+                    }
+                }
+            });
+
             if (mode === 'straight') {
-                let roots = [target, ...(neighbors[target]||[])];
-                let pSet = new Set();
-                roots.forEach(r => {
-                    let idx = wheel.indexOf(r);
-                    for(let i=-3; i<=3; i++) pSet.add(wheel[(idx+i+37)%37]);
-                });
-                fin.p.activeNumbers = Array.from(pSet);
+                fin.p.activeNumbers = Array.from(newNumbers);
                 fin.u.activeNumbers = wheel.filter(num => !fin.p.activeNumbers.includes(num));
                 fin.u.locked = (fin.p.activeNumbers.length > 25 || fin.u.activeNumbers.length >= 21);
                 renderNotation(roots, mode);
             } else {
-                // STREET & DOUBLE STREET LOGIC (No Neighbors)
-                let gid = (mode === 'streets') ? getStreetID(target) : getDSID(target);
-                let gNums = (mode === 'streets') ? getStreetNums(gid) : getDSNums(gid);
-                
+                // ACCUMULATE GROUPS
                 let currentGroups = new Set(fin.p.activeGroups);
-                currentGroups.add(gid);
-                fin.p.activeGroups = Array.from(currentGroups);
+                newGroups.forEach(g => currentGroups.add(g));
+                fin.p.activeGroups = Array.from(currentGroups).sort((a,b)=>a-b);
 
                 let currentNums = new Set(fin.p.activeNumbers);
-                gNums.forEach(n => currentNums.add(n));
+                newNumbers.forEach(n => currentNums.add(n));
                 fin.p.activeNumbers = Array.from(currentNums);
 
                 fin.u.activeNumbers = [];
@@ -228,14 +230,12 @@
 
     function renderNotation(data, mode) {
         let html = "";
-        if (mode === 'straight') {
-            data.forEach(r => html += `<div class="n-block">${r}</div>`);
-        } else {
-            data.forEach(gid => {
-                let prefix = (mode === 'streets') ? "S" : "DS";
-                html += `<div class="n-block">${prefix}${gid}</div>`;
-            });
-        }
+        data.forEach(item => {
+            let label = item;
+            if(mode === 'streets') label = "S" + item;
+            if(mode === 'double') label = "DS" + item;
+            html += `<div class="n-block">${label}</div>`;
+        });
         document.getElementById('pNot').innerHTML = html;
     }
 
@@ -248,11 +248,9 @@
             document.getElementById(`${s}Count`).innerText = (s === 'p' && mode !== 'straight') ? fin.p.activeGroups.length : fin[s].activeNumbers.length;
             document.getElementById(`${s}Pct`).innerText = fin.totalBets > 0 ? Math.round((fin[s].wins/fin.totalBets)*100) + "%" : "0%";
         });
-        
         const uLock = document.getElementById('uLock');
         if(fin.u.locked) uLock.style.display = "flex";
         else uLock.style.display = "none";
-
         document.getElementById('histStrip').innerHTML = "History: " + history.slice(-12).join(" | ");
     }
 
