@@ -21,7 +21,6 @@
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
         .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 100px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         .n-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 18px; font-weight: bold; color: #3498db; }
-        .n-block span { font-size: 11px; color: #9b59b6; vertical-align: super; margin-left: 4px; }
         .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
         .n-btn { padding: 15px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
@@ -46,12 +45,7 @@
             </div>
             <div style="text-align:center"><span class="label">Last Ball</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
             <div>
-                <span class="label">Expansion</span><br>
-                <select id="nExp" onchange="process()">
-                    <option value="3" selected>n3</option>
-                    <option value="5">n5</option>
-                    <option value="9">n9</option>
-                </select>
+                <span class="label">Detection</span><br>
                 <div id="opTag" class="op-display" style="font-size: 14px;">SCANNING...</div>
             </div>
         </div>
@@ -62,7 +56,7 @@
                 <div style="text-align:right"><span class="label">Success %</span><br><span id="pPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">Total P/L</span><span id="pPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Current Stake/Pos</span><span id="pStake" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Stake per Group</span><span id="pStake" class="val">10</span></div>
             <div class="fin-row"><span class="label">Active Groups</span><span id="pCount" class="val">0</span></div>
             <div class="notation-area" id="pNot"></div>
         </div>
@@ -74,7 +68,7 @@
                 <div style="text-align:right"><span class="label">Success %</span><br><span id="uPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">Total P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Current Stake/Pos</span><span id="uStake" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Stake per Pos</span><span id="uStake" class="val">10</span></div>
             <div class="fin-row"><span class="label">Opposite Count</span><span id="uCount" class="val">0</span></div>
             <div class="notation-area" id="uNot"></div>
         </div>
@@ -101,7 +95,6 @@
 
     const getStreetID = (n) => n === 0 ? 0 : Math.ceil(n / 3);
     const getDSID = (n) => n === 0 ? 0 : Math.ceil(n / 6);
-
     const getStreetNums = (id) => id === 0 ? [0] : [(id*3)-2, (id*3)-1, (id*3)];
     const getDSNums = (id) => id === 0 ? [0] : [(id*6)-5, (id*6)-4, (id*6)-3, (id*6)-2, (id*6)-1, (id*6)];
 
@@ -112,7 +105,7 @@
         b.onclick = () => inputNum(i); g.appendChild(b);
     }
 
-    function fullReset() { history = []; stateHistory = []; clearZones(); }
+    function fullReset() { history = []; stateHistory = []; clearZones(); updateUI(); }
     function resetFin(side) { fin[side].stake = parseInt(document.getElementById(side+'Base').value); updateUI(); }
 
     function inputNum(n) {
@@ -125,7 +118,7 @@
                 if(side === 'p') fin.totalBets++;
                 let base = parseInt(document.getElementById(side+'Base').value);
                 let multiplier = (mode === 'straight') ? 36 : (mode === 'streets' ? 12 : 6);
-                let betCount = (mode === 'straight') ? fin[side].activeNumbers.length : fin[side].activeGroups.length;
+                let betCount = (mode === 'straight') ? fin[side].activeNumbers.length : (side === 'p' ? fin.p.activeGroups.length : fin.u.activeNumbers.length);
 
                 if (fin[side].activeNumbers.includes(n)) {
                     fin[side].pl += (fin[side].stake * multiplier) - (betCount * fin[side].stake);
@@ -138,6 +131,7 @@
             }
         });
 
+        // Reset P list on win for accumulation modes
         if ((mode === 'streets' || mode === 'double') && isWin) {
             fin.p.activeNumbers = [];
             fin.p.activeGroups = [];
@@ -162,14 +156,22 @@
         
         const last = history[history.length-1];
         const prev = history[history.length-2];
-        const nVal = parseInt(document.getElementById('nExp').value);
         const mode = document.getElementById('betType').value;
         document.getElementById('lastNum').innerText = last;
 
         let foundOp = null;
         for(let op of ["+10","-10","+1","-1"]) {
             let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-            if(t >=0 && t <= 36 && getCluster(t, nVal).includes(last)) { foundOp = op; break; }
+            // For Streets/DS, we check if the target number's group contains the last ball
+            if(t >=0 && t <= 36) {
+                if(mode === 'straight') {
+                    if(getCluster(t, 3).includes(last)) { foundOp = op; break; }
+                } else if(mode === 'streets') {
+                    if(getStreetID(t) === getStreetID(last)) { foundOp = op; break; }
+                } else {
+                    if(getDSID(t) === getDSID(last)) { foundOp = op; break; }
+                }
+            }
         }
 
         if(!foundOp) { 
@@ -182,42 +184,34 @@
         let target = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
         
         if(target >= 0 && target <= 36) {
-            let roots = [target, ...(neighbors[target]||[])];
-            let newNumbers = new Set();
-            let newGroups = new Set();
-            
-            roots.forEach(r => {
-                let idx = wheel.indexOf(r);
-                for(let i=-nVal; i<=nVal; i++) {
-                    let num = wheel[(idx+i+37)%37];
-                    if (mode === 'straight') {
-                        newNumbers.add(num);
-                    } else if (mode === 'streets') {
-                        let id = getStreetID(num);
-                        newGroups.add(id);
-                        getStreetNums(id).forEach(sn => newNumbers.add(sn));
-                    } else if (mode === 'double') {
-                        let id = getDSID(num);
-                        newGroups.add(id);
-                        getDSNums(id).forEach(dn => newNumbers.add(dn));
-                    }
-                }
-            });
-
             if (mode === 'straight') {
-                fin.p.activeNumbers = Array.from(newNumbers);
-                fin.p.activeGroups = Array.from(newNumbers);
+                let roots = [target, ...(neighbors[target]||[])];
+                let pSet = new Set();
+                roots.forEach(r => {
+                    let idx = wheel.indexOf(r);
+                    for(let i=-3; i<=3; i++) pSet.add(wheel[(idx+i+37)%37]);
+                });
+                fin.p.activeNumbers = Array.from(pSet);
                 fin.u.activeNumbers = wheel.filter(num => !fin.p.activeNumbers.includes(num));
-                fin.u.locked = (roots.length >= 5 || fin.u.activeNumbers.length >= 21 || fin.p.activeNumbers.length > 25);
+                fin.u.locked = (fin.p.activeNumbers.length > 25 || fin.u.activeNumbers.length >= 21);
+                renderNotation(roots, mode);
             } else {
-                let combinedNums = new Set([...fin.p.activeNumbers, ...newNumbers]);
-                let combinedGroups = new Set([...fin.p.activeGroups, ...newGroups]);
-                fin.p.activeNumbers = Array.from(combinedNums);
-                fin.p.activeGroups = Array.from(combinedGroups);
+                // STREET & DOUBLE STREET LOGIC (No Neighbors)
+                let gid = (mode === 'streets') ? getStreetID(target) : getDSID(target);
+                let gNums = (mode === 'streets') ? getStreetNums(gid) : getDSNums(gid);
+                
+                let currentGroups = new Set(fin.p.activeGroups);
+                currentGroups.add(gid);
+                fin.p.activeGroups = Array.from(currentGroups);
+
+                let currentNums = new Set(fin.p.activeNumbers);
+                gNums.forEach(n => currentNums.add(n));
+                fin.p.activeNumbers = Array.from(currentNums);
+
                 fin.u.activeNumbers = [];
                 fin.u.locked = false;
+                renderNotation(fin.p.activeGroups, mode);
             }
-            renderNotation(roots, nVal, mode);
         }
         updateUI();
     }
@@ -232,14 +226,16 @@
         return Array.from(s);
     }
 
-    function renderNotation(roots, n, mode) {
+    function renderNotation(data, mode) {
         let html = "";
-        roots.forEach(r => {
-            let label = r;
-            if(mode === 'streets') label = "S" + getStreetID(r);
-            if(mode === 'double') label = "DS" + getDSID(r);
-            html += `<div class="n-block">${label}<span>n${n}</span></div>`;
-        });
+        if (mode === 'straight') {
+            data.forEach(r => html += `<div class="n-block">${r}</div>`);
+        } else {
+            data.forEach(gid => {
+                let prefix = (mode === 'streets') ? "S" : "DS";
+                html += `<div class="n-block">${prefix}${gid}</div>`;
+            });
+        }
         document.getElementById('pNot').innerHTML = html;
     }
 
@@ -249,7 +245,7 @@
             document.getElementById(`${s}PL`).innerText = fin[s].pl.toFixed(2);
             document.getElementById(`${s}PL`).className = `val ${fin[s].pl >= 0 ? 'win' : 'loss'}`;
             document.getElementById(`${s}Stake`).innerText = fin[s].stake;
-            document.getElementById(`${s}Count`).innerText = (mode === 'straight') ? fin[s].activeNumbers.length : fin[s].activeGroups.length;
+            document.getElementById(`${s}Count`).innerText = (s === 'p' && mode !== 'straight') ? fin.p.activeGroups.length : fin[s].activeNumbers.length;
             document.getElementById(`${s}Pct`).innerText = fin.totalBets > 0 ? Math.round((fin[s].wins/fin.totalBets)*100) + "%" : "0%";
         });
         
