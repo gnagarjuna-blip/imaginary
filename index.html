@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Expansion Pro (0-5)</title>
+    <title>BIET - D'Alembert Pro Multi-Logic</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
@@ -16,8 +16,9 @@
         .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
         .val { font-family: monospace; font-weight: bold; font-size: 18px; }
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
-        .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 100px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-        .n-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 18px; font-weight: bold; color: #3498db; }
+        .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 120px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-content: flex-start; }
+        .n-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 16px; font-weight: bold; color: #3498db; }
+        .u-block { background: #1a1a1a; padding: 8px; border-radius: 6px; border: 1px solid #333; font-size: 16px; font-weight: bold; color: #e67e22; }
         .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
         .n-btn { padding: 15px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
@@ -37,19 +38,15 @@
                 <select id="betType" onchange="fullReset()">
                     <option value="straight">Straight Up</option>
                     <option value="streets">Streets (S)</option>
-                    <option value="double">Double Streets (DS)</option>
+                    <option value="double" selected>Double Streets (DS)</option>
                 </select>
             </div>
             <div style="text-align:center"><span class="label">Last Ball</span><div id="lastNum" style="font-size:32px; font-weight:bold;">--</div></div>
             <div>
                 <span class="label">Expansion</span><br>
                 <select id="nExp" onchange="process()">
-                    <option value="0">n0 (Target Only)</option>
-                    <option value="1">n1</option>
-                    <option value="2" selected>n2</option>
-                    <option value="3">n3</option>
-                    <option value="4">n4</option>
-                    <option value="5">n5</option>
+                    <option value="0">n0</option><option value="1">n1</option><option value="2" selected>n2</option>
+                    <option value="3">n3</option><option value="4">n4</option><option value="5">n5</option>
                 </select>
                 <div id="opTag" class="op-display" style="font-size: 14px;">SCANNING...</div>
             </div>
@@ -57,22 +54,23 @@
 
         <div class="card p-card">
             <div class="fin-row">
-                <div><span class="label">Unit Stake</span><br><input type="number" id="pBase" value="10" onchange="resetFin('p')"></div>
+                <div><span class="label">P-Unit Stake</span><br><input type="number" id="pBase" value="10" onchange="resetFin('p')"></div>
                 <div style="text-align:right"><span class="label">Success %</span><br><span id="pPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">Total P/L</span><span id="pPL" class="val">0.00</span></div>
             <div class="fin-row"><span class="label">Stake/Group</span><span id="pStake" class="val">10</span></div>
-            <div class="fin-row"><span class="label">Active Groups</span><span id="pCount" class="val">0</span></div>
+            <div class="fin-row"><span class="label">Predicted</span><span id="pCount" class="val">0</span></div>
             <div class="notation-area" id="pNot"></div>
         </div>
 
         <div class="card u-card">
             <div class="fin-row">
-                <div><span class="label">Unit Stake</span><br><input type="number" id="uBase" value="10" onchange="resetFin('u')"></div>
+                <div><span class="label">U-Unit Stake</span><br><input type="number" id="uBase" value="10" onchange="resetFin('u')"></div>
                 <div style="text-align:right"><span class="label">Success %</span><br><span id="uPct" class="val">0%</span></div>
             </div>
             <div class="fin-row"><span class="label">Total P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Last Win Spin</span><span id="lastWin" class="val">--</span></div>
+            <div class="fin-row"><span class="label">Stake/Group</span><span id="uStake" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Unpredicted</span><span id="uCount" class="val">0</span></div>
             <div class="notation-area" id="uNot"></div>
         </div>
 
@@ -92,7 +90,7 @@
     let history = [], stateHistory = [];
     let fin = { 
         p: { pl: 0, stake: 10, wins: 0, activeNumbers: [], activeGroups: [] }, 
-        u: { pl: 0, stake: 10, wins: 0, activeNumbers: [] },
+        u: { pl: 0, stake: 10, wins: 0, activeNumbers: [], activeGroups: [] },
         totalBets: 0 
     };
 
@@ -114,29 +112,31 @@
     function inputNum(n) {
         stateHistory.push(JSON.stringify({history, fin}));
         const mode = document.getElementById('betType').value;
-        const isWin = fin.p.activeNumbers.includes(n);
+        fin.totalBets++;
 
-        if (fin.p.activeNumbers.length > 0) {
-            fin.totalBets++;
-            let base = parseInt(document.getElementById('pBase').value);
-            let multiplier = (mode === 'straight') ? 36 : (mode === 'streets' ? 12 : 6);
-            let betCount = (mode === 'straight') ? fin.p.activeNumbers.length : fin.p.activeGroups.length;
+        ['p', 'u'].forEach(side => {
+            if (fin[side].activeNumbers.length > 0) {
+                let base = parseInt(document.getElementById(side+'Base').value);
+                let multiplier = (mode === 'straight') ? 36 : (mode === 'streets' ? 12 : 6);
+                let betCount = (mode === 'straight') ? fin[side].activeNumbers.length : fin[side].activeGroups.length;
 
-            if (isWin) {
-                fin.p.pl += (fin.p.stake * multiplier) - (betCount * fin.p.stake);
-                fin.p.wins++;
-                fin.p.stake = Math.max(base, fin.p.stake - base);
-                document.getElementById('lastWin').innerText = n;
-                // Win reset for S/DS
-                if (mode !== 'straight') {
-                    fin.p.activeNumbers = [];
-                    fin.p.activeGroups = [];
+                if (fin[side].activeNumbers.includes(n)) {
+                    fin[side].pl += (fin[side].stake * multiplier) - (betCount * fin[side].stake);
+                    fin[side].wins++;
+                    fin[side].stake = Math.max(base, fin[side].stake - base);
+                } else {
+                    fin[side].pl -= (betCount * fin[side].stake);
+                    fin[side].stake += base;
                 }
-            } else {
-                fin.p.pl -= (betCount * fin.p.stake);
-                fin.p.stake += base;
             }
+        });
+
+        // Win-based Reset logic
+        if (fin.p.activeNumbers.includes(n)) {
+            fin.p.activeNumbers = [];
+            fin.p.activeGroups = [];
         }
+
         history.push(n);
         process();
     }
@@ -149,7 +149,11 @@
     }
 
     function process() {
-        if(history.length < 2) { updateUI(); return; }
+        if(history.length < 2) { 
+            if(history.length === 1) document.getElementById('lastNum').innerText = history[0];
+            updateUI(); return; 
+        }
+        
         const last = history[history.length-1];
         const prev = history[history.length-2];
         const nVal = parseInt(document.getElementById('nExp').value);
@@ -164,7 +168,8 @@
 
         if(!foundOp) { 
             document.getElementById('opTag').innerText = "SCANNING..."; 
-            if (mode === 'straight') clearZones(); 
+            // In DS mode, clear if no match. In S mode, keep old predictions.
+            if (mode !== 'streets') clearZones(); 
             return; 
         }
         document.getElementById('opTag').innerText = "OP: " + foundOp;
@@ -192,22 +197,48 @@
                 }
             });
 
-            if (mode === 'straight') {
-                fin.p.activeNumbers = Array.from(newNumbers);
-                renderNotation(roots, mode);
+            // LOGIC SPLIT: Accumulate for S/Straight, Refresh for DS
+            if (mode === 'double') {
+                fin.p.activeGroups = Array.from(newGroups).sort((a,b)=>a-b);
             } else {
                 let currentGroups = new Set(fin.p.activeGroups);
                 newGroups.forEach(g => currentGroups.add(g));
                 fin.p.activeGroups = Array.from(currentGroups).sort((a,b)=>a-b);
-
-                let currentNums = new Set();
-                fin.p.activeGroups.forEach(gid => {
-                    let groupNums = (mode === 'streets') ? getStreetNums(gid) : getDSNums(gid);
-                    groupNums.forEach(gn => currentNums.add(gn));
-                });
-                fin.p.activeNumbers = Array.from(currentNums);
-                renderNotation(fin.p.activeGroups, mode);
             }
+
+            // Sync Active Numbers from Groups
+            let pNums = new Set();
+            if(mode === 'straight') {
+                newNumbers.forEach(n => pNums.add(n));
+                fin.p.activeNumbers = Array.from(pNums);
+            } else {
+                fin.p.activeGroups.forEach(gid => {
+                    let gSet = (mode === 'streets') ? getStreetNums(gid) : getDSNums(gid);
+                    gSet.forEach(gn => pNums.add(gn));
+                });
+                fin.p.activeNumbers = Array.from(pNums);
+            }
+
+            // UNPREDICTED LOGIC
+            if(mode === 'straight') {
+                fin.u.activeNumbers = wheel.filter(n => !fin.p.activeNumbers.includes(n));
+                fin.u.activeGroups = [];
+            } else {
+                let maxGroups = (mode === 'streets') ? 12 : 6;
+                let uGroups = [];
+                for(let i=1; i<=maxGroups; i++) {
+                    if(!fin.p.activeGroups.includes(i)) uGroups.push(i);
+                }
+                fin.u.activeGroups = uGroups;
+                let uNums = new Set();
+                uGroups.forEach(gid => {
+                    let gSet = (mode === 'streets') ? getStreetNums(gid) : getDSNums(gid);
+                    gSet.forEach(gn => uNums.add(gn));
+                });
+                fin.u.activeNumbers = Array.from(uNums);
+            }
+            
+            renderNotations(mode);
         }
         updateUI();
     }
@@ -222,28 +253,36 @@
         return Array.from(s);
     }
 
-    function renderNotation(data, mode) {
-        let html = "";
-        data.forEach(item => {
-            let label = (mode === 'streets') ? "S" + item : (mode === 'double' ? "DS" + item : item);
-            html += `<div class="n-block">${label}</div>`;
+    function renderNotations(mode) {
+        ['p', 'u'].forEach(side => {
+            let html = "";
+            let data = (mode === 'straight') ? fin[side].activeNumbers : fin[side].activeGroups;
+            data.forEach(item => {
+                let label = (mode === 'streets') ? "S" + item : (mode === 'double' ? "DS" + item : item);
+                html += `<div class="${side}-block">${label}</div>`;
+            });
+            document.getElementById(side + 'Not').innerHTML = html;
         });
-        document.getElementById('pNot').innerHTML = html;
     }
 
     function updateUI() {
         const mode = document.getElementById('betType').value;
-        document.getElementById('pPL').innerText = fin.p.pl.toFixed(2);
-        document.getElementById('pPL').className = `val ${fin.p.pl >= 0 ? 'win' : 'loss'}`;
-        document.getElementById('pStake').innerText = fin.p.stake;
-        document.getElementById('pCount').innerText = (mode === 'straight') ? fin.p.activeNumbers.length : fin.p.activeGroups.length;
-        document.getElementById('pPct').innerText = fin.totalBets > 0 ? Math.round((fin.p.wins/fin.totalBets)*100) + "%" : "0%";
+        ['p', 'u'].forEach(s => {
+            document.getElementById(`${s}PL`).innerText = fin[s].pl.toFixed(2);
+            document.getElementById(`${s}PL`).className = `val ${fin[s].pl >= 0 ? 'win' : 'loss'}`;
+            document.getElementById(`${s}Stake`).innerText = fin[s].stake;
+            document.getElementById(`${s}Count`).innerText = (mode === 'straight') ? fin[s].activeNumbers.length : fin[s].activeGroups.length;
+            document.getElementById(`${s}Pct`).innerText = fin.totalBets > 0 ? Math.round((fin[s].wins/fin.totalBets)*100) + "%" : "0%";
+        });
         document.getElementById('histStrip').innerHTML = "History: " + history.slice(-12).join(" | ");
     }
 
     function clearZones() {
         fin.p.activeNumbers = []; fin.p.activeGroups = [];
-        document.getElementById('pNot').innerHTML = ""; updateUI();
+        fin.u.activeNumbers = []; fin.u.activeGroups = [];
+        document.getElementById('pNot').innerHTML = ""; 
+        document.getElementById('uNot').innerHTML = ""; 
+        updateUI();
     }
 </script>
 </body>
