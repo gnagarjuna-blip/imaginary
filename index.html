@@ -2,17 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Full Logic + Staged Progression</title>
+    <title>BIET - Full History Logic Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1100px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
-        /* Original Scanner Header */
         .header { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center; }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
 
-        /* Card Styling */
         .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; min-height: 400px; }
         .p-card { border-top: 5px solid #3498db; }
         .u-card { border-top: 5px solid #e67e22; }
@@ -29,19 +27,20 @@
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
         
         .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 80px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 5px; }
-        .n-block, .p-block, .u-block { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #333; }
-        .p-block { color: #3498db; } .u-block { color: #e67e22; }
+        .p-block { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #333; color: #3498db; }
+        .u-block { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #333; color: #e67e22; }
 
         .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
         .n-btn { padding: 12px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
         
         .bulk-area { grid-column: span 2; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        #bulkInput { width: 100%; height: 100px; background: #000; color: #3498db; border: 1px solid #444; border-radius: 8px; padding: 10px; font-family: monospace; resize: none; }
+        #bulkInput { width: 100%; height: 100px; background: #000; color: #3498db; border: 1px solid #444; border-radius: 8px; padding: 10px; font-family: monospace; }
         
         select, input { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 4px; font-size: 11px; }
-        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; font-size: 12px; margin-bottom: 10px;}
+        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; font-size: 12px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap;}
         .prog-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
+        .status-bar { padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; margin-top: 10px; background: #222; color: #888; }
     </style>
 </head>
 <body>
@@ -65,11 +64,11 @@
             </div>
 
             <div class="config-group">
-                <span class="label">Risk Limits</span>
+                <span class="label">Risk Management</span>
                 <span class="label" style="font-size:8px">Stop Bankroll</span>
                 <select id="sessionBank">
                     <option value="500">500</option><option value="1000" selected>1000</option>
-                    <option value="5000">5000</option><option value="10000">10000</option>
+                    <option value="2000">2000</option><option value="5000">5000</option>
                 </select>
                 <span class="label" style="font-size:8px; margin-top:5px">Max Bet/Spot</span>
                 <input type="number" id="maxBet" value="2000">
@@ -86,33 +85,32 @@
                 <span class="label">Exp (Neighbors)</span>
                 <select id="nExp" onchange="process()">
                     <option value="0">n0</option><option value="1">n1</option><option value="2" selected>n2</option>
-                    <option value="3">n3</option><option value="4">n4</option><option value="5">n5</option>
+                    <option value="3">n3</option><option value="4">n4</option>
                 </select>
                 <div style="margin-top:10px">
-                    <span class="label">Net P/L</span><br>
+                    <span class="label">Total Net P/L</span><br>
                     <span id="netTotal" class="val">0.00</span>
                 </div>
             </div>
         </div>
 
         <div class="freq-box">
-            <div id="box+10" class="freq-item"><span class="freq-lbl">+10 Hit</span><span id="f+10" class="freq-val">0</span></div>
-            <div id="box-10" class="freq-item"><span class="freq-lbl">-10 Hit</span><span id="f-10" class="freq-val">0</span></div>
-            <div id="box+1" class="freq-item"><span class="freq-lbl">+1 Hit</span><span id="f+1" class="freq-val">0</span></div>
-            <div id="box-1" class="freq-item"><span class="freq-lbl">-1 Hit</span><span id="f-1" class="freq-val">0</span></div>
-            <div class="freq-item"><span class="freq-lbl">Sample</span><span id="fSamp" class="freq-val">0/14</span></div>
+            <div id="box+10" class="freq-item"><span class="freq-lbl">+10 History</span><span id="f+10" class="freq-val">0</span></div>
+            <div id="box-10" class="freq-item"><span class="freq-lbl">-10 History</span><span id="f-10" class="freq-val">0</span></div>
+            <div id="box+1" class="freq-item"><span class="freq-lbl">+1 History</span><span id="f+1" class="freq-val">0</span></div>
+            <div id="box-1" class="freq-item"><span class="freq-lbl">-1 History</span><span id="f-1" class="freq-val">0</span></div>
+            <div class="freq-item"><span class="freq-lbl">Total Samples</span><span id="fSamp" class="freq-val">0</span></div>
         </div>
 
-        <div class="card p-card">
-            <span class="label" style="color:#3498db">Predicted Side (P)</span>
+        <div class="card p-card" id="pCardUI">
+            <span class="label" style="color:#3498db">Predicted (P)</span>
             <div class="prog-settings">
                 <div><span class="label" style="font-size:8px">Base Unit</span><input type="number" id="pBase" value="10"></div>
                 <div><span class="label" style="font-size:8px">Add Unit (+)</span><input type="number" id="pStep" value="10"></div>
-                <div><span class="label" style="font-size:8px">After X Loss</span>
+                <div><span class="label" style="font-size:8px">Incr. After X Loss</span>
                     <select id="pLossTrigger">
                         <option value="1">1 Loss</option><option value="2">2 Losses</option>
                         <option value="3" selected>3 Losses</option><option value="5">5 Losses</option>
-                        <option value="10">10 Losses</option>
                     </select>
                 </div>
                 <div><span class="label" style="font-size:8px">On Win</span>
@@ -126,12 +124,12 @@
             <div class="notation-area" id="pNot"></div>
         </div>
 
-        <div class="card u-card">
-            <span class="label" style="color:#e67e22">Unpredicted Side (U)</span>
+        <div class="card u-card" id="uCardUI">
+            <span class="label" style="color:#e67e22">Unpredicted (U)</span>
             <div class="prog-settings">
                 <div><span class="label" style="font-size:8px">Base Unit</span><input type="number" id="uBase" value="10"></div>
                 <div><span class="label" style="font-size:8px">Add Unit (+)</span><input type="number" id="uStep" value="10"></div>
-                <div><span class="label" style="font-size:8px">After X Loss</span>
+                <div><span class="label" style="font-size:8px">Incr. After X Loss</span>
                     <select id="uLossTrigger">
                         <option value="1" selected>1 Loss</option><option value="2">2 Losses</option>
                     </select>
@@ -151,15 +149,14 @@
         <div class="num-grid" id="grid"><button class="n-btn green" onclick="inputNum(0)">0</button></div>
 
         <div class="footer-tools" style="grid-column: span 2; display: flex; gap: 10px;">
-            <button class="tool-btn" style="background:#d35400; flex:1; padding:10px" onclick="undo()">Undo</button>
-            <button class="tool-btn" style="background:#333; flex:1; padding:10px" onclick="location.reload()">Reset Session</button>
+            <button class="tool-btn" style="background:#d35400; flex:1; padding:12px; border:0; border-radius:6px; cursor:pointer; color:white;" onclick="undo()">UNDO</button>
+            <button class="tool-btn" style="background:#333; flex:1; padding:12px; border:0; border-radius:6px; cursor:pointer; color:white;" onclick="location.reload()">RESET ALL</button>
         </div>
 
         <div class="bulk-area">
-            <span class="label" style="color:#3498db">Bulk Data Tester</span>
-            <textarea id="bulkInput" placeholder="Paste results here..."></textarea>
-            <button class="tool-btn" style="background:#27ae60; width:100%; margin-top:10px; padding:12px" onclick="runBulk()">Run Full Simulation</button>
-            <div id="bulkStatus" style="font-size:11px; color:#777; margin-top:5px; text-align:center">Simulation follows all scan and progression rules.</div>
+            <textarea id="bulkInput" placeholder="Paste all session results here..."></textarea>
+            <button class="tool-btn" style="background:#27ae60; width:100%; margin-top:10px; padding:12px; border:0; border-radius:6px; cursor:pointer; color:white; font-weight:bold" onclick="runBulk()">RUN FULL HISTORY SCAN</button>
+            <div id="bulkStatus" class="status-bar">READY FOR DATA</div>
         </div>
     </div>
 </div>
@@ -170,12 +167,10 @@
 
     let history = [], stateHistory = [], isLocked = false;
     let fin = {
-        p: { pl: 0, stake: 0, streak: 0, activeNumbers: [], activeGroups: [], activeRoots: [] },
-        u: { pl: 0, stake: 0, streak: 0, activeNumbers: [], activeGroups: [] },
-        totalBets: 0
+        p: { pl: 0, stake: 0, streak: 0, activeNumbers: [], activeGroups: [] },
+        u: { pl: 0, stake: 0, streak: 0, activeNumbers: [], activeGroups: [] }
     };
 
-    // UI Initialization
     const g = document.getElementById('grid');
     for(let i=1; i<=36; i++) {
         let b = document.createElement('button');
@@ -183,10 +178,10 @@
         b.onclick = () => inputNum(i); g.appendChild(b);
     }
 
-    function fullReset() { history = []; stateHistory = []; isLocked = false; fin.p.activeNumbers=[]; fin.u.activeNumbers=[]; updateUI(); }
+    function fullReset() { history = []; stateHistory = []; isLocked = false; fin.p.activeNumbers=[]; fin.u.activeNumbers=[]; updateUI(); document.getElementById('bulkStatus').style.background="#222"; }
 
     function inputNum(n) {
-        if(isLocked) { alert("Session Stopped. Check Limits."); return; }
+        if(isLocked) return;
         stateHistory.push(JSON.stringify({history, fin}));
 
         const mode = document.getElementById('betType').value;
@@ -194,12 +189,10 @@
 
         ['p', 'u'].forEach(side => {
             if (fin[side].activeNumbers.length > 0) {
-                if(side === 'p') fin.totalBets++;
                 const base = parseInt(document.getElementById(side+'Base').value);
                 const step = parseInt(document.getElementById(side+'Step').value);
                 const trigger = parseInt(document.getElementById(side+'LossTrigger').value);
                 const winAct = document.getElementById(side+'WinAction').value;
-                
                 const mult = (mode === 'straight') ? 36 : (mode === 'streets' ? 12 : 6);
                 const count = (mode === 'straight') ? fin[side].activeNumbers.length : fin[side].activeGroups.length;
 
@@ -217,7 +210,6 @@
             }
         });
 
-        // If P-side hit, clear current prediction
         if (fin.p.activeNumbers.includes(n)) { fin.p.activeNumbers = []; fin.p.activeGroups = []; }
 
         history.push(n);
@@ -228,16 +220,16 @@
 
     function calculateFreq() {
         let ops = {"+10":0, "-10":0, "+1":0, "-1":0};
-        let sample = history.slice(-15);
-        for(let i=0; i < sample.length - 1; i++) {
-            let prev = sample[i], curr = sample[i+1];
+        // Entire history scan
+        for(let i=0; i < history.length - 1; i++) {
+            let prev = history[i], curr = history[i+1];
             for(let op in ops) {
                 let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
                 if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(curr)) ops[op]++;
             }
         }
         for(let op in ops) document.getElementById('f'+op).innerText = ops[op];
-        document.getElementById('fSamp').innerText = Math.max(0, sample.length-1) + "/14";
+        document.getElementById('fSamp').innerText = Math.max(0, history.length - 1);
     }
 
     function process() {
@@ -323,10 +315,16 @@
         const bankroll = parseInt(document.getElementById('sessionBank').value) * -1;
         const target = parseInt(document.getElementById('targetProfit').value);
         const net = fin.p.pl + fin.u.pl;
-        if (net <= bankroll || net >= target) {
+        const bar = document.getElementById('bulkStatus');
+        
+        if (net <= bankroll) {
             isLocked = true;
-            document.getElementById('bulkStatus').innerText = net >= target ? "WINNER: TARGET HIT" : "STOP: BANKROLL HIT";
-            document.getElementById('bulkStatus').style.color = "#e74c3c";
+            bar.innerText = "SESSION STOPPED: BANKROLL HIT";
+            bar.style.background = "#c0392b"; bar.style.color = "white";
+        } else if (net >= target) {
+            isLocked = true;
+            bar.innerText = "SESSION STOPPED: TARGET PROFIT REACHED";
+            bar.style.background = "#27ae60"; bar.style.color = "white";
         }
     }
 
@@ -339,11 +337,12 @@
             document.getElementById(s+'StakeDisp').innerText = fin[s].stake;
             document.getElementById(s+'Streak').innerText = fin[s].streak;
         });
-        document.getElementById('histStrip').innerText = "History: " + history.slice(-15).join(" | ");
+        document.getElementById('histStrip').innerText = "History: " + history.join(" | ");
     }
 
     function runBulk() {
-        const nums = document.getElementById('bulkInput').value.match(/\b([0-9]|[12][0-9]|3[0-6])\b/g);
+        const input = document.getElementById('bulkInput').value;
+        const nums = input.match(/\b([0-9]|[12][0-9]|3[0-6])\b/g);
         if(!nums) return;
         nums.forEach(n => inputNum(parseInt(n)));
         updateUI();
@@ -353,7 +352,10 @@
         if(stateHistory.length > 0) {
             isLocked = false;
             let prev = JSON.parse(stateHistory.pop());
-            history = prev.history; fin = prev.fin; updateUI(); calculateFreq();
+            history = prev.history; fin = prev.fin; 
+            document.getElementById('bulkStatus').style.background="#222";
+            document.getElementById('bulkStatus').innerText="UNDO APPLIED";
+            updateUI(); calculateFreq();
         }
     }
 </script>
