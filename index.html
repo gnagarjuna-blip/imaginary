@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Operator Lock & Frequency Pro</title>
+    <title>BIET - Bulk Simulator Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
@@ -14,7 +14,6 @@
         
         .freq-box { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-around; align-items: center; }
         .freq-item { text-align: center; padding: 5px 15px; border-radius: 6px; transition: all 0.3s; border: 1px solid transparent; }
-        /* Highlight Class */
         .freq-active { background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
         .freq-val { font-size: 20px; font-weight: bold; color: #f1c40f; display: block; }
         .freq-lbl { font-size: 10px; color: #777; text-transform: uppercase; }
@@ -31,11 +30,16 @@
         .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
         .n-btn { padding: 12px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
-        .footer-tools { grid-column: span 2; display: flex; gap: 10px; }
-        .tool-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        
+        .footer-tools { grid-column: span 2; display: flex; gap: 10px; margin-bottom: 20px; }
+        .tool-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; }
         .btn-undo { background: #d35400; } .btn-reset { background: #333; }
+        
+        .bulk-area { grid-column: span 2; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
+        #bulkInput { width: 100%; height: 120px; background: #000; color: #3498db; border: 1px solid #444; border-radius: 8px; padding: 10px; font-family: monospace; margin-top: 10px; box-sizing: border-box; resize: vertical; }
+        
         select, input[type="number"] { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 5px; width: 100%; font-size: 12px; }
-        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; overflow-x: auto; font-size: 12px; }
+        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; overflow-x: auto; font-size: 12px; margin-bottom: 10px;}
         .prog-settings { display: flex; gap: 5px; margin-top: 5px; }
     </style>
 </head>
@@ -80,19 +84,16 @@
         <div class="card p-card">
             <div class="fin-row">
                 <div style="width:100%">
-                    <span class="label">Stake Controls</span>
+                    <span class="label">P-Side Progression (Base / Loss+ / Win-)</span>
                     <div class="prog-settings">
-                        <input type="number" id="pBase" value="10" title="Base Unit">
-                        <select id="pLossProg" title="Loss Progression Step">
+                        <input type="number" id="pBase" value="10">
+                        <select id="pLossProg">
                             <option value="0">L: 0 (Flat)</option>
-                            <option value="1" selected>L: +1</option><option value="2">L: +2</option><option value="3">L: +3</option>
-                            <option value="4">L: +4</option><option value="5">L: +5</option><option value="6">L: +6</option>
-                            <option value="8">L: +8</option><option value="10">L: +10</option><option value="12">L: +12</option>
+                            <option value="1" selected>L: +1</option><option value="2">L: +2</option>
+                            <option value="5">L: +5</option><option value="10">L: +10</option>
                         </select>
-                        <select id="pWinProg" title="Win Reduction Step">
-                            <option value="0">W: Reset</option>
-                            <option value="1">W: -1</option><option value="2">W: -2</option><option value="3">W: -3</option>
-                            <option value="4">W: -4</option><option value="5">W: -5</option><option value="6">W: -6</option>
+                        <select id="pWinProg">
+                            <option value="0">W: Reset</option><option value="1">W: -1</option>
                         </select>
                     </div>
                 </div>
@@ -106,15 +107,14 @@
         <div class="card u-card">
             <div class="fin-row">
                 <div style="width:100%">
-                    <span class="label">Stake Controls</span>
+                    <span class="label">U-Side Progression (Base / Loss+ / Win-)</span>
                     <div class="prog-settings">
                         <input type="number" id="uBase" value="10">
                         <select id="uLossProg">
                             <option value="0">L: 0</option><option value="1" selected>L: +1</option><option value="2">L: +2</option>
-                            <option value="4">L: +4</option><option value="6">L: +6</option><option value="12">L: +12</option>
                         </select>
                         <select id="uWinProg">
-                            <option value="0">W: Reset</option><option value="1">W: -1</option><option value="6">W: -6</option>
+                            <option value="0">W: Reset</option><option value="1">W: -1</option>
                         </select>
                     </div>
                 </div>
@@ -125,11 +125,21 @@
             <div class="notation-area" id="uNot"></div>
         </div>
 
-        <div class="num-grid" id="grid"><button class="n-btn green" onclick="inputNum(0)">0</button></div>
         <div class="history-strip" id="histStrip">History: ...</div>
+        <div class="num-grid" id="grid"><button class="n-btn green" onclick="inputNum(0)">0</button></div>
+
         <div class="footer-tools">
             <button class="tool-btn btn-undo" onclick="undo()">UNDO LAST</button>
             <button class="tool-btn btn-reset" onclick="location.reload()">RESET SESSION</button>
+        </div>
+
+        <div class="bulk-area">
+            <span class="label" style="color:#3498db">Bulk Data Tester (Up to 10,000 results)</span>
+            <textarea id="bulkInput" placeholder="Paste numbers here... e.g. 10, 2, 33, 14 or 5 12 0 32"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
+                <button class="tool-btn" style="background: #27ae60;" onclick="runBulk()">Run Simulation</button>
+                <div id="bulkStatus" style="font-size: 11px; color: #777; flex: 2;">Ready to simulate...</div>
+            </div>
         </div>
     </div>
 </div>
@@ -145,6 +155,7 @@
         totalBets: 0 
     };
 
+    // Initialize UI Grid
     const g = document.getElementById('grid');
     for(let i=1; i<=36; i++) {
         let b = document.createElement('button');
@@ -172,33 +183,42 @@
                 if (fin[side].activeNumbers.includes(n)) {
                     fin[side].pl += (fin[side].stake * multiplier) - (betCount * fin[side].stake);
                     fin[side].wins++;
-                    // Win Logic: If winStep is 0, reset to base. Else subtract step.
-                    if(winStep === 0) fin[side].stake = base;
-                    else fin[side].stake = Math.max(base, fin[side].stake - (base * winStep));
+                    fin[side].stake = (winStep === 0) ? base : Math.max(base, fin[side].stake - (base * winStep));
                 } else {
                     fin[side].pl -= (betCount * fin[side].stake);
-                    // Loss Logic: Add base * lossStep
                     fin[side].stake += (base * lossStep);
                 }
             }
         });
 
-        // Auto-clear logic for Predicted side on hit
-        if (fin.p.activeNumbers.includes(n)) {
-            fin.p.activeNumbers = []; fin.p.activeGroups = []; fin.p.activeRoots = [];
-        }
+        if (fin.p.activeNumbers.includes(n)) { fin.p.activeNumbers = []; fin.p.activeGroups = []; fin.p.activeRoots = []; }
 
         history.push(n);
         calculateFreq();
         process();
     }
 
+    function runBulk() {
+        const text = document.getElementById('bulkInput').value;
+        const nums = text.match(/\b([0-9]|[12][0-9]|3[0-6])\b/g);
+        
+        if(!nums) { alert("No valid numbers found!"); return; }
+        
+        const status = document.getElementById('bulkStatus');
+        status.innerText = `Processing ${nums.length} spins...`;
+
+        // Run simulation
+        nums.forEach(n => inputNum(parseInt(n)));
+        
+        status.innerText = `Simulation Finished. Processed ${nums.length} spins.`;
+        updateUI();
+    }
+
     function calculateFreq() {
         let ops = {"+10":0, "-10":0, "+1":0, "-1":0};
         let sample = history.slice(-15);
         for(let i=0; i < sample.length - 1; i++) {
-            let prev = sample[i];
-            let curr = sample[i+1];
+            let prev = sample[i], curr = sample[i+1];
             for(let op in ops) {
                 let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
                 if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(curr)) ops[op]++;
@@ -209,31 +229,19 @@
     }
 
     function process() {
-        // Clear previous highlights
         document.querySelectorAll('.freq-item').forEach(el => el.classList.remove('freq-active'));
-
         if(history.length < 2) { 
             if(history.length === 1) document.getElementById('lastNum').innerText = history[0];
             updateUI(); return; 
         }
-        const last = history[history.length-1];
-        const prev = history[history.length-2];
-        const nVal = parseInt(document.getElementById('nExp').value);
-        const mode = document.getElementById('betType').value;
-        const lock = document.getElementById('opLock').value;
+        const last = history[history.length-1], prev = history[history.length-2];
+        const nVal = parseInt(document.getElementById('nExp').value), mode = document.getElementById('betType').value, lock = document.getElementById('opLock').value;
         document.getElementById('lastNum').innerText = last;
 
-        let foundOp = null;
-        let scanList = (lock === "AUTO") ? ["+10","-10","+1","-1"] : [lock];
-
+        let foundOp = null, scanList = (lock === "AUTO") ? ["+10","-10","+1","-1"] : [lock];
         for(let op of scanList) {
             let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-            if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(last)) { 
-                foundOp = op; 
-                // Highlight the operator box
-                document.getElementById('box' + op).classList.add('freq-active');
-                break; 
-            }
+            if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(last)) { foundOp = op; document.getElementById('box' + op).classList.add('freq-active'); break; }
         }
 
         if(!foundOp) { 
@@ -242,12 +250,8 @@
         }
 
         let target = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
-        
         if(target >= 0 && target <= 36) {
-            let roots = [target, ...(neighbors[target]||[])];
-            let newNumbers = new Set();
-            let newGroups = new Set();
-            
+            let roots = [target, ...(neighbors[target]||[])], newNumbers = new Set(), newGroups = new Set();
             roots.forEach(r => {
                 let idx = wheel.indexOf(r);
                 for(let i=-nVal; i<=nVal; i++) {
@@ -257,7 +261,6 @@
                     else if (mode === 'double') newGroups.add(Math.ceil(num/6 || 0.1));
                 }
             });
-
             if (mode === 'streets') {
                 let cur = new Set(fin.p.activeGroups);
                 newGroups.forEach(g => cur.add(g));
@@ -265,43 +268,27 @@
             } else if (mode === 'double') {
                 fin.p.activeGroups = Array.from(newGroups).sort((a,b)=>a-b);
             } else {
-                fin.p.activeNumbers = Array.from(newNumbers);
-                fin.p.activeRoots = roots;
+                fin.p.activeNumbers = Array.from(newNumbers); fin.p.activeRoots = roots;
             }
-
             if(mode !== 'straight') {
-                let pNums = new Set();
-                fin.p.activeGroups.forEach(gid => {
-                    let size = (mode === 'streets') ? 3 : 6;
-                    for(let i=0; i<size; i++) {
-                        let n = (gid === 0) ? 0 : (gid*size)-i;
-                        if(n>=0 && n<=36) pNums.add(n);
-                    }
-                });
+                let pNums = new Set(), size = (mode === 'streets') ? 3 : 6;
+                fin.p.activeGroups.forEach(gid => { for(let i=0; i<size; i++) { let n = (gid === 0) ? 0 : (gid*size)-i; if(n>=0 && n<=36) pNums.add(n); } });
                 fin.p.activeNumbers = Array.from(pNums);
             }
-            syncUnpredicted(mode);
-            renderNotations(mode);
+            syncUnpredicted(mode); renderNotations(mode);
         }
         updateUI();
     }
 
     function syncUnpredicted(mode) {
         fin.u.activeNumbers = wheel.filter(n => !fin.p.activeNumbers.includes(n));
-        if(mode === 'streets' || mode === 'double') {
-            let max = (mode === 'streets') ? 12 : 6;
-            fin.u.activeGroups = [];
-            for(let i=1; i<=max; i++) if(!fin.p.activeGroups.includes(i)) fin.u.activeGroups.push(i);
-        }
+        let max = (mode === 'streets') ? 12 : 6; fin.u.activeGroups = [];
+        if(mode !== 'straight') for(let i=1; i<=max; i++) if(!fin.p.activeGroups.includes(i)) fin.u.activeGroups.push(i);
     }
 
     function getWheelArea(t, n) {
-        let s = new Set();
-        let pts = [t, ...(neighbors[t]||[])];
-        pts.forEach(p => {
-            let idx = wheel.indexOf(p);
-            for(let i=-n; i<=n; i++) s.add(wheel[(idx+i+37)%37]);
-        });
+        let s = new Set(), pts = [t, ...(neighbors[t]||[])];
+        pts.forEach(p => { let idx = wheel.indexOf(p); for(let i=-n; i<=n; i++) s.add(wheel[(idx+i+37)%37]); });
         return Array.from(s);
     }
 
@@ -323,14 +310,13 @@
     }
 
     function updateUI() {
-        const mode = document.getElementById('betType').value;
         ['p', 'u'].forEach(s => {
             document.getElementById(`${s}PL`).innerText = fin[s].pl.toFixed(2);
             document.getElementById(`${s}PL`).className = `val ${fin[s].pl >= 0 ? 'win' : 'loss'}`;
             document.getElementById(`${s}StakeDisp`).innerText = fin[s].stake;
             document.getElementById(`${s}Pct`).innerText = fin.totalBets > 0 ? Math.round((fin[s].wins/fin.totalBets)*100) + "%" : "0%";
         });
-        document.getElementById('histStrip').innerHTML = "History: " + history.slice(-12).join(" | ");
+        document.getElementById('histStrip').innerHTML = "History: " + history.slice(-15).join(" | ");
     }
 
     function undo() {
