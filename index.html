@@ -2,41 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Advanced Staged Progression & Risk Control</title>
+    <title>BIET - Full Logic + Staged Progression</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1100px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         
-        .header { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: center; }
+        /* Original Scanner Header */
+        .header { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center; }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
-        
+
+        /* Card Styling */
         .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; min-height: 400px; }
         .p-card { border-top: 5px solid #3498db; }
         .u-card { border-top: 5px solid #e67e22; }
         
+        .freq-box { grid-column: span 2; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-around; }
+        .freq-item { text-align: center; padding: 5px 15px; border-radius: 6px; }
+        .freq-active { background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; }
+        .freq-val { font-size: 18px; font-weight: bold; color: #f1c40f; display: block; }
+        .freq-lbl { font-size: 9px; color: #777; text-transform: uppercase; }
+
         .fin-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 5px; }
         .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
         .val { font-family: monospace; font-weight: bold; font-size: 18px; }
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
         
         .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 80px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 5px; }
-        .n-block, .p-block, .u-block { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid #333; }
+        .n-block, .p-block, .u-block { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #333; }
         .p-block { color: #3498db; } .u-block { color: #e67e22; }
 
         .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
         .n-btn { padding: 12px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
         
-        .footer-tools { grid-column: span 2; display: flex; gap: 10px; margin-bottom: 20px; }
-        .tool-btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; }
-        
         .bulk-area { grid-column: span 2; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
         #bulkInput { width: 100%; height: 100px; background: #000; color: #3498db; border: 1px solid #444; border-radius: 8px; padding: 10px; font-family: monospace; resize: none; }
         
         select, input { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 4px; font-size: 11px; }
         .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; font-size: 12px; margin-bottom: 10px;}
-        .prog-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
+        .prog-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -45,55 +50,78 @@
     <div class="grid">
         <div class="header">
             <div class="config-group">
-                <span class="label">Table Limits & Global Stop</span>
-                <div style="display:flex; gap:5px">
-                    <div style="flex:1"><span class="label" style="font-size:8px">Max Bet/Spot</span>
-                    <input type="number" id="maxBet" value="5000"></div>
-                    <div style="flex:1"><span class="label" style="font-size:8px">Session Bankroll</span>
-                    <select id="sessionBank">
-                        <option value="500">500</option><option value="1000" selected>1000</option>
-                        <option value="5000">5000</option><option value="10000">10000</option>
-                    </select></div>
+                <span class="label">Bet Mode</span>
+                <select id="betType" onchange="fullReset()">
+                    <option value="straight">Straight Up</option>
+                    <option value="streets">Streets</option>
+                    <option value="double" selected>Double Streets</option>
+                </select>
+                <span class="label" style="margin-top:5px">Op Lock</span>
+                <select id="opLock" onchange="process()">
+                    <option value="AUTO">AUTO SCAN</option>
+                    <option value="+10">+10 Lock</option><option value="-10">-10 Lock</option>
+                    <option value="+1">+1 Lock</option><option value="-1">-1 Lock</option>
+                </select>
+            </div>
+
+            <div class="config-group">
+                <span class="label">Risk Limits</span>
+                <span class="label" style="font-size:8px">Stop Bankroll</span>
+                <select id="sessionBank">
+                    <option value="500">500</option><option value="1000" selected>1000</option>
+                    <option value="5000">5000</option><option value="10000">10000</option>
+                </select>
+                <span class="label" style="font-size:8px; margin-top:5px">Max Bet/Spot</span>
+                <input type="number" id="maxBet" value="2000">
+            </div>
+
+            <div class="config-group" style="text-align:center">
+                <span class="label">Last Ball</span>
+                <div id="lastNum" style="font-size:24px; font-weight:bold; color:#f1c40f">--</div>
+                <span class="label">Target Profit</span>
+                <input type="number" id="targetProfit" value="500">
+            </div>
+
+            <div class="config-group" style="text-align:right">
+                <span class="label">Exp (Neighbors)</span>
+                <select id="nExp" onchange="process()">
+                    <option value="0">n0</option><option value="1">n1</option><option value="2" selected>n2</option>
+                    <option value="3">n3</option><option value="4">n4</option><option value="5">n5</option>
+                </select>
+                <div style="margin-top:10px">
+                    <span class="label">Net P/L</span><br>
+                    <span id="netTotal" class="val">0.00</span>
                 </div>
             </div>
+        </div>
 
-            <div class="config-group" style="border-left: 1px solid #333; padding-left: 15px; border-right: 1px solid #333; padding-right: 15px; text-align:center;">
-                <span class="label">Strategy & Target</span>
-                <select id="betType" onchange="fullReset()">
-                    <option value="double" selected>Double Streets</option>
-                    <option value="streets">Single Streets</option>
-                    <option value="straight">Straight Up</option>
-                </select>
-                <div style="margin-top:5px"><span class="label">Target:</span> 
-                <input type="number" id="targetProfit" value="200" style="width:60px"></div>
-            </div>
-
-            <div class="config-group" style="text-align:right;">
-                <span class="label">Net Performance</span>
-                <div id="netTotal" class="val" style="font-size:24px">0.00</div>
-                <div id="lastNum" style="color:#f1c40f; font-weight:bold">Last: --</div>
-            </div>
+        <div class="freq-box">
+            <div id="box+10" class="freq-item"><span class="freq-lbl">+10 Hit</span><span id="f+10" class="freq-val">0</span></div>
+            <div id="box-10" class="freq-item"><span class="freq-lbl">-10 Hit</span><span id="f-10" class="freq-val">0</span></div>
+            <div id="box+1" class="freq-item"><span class="freq-lbl">+1 Hit</span><span id="f+1" class="freq-val">0</span></div>
+            <div id="box-1" class="freq-item"><span class="freq-lbl">-1 Hit</span><span id="f-1" class="freq-val">0</span></div>
+            <div class="freq-item"><span class="freq-lbl">Sample</span><span id="fSamp" class="freq-val">0/14</span></div>
         </div>
 
         <div class="card p-card">
             <span class="label" style="color:#3498db">Predicted Side (P)</span>
             <div class="prog-settings">
                 <div><span class="label" style="font-size:8px">Base Unit</span><input type="number" id="pBase" value="10"></div>
-                <div><span class="label" style="font-size:8px">Unit Incr. (+)</span><input type="number" id="pStep" value="10"></div>
-                <div><span class="label" style="font-size:8px">Incr. After X Loss</span>
+                <div><span class="label" style="font-size:8px">Add Unit (+)</span><input type="number" id="pStep" value="10"></div>
+                <div><span class="label" style="font-size:8px">After X Loss</span>
                     <select id="pLossTrigger">
                         <option value="1">1 Loss</option><option value="2">2 Losses</option>
                         <option value="3" selected>3 Losses</option><option value="5">5 Losses</option>
                         <option value="10">10 Losses</option>
                     </select>
                 </div>
-                <div><span class="label" style="font-size:8px">Win Action</span>
+                <div><span class="label" style="font-size:8px">On Win</span>
                     <select id="pWinAction"><option value="reset">Reset</option><option value="reduce">Reduce -1</option></select>
                 </div>
             </div>
             <hr style="border:0; border-top:1px solid #222; margin:10px 0;">
             <div class="fin-row"><span class="label">P/L</span><span id="pPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Current Stake</span><span id="pStakeDisp" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Stake</span><span id="pStakeDisp" class="val">0</span></div>
             <div class="fin-row"><span class="label">Loss Streak</span><span id="pStreak" class="val">0</span></div>
             <div class="notation-area" id="pNot"></div>
         </div>
@@ -102,19 +130,19 @@
             <span class="label" style="color:#e67e22">Unpredicted Side (U)</span>
             <div class="prog-settings">
                 <div><span class="label" style="font-size:8px">Base Unit</span><input type="number" id="uBase" value="10"></div>
-                <div><span class="label" style="font-size:8px">Unit Incr. (+)</span><input type="number" id="uStep" value="10"></div>
-                <div><span class="label" style="font-size:8px">Incr. After X Loss</span>
+                <div><span class="label" style="font-size:8px">Add Unit (+)</span><input type="number" id="uStep" value="10"></div>
+                <div><span class="label" style="font-size:8px">After X Loss</span>
                     <select id="uLossTrigger">
                         <option value="1" selected>1 Loss</option><option value="2">2 Losses</option>
                     </select>
                 </div>
-                <div><span class="label" style="font-size:8px">Win Action</span>
+                <div><span class="label" style="font-size:8px">On Win</span>
                     <select id="uWinAction"><option value="reset">Reset</option><option value="reduce">Reduce -1</option></select>
                 </div>
             </div>
             <hr style="border:0; border-top:1px solid #222; margin:10px 0;">
             <div class="fin-row"><span class="label">P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Current Stake</span><span id="uStakeDisp" class="val">10</span></div>
+            <div class="fin-row"><span class="label">Stake</span><span id="uStakeDisp" class="val">0</span></div>
             <div class="fin-row"><span class="label">Loss Streak</span><span id="uStreak" class="val">0</span></div>
             <div class="notation-area" id="uNot"></div>
         </div>
@@ -122,30 +150,32 @@
         <div class="history-strip" id="histStrip">History: ...</div>
         <div class="num-grid" id="grid"><button class="n-btn green" onclick="inputNum(0)">0</button></div>
 
-        <div class="footer-tools">
-            <button class="tool-btn" style="background:#d35400" onclick="undo()">Undo</button>
-            <button class="tool-btn" style="background:#333" onclick="location.reload()">Reset</button>
+        <div class="footer-tools" style="grid-column: span 2; display: flex; gap: 10px;">
+            <button class="tool-btn" style="background:#d35400; flex:1; padding:10px" onclick="undo()">Undo</button>
+            <button class="tool-btn" style="background:#333; flex:1; padding:10px" onclick="location.reload()">Reset Session</button>
         </div>
 
         <div class="bulk-area">
-            <span class="label" style="color:#3498db">Bulk Simulation</span>
-            <textarea id="bulkInput" placeholder="Paste numbers here..."></textarea>
-            <button class="tool-btn" style="background:#27ae60; width:100%; margin-top:10px" onclick="runBulk()">Run Staged Simulation</button>
-            <div id="bulkStatus" style="font-size:11px; color:#777; margin-top:5px">Ready. Settings will apply spin-by-spin.</div>
+            <span class="label" style="color:#3498db">Bulk Data Tester</span>
+            <textarea id="bulkInput" placeholder="Paste results here..."></textarea>
+            <button class="tool-btn" style="background:#27ae60; width:100%; margin-top:10px; padding:12px" onclick="runBulk()">Run Full Simulation</button>
+            <div id="bulkStatus" style="font-size:11px; color:#777; margin-top:5px; text-align:center">Simulation follows all scan and progression rules.</div>
         </div>
     </div>
 </div>
 
 <script>
     const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    const neighbors = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
+
     let history = [], stateHistory = [], isLocked = false;
-    
     let fin = {
-        p: { pl: 0, stake: 0, streak: 0, activeNumbers: [] },
-        u: { pl: 0, stake: 0, streak: 0, activeNumbers: [] }
+        p: { pl: 0, stake: 0, streak: 0, activeNumbers: [], activeGroups: [], activeRoots: [] },
+        u: { pl: 0, stake: 0, streak: 0, activeNumbers: [], activeGroups: [] },
+        totalBets: 0
     };
 
-    // UI Init
+    // UI Initialization
     const g = document.getElementById('grid');
     for(let i=1; i<=36; i++) {
         let b = document.createElement('button');
@@ -153,58 +183,163 @@
         b.onclick = () => inputNum(i); g.appendChild(b);
     }
 
+    function fullReset() { history = []; stateHistory = []; isLocked = false; fin.p.activeNumbers=[]; fin.u.activeNumbers=[]; updateUI(); }
+
     function inputNum(n) {
-        if(isLocked) return;
+        if(isLocked) { alert("Session Stopped. Check Limits."); return; }
         stateHistory.push(JSON.stringify({history, fin}));
-        
+
         const mode = document.getElementById('betType').value;
         const maxLimit = parseInt(document.getElementById('maxBet').value);
 
         ['p', 'u'].forEach(side => {
             if (fin[side].activeNumbers.length > 0) {
+                if(side === 'p') fin.totalBets++;
                 const base = parseInt(document.getElementById(side+'Base').value);
-                const stepSize = parseInt(document.getElementById(side+'Step').value);
+                const step = parseInt(document.getElementById(side+'Step').value);
                 const trigger = parseInt(document.getElementById(side+'LossTrigger').value);
                 const winAct = document.getElementById(side+'WinAction').value;
                 
                 const mult = (mode === 'straight') ? 36 : (mode === 'streets' ? 12 : 6);
-                const betCount = (mode === 'straight') ? fin[side].activeNumbers.length : (mode === 'streets' ? Math.ceil(fin[side].activeNumbers.length/3) : Math.ceil(fin[side].activeNumbers.length/6));
+                const count = (mode === 'straight') ? fin[side].activeNumbers.length : fin[side].activeGroups.length;
 
-                // Initialize stake if first bet
                 if(fin[side].stake === 0) fin[side].stake = base;
 
                 if (fin[side].activeNumbers.includes(n)) {
-                    // WIN
-                    fin[side].pl += (fin[side].stake * mult) - (betCount * fin[side].stake);
+                    fin[side].pl += (fin[side].stake * mult) - (count * fin[side].stake);
                     fin[side].streak = 0;
-                    fin[side].stake = (winAct === 'reset') ? base : Math.max(base, fin[side].stake - stepSize);
+                    fin[side].stake = (winAct === 'reset') ? base : Math.max(base, fin[side].stake - step);
                 } else {
-                    // LOSS
-                    fin[side].pl -= (betCount * fin[side].stake);
+                    fin[side].pl -= (count * fin[side].stake);
                     fin[side].streak++;
-                    // Staged Progression logic
-                    if (fin[side].streak % trigger === 0) {
-                        fin[side].stake = Math.min(maxLimit, fin[side].stake + stepSize);
-                    }
+                    if(fin[side].streak % trigger === 0) fin[side].stake = Math.min(maxLimit, fin[side].stake + step);
                 }
             }
         });
 
+        // If P-side hit, clear current prediction
+        if (fin.p.activeNumbers.includes(n)) { fin.p.activeNumbers = []; fin.p.activeGroups = []; }
+
         history.push(n);
-        process(n);
+        calculateFreq();
+        process();
         checkGlobalLimits();
+    }
+
+    function calculateFreq() {
+        let ops = {"+10":0, "-10":0, "+1":0, "-1":0};
+        let sample = history.slice(-15);
+        for(let i=0; i < sample.length - 1; i++) {
+            let prev = sample[i], curr = sample[i+1];
+            for(let op in ops) {
+                let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
+                if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(curr)) ops[op]++;
+            }
+        }
+        for(let op in ops) document.getElementById('f'+op).innerText = ops[op];
+        document.getElementById('fSamp').innerText = Math.max(0, sample.length-1) + "/14";
+    }
+
+    function process() {
+        document.querySelectorAll('.freq-item').forEach(el => el.classList.remove('freq-active'));
+        if(history.length < 2) { 
+            if(history.length === 1) document.getElementById('lastNum').innerText = history[0];
+            updateUI(); return; 
+        }
+
+        const last = history[history.length-1], prev = history[history.length-2];
+        const nVal = parseInt(document.getElementById('nExp').value);
+        const mode = document.getElementById('betType').value;
+        const lock = document.getElementById('opLock').value;
+        document.getElementById('lastNum').innerText = last;
+
+        let foundOp = null;
+        let scanList = (lock === "AUTO") ? ["+10","-10","+1","-1"] : [lock];
+
+        for(let op of scanList) {
+            let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
+            if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(last)) { foundOp = op; document.getElementById('box' + op).classList.add('freq-active'); break; }
+        }
+
+        if(!foundOp) {
+            if(mode !== 'streets') { fin.p.activeNumbers = []; fin.p.activeGroups = []; }
+            syncU(mode); renderNotations(mode); updateUI(); return;
+        }
+
+        let target = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
+        if(target >=0 && target <= 36) {
+            let roots = [target, ...(neighbors[target]||[])];
+            let nSet = new Set(), gSet = new Set();
+            roots.forEach(r => {
+                let idx = wheel.indexOf(r);
+                for(let i=-nVal; i<=nVal; i++) {
+                    let num = wheel[(idx+i+37)%37];
+                    if(mode === 'straight') nSet.add(num);
+                    else if(mode === 'streets') gSet.add(Math.ceil(num/3 || 0.1));
+                    else gSet.add(Math.ceil(num/6 || 0.1));
+                }
+            });
+
+            if(mode === 'streets') {
+                let cur = new Set(fin.p.activeGroups);
+                gSet.forEach(g => cur.add(g));
+                fin.p.activeGroups = Array.from(cur);
+            } else if(mode === 'double') {
+                fin.p.activeGroups = Array.from(gSet);
+            } else {
+                fin.p.activeNumbers = Array.from(nSet);
+            }
+
+            if(mode !== 'straight') {
+                let pNums = new Set(), size = (mode === 'streets' ? 3 : 6);
+                fin.p.activeGroups.forEach(gid => { for(let i=0; i<size; i++) { let n = (gid===0)?0:(gid*size)-i; if(n>=0 && n<=36) pNums.add(n); } });
+                fin.p.activeNumbers = Array.from(pNums);
+            }
+            syncU(mode); renderNotations(mode);
+        }
+        updateUI();
+    }
+
+    function syncU(mode) {
+        fin.u.activeNumbers = wheel.filter(n => !fin.p.activeNumbers.includes(n));
+        let max = (mode === 'streets' ? 12 : 6); fin.u.activeGroups = [];
+        if(mode !== 'straight') for(let i=1; i<=max; i++) if(!fin.p.activeGroups.includes(i)) fin.u.activeGroups.push(i);
+    }
+
+    function getWheelArea(t, n) {
+        let s = new Set(), pts = [t, ...(neighbors[t]||[])];
+        pts.forEach(p => { let idx = wheel.indexOf(p); for(let i=-n; i<=n; i++) s.add(wheel[(idx+i+37)%37]); });
+        return Array.from(s);
+    }
+
+    function renderNotations(mode) {
+        ['p', 'u'].forEach(side => {
+            let data = (mode === 'straight') ? fin[side].activeNumbers : fin[side].activeGroups;
+            document.getElementById(side+'Not').innerHTML = data.map(item => `<div class="${side}-block">${(mode!=='straight'?'G':'')+item}</div>`).join('');
+        });
     }
 
     function checkGlobalLimits() {
         const bankroll = parseInt(document.getElementById('sessionBank').value) * -1;
         const target = parseInt(document.getElementById('targetProfit').value);
         const net = fin.p.pl + fin.u.pl;
-
         if (net <= bankroll || net >= target) {
             isLocked = true;
-            document.getElementById('bulkStatus').innerText = net >= target ? "TARGET REACHED!" : "BANKROLL EXHAUSTED!";
+            document.getElementById('bulkStatus').innerText = net >= target ? "WINNER: TARGET HIT" : "STOP: BANKROLL HIT";
             document.getElementById('bulkStatus').style.color = "#e74c3c";
         }
+    }
+
+    function updateUI() {
+        const net = fin.p.pl + fin.u.pl;
+        document.getElementById('netTotal').innerText = net.toFixed(2);
+        document.getElementById('netTotal').className = `val ${net >= 0 ? 'win' : 'loss'}`;
+        ['p', 'u'].forEach(s => {
+            document.getElementById(s+'PL').innerText = fin[s].pl.toFixed(2);
+            document.getElementById(s+'StakeDisp').innerText = fin[s].stake;
+            document.getElementById(s+'Streak').innerText = fin[s].streak;
+        });
+        document.getElementById('histStrip').innerText = "History: " + history.slice(-15).join(" | ");
     }
 
     function runBulk() {
@@ -214,46 +349,11 @@
         updateUI();
     }
 
-    function process(last) {
-        // Simple logic for simulation (last number neighbors)
-        const mode = document.getElementById('betType').value;
-        document.getElementById('lastNum').innerText = "Last: " + last;
-        
-        // Example logic: bet on neighbors of last number
-        let target = last;
-        let neighbors = [target, wheel[(wheel.indexOf(target)+1)%37], wheel[(wheel.indexOf(target)+36)%37]];
-        
-        fin.p.activeNumbers = neighbors; 
-        fin.u.activeNumbers = wheel.filter(x => !neighbors.includes(x));
-        
-        renderNotations();
-        updateUI();
-    }
-
-    function renderNotations() {
-        ['p', 'u'].forEach(side => {
-            document.getElementById(side+'Not').innerHTML = fin[side].activeNumbers.map(n => `<div class="${side}-block">${n}</div>`).join('');
-        });
-    }
-
-    function updateUI() {
-        const net = fin.p.pl + fin.u.pl;
-        document.getElementById('netTotal').innerText = net.toFixed(2);
-        document.getElementById('netTotal').className = `val ${net >= 0 ? 'win' : 'loss'}`;
-
-        ['p', 'u'].forEach(s => {
-            document.getElementById(s+'PL').innerText = fin[s].pl.toFixed(2);
-            document.getElementById(s+'StakeDisp').innerText = fin[s].stake;
-            document.getElementById(s+'Streak').innerText = fin[s].streak;
-        });
-        document.getElementById('histStrip').innerText = "History: " + history.slice(-15).join(" | ");
-    }
-
     function undo() {
         if(stateHistory.length > 0) {
             isLocked = false;
             let prev = JSON.parse(stateHistory.pop());
-            history = prev.history; fin = prev.fin; updateUI();
+            history = prev.history; fin = prev.fin; updateUI(); calculateFreq();
         }
     }
 </script>
