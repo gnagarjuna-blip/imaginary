@@ -2,21 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Bulk Simulator Pro</title>
+    <title>BIET - Bulk Simulator Pro (Bankroll Edition)</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1000px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .header { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center; }
+        
+        /* Updated Header for Bankroll Settings */
+        .header { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: center; }
+        .config-group { display: flex; flex-direction: column; gap: 5px; }
+        
         .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; min-height: 350px; }
         .p-card { border-top: 5px solid #3498db; }
         .u-card { border-top: 5px solid #e67e22; }
         
-        .freq-box { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-around; align-items: center; }
-        .freq-item { text-align: center; padding: 5px 15px; border-radius: 6px; transition: all 0.3s; border: 1px solid transparent; }
-        .freq-active { background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
-        .freq-val { font-size: 20px; font-weight: bold; color: #f1c40f; display: block; }
-        .freq-lbl { font-size: 10px; color: #777; text-transform: uppercase; }
+        .freq-box { grid-column: span 2; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-around; align-items: center; }
+        .freq-item { text-align: center; padding: 5px; }
+        .freq-active { background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; border-radius: 6px; }
+        .freq-val { font-size: 18px; font-weight: bold; color: #f1c40f; display: block; }
+        .freq-lbl { font-size: 9px; color: #777; text-transform: uppercase; }
 
         .fin-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 5px; }
         .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
@@ -41,6 +45,9 @@
         select, input[type="number"] { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 5px; width: 100%; font-size: 12px; }
         .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; overflow-x: auto; font-size: 12px; margin-bottom: 10px;}
         .prog-settings { display: flex; gap: 5px; margin-top: 5px; }
+        
+        .limit-hit { border: 2px solid #e74c3c !important; animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(5px); } 50% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
     </style>
 </head>
 <body>
@@ -48,14 +55,13 @@
 <div class="container">
     <div class="grid">
         <div class="header">
-            <div><span class="label">Bet Mode</span><br>
+            <div class="config-group">
+                <span class="label">Betting Strategy</span>
                 <select id="betType" onchange="fullReset()">
                     <option value="straight">Straight Up (Nbr)</option>
                     <option value="streets">Streets (Acc)</option>
                     <option value="double" selected>Double Streets (No Acc)</option>
                 </select>
-            </div>
-            <div><span class="label">Op Lock</span><br>
                 <select id="opLock" onchange="process()">
                     <option value="AUTO">AUTO SCAN</option>
                     <option value="+10">+10 Lock</option>
@@ -64,12 +70,28 @@
                     <option value="-1">-1 Lock</option>
                 </select>
             </div>
-            <div style="text-align:center"><span class="label">Last Ball</span><div id="lastNum" style="font-size:24px; font-weight:bold; color:#f1c40f">--</div></div>
-            <div><span class="label">Exp</span><br>
+
+            <div class="config-group" style="border-left: 1px solid #333; padding-left: 15px; border-right: 1px solid #333; padding-right: 15px;">
+                <span class="label" style="color:#e74c3c">Risk Management</span>
+                <div style="display:flex; gap:5px;">
+                    <div style="flex:1"><span class="label" style="font-size:8px;">Bankroll (Stop Loss)</span>
+                    <input type="number" id="stopLoss" value="1000" placeholder="1000"></div>
+                    <div style="flex:1"><span class="label" style="font-size:8px;">Target (Stop Profit)</span>
+                    <input type="number" id="stopProfit" value="500" placeholder="500"></div>
+                </div>
+                <div style="text-align:center; margin-top:5px;"><span class="label">Last:</span> <span id="lastNum" style="font-size:18px; font-weight:bold; color:#f1c40f">--</span></div>
+            </div>
+
+            <div class="config-group">
+                <span class="label">Wheel Neighbors (Exp)</span>
                 <select id="nExp" onchange="process()">
                     <option value="0">n0</option><option value="1">n1</option><option value="2" selected>n2</option>
                     <option value="3">n3</option><option value="4">n4</option><option value="5">n5</option>
                 </select>
+                <div style="margin-top:5px; text-align:center">
+                    <span class="label">Total Net P/L:</span><br>
+                    <span id="netTotal" class="val">0.00</span>
+                </div>
             </div>
         </div>
 
@@ -81,19 +103,19 @@
             <div class="freq-item"><span class="freq-lbl">Sample</span><span id="fSamp" class="freq-val">0/14</span></div>
         </div>
 
-        <div class="card p-card">
+        <div class="card p-card" id="pCard">
             <div class="fin-row">
                 <div style="width:100%">
-                    <span class="label">P-Side Progression (Base / Loss+ / Win-)</span>
+                    <span class="label">P-Side Progression</span>
                     <div class="prog-settings">
                         <input type="number" id="pBase" value="10">
                         <select id="pLossProg">
-                            <option value="0">L: 0 (Flat)</option>
-                            <option value="1" selected>L: +1</option><option value="2">L: +2</option>
-                            <option value="5">L: +5</option><option value="10">L: +10</option>
+                            <option value="0">Flat</option>
+                            <option value="1" selected>+1 Base</option><option value="2">+2 Base</option>
+                            <option value="5">+5 Base</option>
                         </select>
                         <select id="pWinProg">
-                            <option value="0">W: Reset</option><option value="1">W: -1</option>
+                            <option value="0">W: Reset</option><option value="1">W: -1 Step</option>
                         </select>
                     </div>
                 </div>
@@ -104,17 +126,17 @@
             <div class="notation-area" id="pNot"></div>
         </div>
 
-        <div class="card u-card">
+        <div class="card u-card" id="uCard">
             <div class="fin-row">
                 <div style="width:100%">
-                    <span class="label">U-Side Progression (Base / Loss+ / Win-)</span>
+                    <span class="label">U-Side Progression</span>
                     <div class="prog-settings">
                         <input type="number" id="uBase" value="10">
                         <select id="uLossProg">
-                            <option value="0">L: 0</option><option value="1" selected>L: +1</option><option value="2">L: +2</option>
+                            <option value="0">Flat</option><option value="1" selected>+1 Base</option><option value="2">+2 Base</option>
                         </select>
                         <select id="uWinProg">
-                            <option value="0">W: Reset</option><option value="1">W: -1</option>
+                            <option value="0">W: Reset</option><option value="1">W: -1 Step</option>
                         </select>
                     </div>
                 </div>
@@ -134,11 +156,11 @@
         </div>
 
         <div class="bulk-area">
-            <span class="label" style="color:#3498db">Bulk Data Tester (Up to 10,000 results)</span>
-            <textarea id="bulkInput" placeholder="Paste numbers here... e.g. 10, 2, 33, 14 or 5 12 0 32"></textarea>
+            <span class="label" style="color:#3498db">Bulk Simulation Module</span>
+            <textarea id="bulkInput" placeholder="Paste 10,000 results here..."></textarea>
             <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
-                <button class="tool-btn" style="background: #27ae60;" onclick="runBulk()">Run Simulation</button>
-                <div id="bulkStatus" style="font-size: 11px; color: #777; flex: 2;">Ready to simulate...</div>
+                <button id="bulkBtn" class="tool-btn" style="background: #27ae60;" onclick="runBulk()">Run Simulation</button>
+                <div id="bulkStatus" style="font-size: 11px; color: #777; flex: 2;">Bankroll limits apply during simulation.</div>
             </div>
         </div>
     </div>
@@ -149,13 +171,13 @@
     const neighbors = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
 
     let history = [], stateHistory = [];
+    let isLocked = false;
     let fin = { 
         p: { pl: 0, stake: 10, wins: 0, activeNumbers: [], activeGroups: [], activeRoots: [] }, 
         u: { pl: 0, stake: 10, wins: 0, activeNumbers: [], activeGroups: [] },
         totalBets: 0 
     };
 
-    // Initialize UI Grid
     const g = document.getElementById('grid');
     for(let i=1; i<=36; i++) {
         let b = document.createElement('button');
@@ -163,9 +185,11 @@
         b.onclick = () => inputNum(i); g.appendChild(b);
     }
 
-    function fullReset() { history = []; stateHistory = []; clearZones(); updateUI(); }
+    function fullReset() { isLocked = false; history = []; stateHistory = []; clearZones(); updateUI(); }
 
     function inputNum(n) {
+        if(isLocked) { alert("Session Stopped: Bankroll limit reached. Reset to continue."); return; }
+
         stateHistory.push(JSON.stringify({history, fin}));
         const mode = document.getElementById('betType').value;
 
@@ -196,21 +220,35 @@
         history.push(n);
         calculateFreq();
         process();
+        checkLimits();
+    }
+
+    function checkLimits() {
+        const stopLoss = parseFloat(document.getElementById('stopLoss').value) * -1;
+        const stopProfit = parseFloat(document.getElementById('stopProfit').value);
+        const netP = fin.p.pl;
+        const netU = fin.u.pl;
+
+        if (netP <= stopLoss || netU <= stopLoss) {
+            isLocked = true;
+            document.getElementById('bulkStatus').innerText = "STOPPED: Bankroll Limit Hit.";
+            document.getElementById('bulkStatus').style.color = "#e74c3c";
+        } else if (netP >= stopProfit || netU >= stopProfit) {
+            isLocked = true;
+            document.getElementById('bulkStatus').innerText = "STOPPED: Profit Target Reached!";
+            document.getElementById('bulkStatus').style.color = "#2ecc71";
+        }
     }
 
     function runBulk() {
         const text = document.getElementById('bulkInput').value;
         const nums = text.match(/\b([0-9]|[12][0-9]|3[0-6])\b/g);
+        if(!nums) return;
         
-        if(!nums) { alert("No valid numbers found!"); return; }
-        
-        const status = document.getElementById('bulkStatus');
-        status.innerText = `Processing ${nums.length} spins...`;
-
-        // Run simulation
-        nums.forEach(n => inputNum(parseInt(n)));
-        
-        status.innerText = `Simulation Finished. Processed ${nums.length} spins.`;
+        for (let n of nums) {
+            if (isLocked) break;
+            inputNum(parseInt(n));
+        }
         updateUI();
     }
 
@@ -310,6 +348,10 @@
     }
 
     function updateUI() {
+        const netTotal = fin.p.pl + fin.u.pl;
+        document.getElementById('netTotal').innerText = netTotal.toFixed(2);
+        document.getElementById('netTotal').className = `val ${netTotal >= 0 ? 'win' : 'loss'}`;
+
         ['p', 'u'].forEach(s => {
             document.getElementById(`${s}PL`).innerText = fin[s].pl.toFixed(2);
             document.getElementById(`${s}PL`).className = `val ${fin[s].pl >= 0 ? 'win' : 'loss'}`;
@@ -321,6 +363,7 @@
 
     function undo() {
         if(stateHistory.length > 0) {
+            isLocked = false;
             let prev = JSON.parse(stateHistory.pop());
             history = prev.history; fin = prev.fin; calculateFreq(); process();
         }
