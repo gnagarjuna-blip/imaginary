@@ -1,168 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>BIET - Full History Logic Pro</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 1100px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        
-        .header { grid-column: span 2; background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: center; }
-        .config-group { display: flex; flex-direction: column; gap: 5px; }
-
-        .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; min-height: 400px; }
-        .p-card { border-top: 5px solid #3498db; }
-        .u-card { border-top: 5px solid #e67e22; }
-        
-        .freq-box { grid-column: span 2; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-around; }
-        .freq-item { text-align: center; padding: 5px 15px; border-radius: 6px; }
-        .freq-active { background: rgba(241, 196, 15, 0.1); border: 1px solid #f1c40f; }
-        .freq-val { font-size: 18px; font-weight: bold; color: #f1c40f; display: block; }
-        .freq-lbl { font-size: 9px; color: #777; text-transform: uppercase; }
-
-        .fin-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 5px; }
-        .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
-        .val { font-family: monospace; font-weight: bold; font-size: 18px; }
-        .win { color: #2ecc71; } .loss { color: #e74c3c; }
-        
-        .notation-area { background: #000; padding: 10px; border-radius: 8px; margin-top: 15px; min-height: 80px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 5px; }
-        .p-block { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #333; color: #3498db; }
-        .u-block { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #333; color: #e67e22; }
-
-        .num-grid { grid-column: span 2; display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
-        .n-btn { padding: 12px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
-        .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
-        
-        .bulk-area { grid-column: span 2; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; }
-        #bulkInput { width: 100%; height: 100px; background: #000; color: #3498db; border: 1px solid #444; border-radius: 8px; padding: 10px; font-family: monospace; }
-        
-        select, input { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 4px; font-size: 11px; }
-        .history-strip { grid-column: span 2; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-family: monospace; font-size: 12px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap;}
-        .prog-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
-        .status-bar { padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; margin-top: 10px; background: #222; color: #888; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div class="grid">
-        <div class="header">
-            <div class="config-group">
-                <span class="label">Bet Mode</span>
-                <select id="betType" onchange="fullReset()">
-                    <option value="straight">Straight Up</option>
-                    <option value="streets">Streets</option>
-                    <option value="double" selected>Double Streets</option>
-                </select>
-                <span class="label" style="margin-top:5px">Op Lock</span>
-                <select id="opLock" onchange="process()">
-                    <option value="AUTO">AUTO SCAN</option>
-                    <option value="+10">+10 Lock</option><option value="-10">-10 Lock</option>
-                    <option value="+1">+1 Lock</option><option value="-1">-1 Lock</option>
-                </select>
-            </div>
-
-            <div class="config-group">
-                <span class="label">Risk Management</span>
-                <span class="label" style="font-size:8px">Stop Bankroll</span>
-                <select id="sessionBank">
-                    <option value="500">500</option><option value="1000" selected>1000</option>
-                    <option value="2000">2000</option><option value="5000">5000</option>
-                </select>
-                <span class="label" style="font-size:8px; margin-top:5px">Max Bet/Spot</span>
-                <input type="number" id="maxBet" value="2000">
-            </div>
-
-            <div class="config-group" style="text-align:center">
-                <span class="label">Last Ball</span>
-                <div id="lastNum" style="font-size:24px; font-weight:bold; color:#f1c40f">--</div>
-                <span class="label">Target Profit</span>
-                <input type="number" id="targetProfit" value="500">
-            </div>
-
-            <div class="config-group" style="text-align:right">
-                <span class="label">Exp (Neighbors)</span>
-                <select id="nExp" onchange="process()">
-                    <option value="0">n0</option><option value="1">n1</option><option value="2" selected>n2</option>
-                    <option value="3">n3</option><option value="4">n4</option>
-                </select>
-                <div style="margin-top:10px">
-                    <span class="label">Total Net P/L</span><br>
-                    <span id="netTotal" class="val">0.00</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="freq-box">
-            <div id="box+10" class="freq-item"><span class="freq-lbl">+10 History</span><span id="f+10" class="freq-val">0</span></div>
-            <div id="box-10" class="freq-item"><span class="freq-lbl">-10 History</span><span id="f-10" class="freq-val">0</span></div>
-            <div id="box+1" class="freq-item"><span class="freq-lbl">+1 History</span><span id="f+1" class="freq-val">0</span></div>
-            <div id="box-1" class="freq-item"><span class="freq-lbl">-1 History</span><span id="f-1" class="freq-val">0</span></div>
-            <div class="freq-item"><span class="freq-lbl">Total Samples</span><span id="fSamp" class="freq-val">0</span></div>
-        </div>
-
-        <div class="card p-card" id="pCardUI">
-            <span class="label" style="color:#3498db">Predicted (P)</span>
-            <div class="prog-settings">
-                <div><span class="label" style="font-size:8px">Base Unit</span><input type="number" id="pBase" value="10"></div>
-                <div><span class="label" style="font-size:8px">Add Unit (+)</span><input type="number" id="pStep" value="10"></div>
-                <div><span class="label" style="font-size:8px">Incr. After X Loss</span>
-                    <select id="pLossTrigger">
-                        <option value="1">1 Loss</option><option value="2">2 Losses</option>
-                        <option value="3" selected>3 Losses</option><option value="5">5 Losses</option>
-                    </select>
-                </div>
-                <div><span class="label" style="font-size:8px">On Win</span>
-                    <select id="pWinAction"><option value="reset">Reset</option><option value="reduce">Reduce -1</option></select>
-                </div>
-            </div>
-            <hr style="border:0; border-top:1px solid #222; margin:10px 0;">
-            <div class="fin-row"><span class="label">P/L</span><span id="pPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Stake</span><span id="pStakeDisp" class="val">0</span></div>
-            <div class="fin-row"><span class="label">Loss Streak</span><span id="pStreak" class="val">0</span></div>
-            <div class="notation-area" id="pNot"></div>
-        </div>
-
-        <div class="card u-card" id="uCardUI">
-            <span class="label" style="color:#e67e22">Unpredicted (U)</span>
-            <div class="prog-settings">
-                <div><span class="label" style="font-size:8px">Base Unit</span><input type="number" id="uBase" value="10"></div>
-                <div><span class="label" style="font-size:8px">Add Unit (+)</span><input type="number" id="uStep" value="10"></div>
-                <div><span class="label" style="font-size:8px">Incr. After X Loss</span>
-                    <select id="uLossTrigger">
-                        <option value="1" selected>1 Loss</option><option value="2">2 Losses</option>
-                    </select>
-                </div>
-                <div><span class="label" style="font-size:8px">On Win</span>
-                    <select id="uWinAction"><option value="reset">Reset</option><option value="reduce">Reduce -1</option></select>
-                </div>
-            </div>
-            <hr style="border:0; border-top:1px solid #222; margin:10px 0;">
-            <div class="fin-row"><span class="label">P/L</span><span id="uPL" class="val">0.00</span></div>
-            <div class="fin-row"><span class="label">Stake</span><span id="uStakeDisp" class="val">0</span></div>
-            <div class="fin-row"><span class="label">Loss Streak</span><span id="uStreak" class="val">0</span></div>
-            <div class="notation-area" id="uNot"></div>
-        </div>
-
-        <div class="history-strip" id="histStrip">History: ...</div>
-        <div class="num-grid" id="grid"><button class="n-btn green" onclick="inputNum(0)">0</button></div>
-
-        <div class="footer-tools" style="grid-column: span 2; display: flex; gap: 10px;">
-            <button class="tool-btn" style="background:#d35400; flex:1; padding:12px; border:0; border-radius:6px; cursor:pointer; color:white;" onclick="undo()">UNDO</button>
-            <button class="tool-btn" style="background:#333; flex:1; padding:12px; border:0; border-radius:6px; cursor:pointer; color:white;" onclick="location.reload()">RESET ALL</button>
-        </div>
-
-        <div class="bulk-area">
-            <textarea id="bulkInput" placeholder="Paste all session results here..."></textarea>
-            <button class="tool-btn" style="background:#27ae60; width:100%; margin-top:10px; padding:12px; border:0; border-radius:6px; cursor:pointer; color:white; font-weight:bold" onclick="runBulk()">RUN FULL HISTORY SCAN</button>
-            <div id="bulkStatus" class="status-bar">READY FOR DATA</div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     const neighbors = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
 
     let history = [], stateHistory = [], isLocked = false;
@@ -178,7 +14,7 @@
         b.onclick = () => inputNum(i); g.appendChild(b);
     }
 
-    function fullReset() { history = []; stateHistory = []; isLocked = false; fin.p.activeNumbers=[]; fin.u.activeNumbers=[]; updateUI(); document.getElementById('bulkStatus').style.background="#222"; }
+    function fullReset() { history = []; stateHistory = []; isLocked = false; fin.p.activeNumbers=[]; fin.u.activeNumbers=[]; updateUI(); }
 
     function inputNum(n) {
         if(isLocked) return;
@@ -213,26 +49,33 @@
         if (fin.p.activeNumbers.includes(n)) { fin.p.activeNumbers = []; fin.p.activeGroups = []; }
 
         history.push(n);
-        calculateFreq();
-        process();
+        let topOp = calculateFreq(); // Returns the highest frequency operator
+        process(topOp);
         checkGlobalLimits();
     }
 
     function calculateFreq() {
         let ops = {"+10":0, "-10":0, "+1":0, "-1":0};
-        // Entire history scan
-        for(let i=0; i < history.length - 1; i++) {
+        // ONLY SCAN LAST 16 SAMPLES
+        let start = Math.max(0, history.length - 17);
+        for(let i=start; i < history.length - 1; i++) {
             let prev = history[i], curr = history[i+1];
             for(let op in ops) {
                 let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
                 if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(curr)) ops[op]++;
             }
         }
-        for(let op in ops) document.getElementById('f'+op).innerText = ops[op];
-        document.getElementById('fSamp').innerText = Math.max(0, history.length - 1);
+        
+        let maxVal = -1, topOp = null;
+        for(let op in ops) {
+            document.getElementById('f'+op).innerText = ops[op];
+            if(ops[op] > maxVal) { maxVal = ops[op]; topOp = op; }
+        }
+        document.getElementById('fSamp').innerText = Math.min(16, Math.max(0, history.length - 1));
+        return (maxVal > 0) ? topOp : null;
     }
 
-    function process() {
+    function process(topOp) {
         document.querySelectorAll('.freq-item').forEach(el => el.classList.remove('freq-active'));
         if(history.length < 2) { 
             if(history.length === 1) document.getElementById('lastNum').innerText = history[0];
@@ -240,7 +83,6 @@
         }
 
         const last = history[history.length-1], prev = history[history.length-2];
-        const nVal = parseInt(document.getElementById('nExp').value);
         const mode = document.getElementById('betType').value;
         const lock = document.getElementById('opLock').value;
         document.getElementById('lastNum').innerText = last;
@@ -258,19 +100,19 @@
             syncU(mode); renderNotations(mode); updateUI(); return;
         }
 
-        let target = (foundOp==="+10")?last+10:(foundOp==="-10")?last-10:(foundOp==="+1")?last+1:last-1;
+        // TRIGGER LOGIC: Use highest frequency operator with EXACT NO NEIGHBOR (n0)
+        let opToUse = topOp || foundOp; 
+        let target = (opToUse==="+10")?last+10:(opToUse==="-10")?last-10:(opToUse==="+1")?last+1:last-1;
+        
         if(target >=0 && target <= 36) {
-            let roots = [target, ...(neighbors[target]||[])];
             let nSet = new Set(), gSet = new Set();
-            roots.forEach(r => {
-                let idx = wheel.indexOf(r);
-                for(let i=-nVal; i<=nVal; i++) {
-                    let num = wheel[(idx+i+37)%37];
-                    if(mode === 'straight') nSet.add(num);
-                    else if(mode === 'streets') gSet.add(Math.ceil(num/3 || 0.1));
-                    else gSet.add(Math.ceil(num/6 || 0.1));
-                }
-            });
+            // Forced n0 Mode (No Neighbors, just the single target index)
+            let idx = wheel.indexOf(target);
+            let num = wheel[idx]; 
+            
+            if(mode === 'straight') nSet.add(num);
+            else if(mode === 'streets') gSet.add(Math.ceil(num/3 || 0.1));
+            else gSet.add(Math.ceil(num/6 || 0.1));
 
             if(mode === 'streets') {
                 let cur = new Set(fin.p.activeGroups);
@@ -291,73 +133,3 @@
         }
         updateUI();
     }
-
-    function syncU(mode) {
-        fin.u.activeNumbers = wheel.filter(n => !fin.p.activeNumbers.includes(n));
-        let max = (mode === 'streets' ? 12 : 6); fin.u.activeGroups = [];
-        if(mode !== 'straight') for(let i=1; i<=max; i++) if(!fin.p.activeGroups.includes(i)) fin.u.activeGroups.push(i);
-    }
-
-    function getWheelArea(t, n) {
-        let s = new Set(), pts = [t, ...(neighbors[t]||[])];
-        pts.forEach(p => { let idx = wheel.indexOf(p); for(let i=-n; i<=n; i++) s.add(wheel[(idx+i+37)%37]); });
-        return Array.from(s);
-    }
-
-    function renderNotations(mode) {
-        ['p', 'u'].forEach(side => {
-            let data = (mode === 'straight') ? fin[side].activeNumbers : fin[side].activeGroups;
-            document.getElementById(side+'Not').innerHTML = data.map(item => `<div class="${side}-block">${(mode!=='straight'?'G':'')+item}</div>`).join('');
-        });
-    }
-
-    function checkGlobalLimits() {
-        const bankroll = parseInt(document.getElementById('sessionBank').value) * -1;
-        const target = parseInt(document.getElementById('targetProfit').value);
-        const net = fin.p.pl + fin.u.pl;
-        const bar = document.getElementById('bulkStatus');
-        
-        if (net <= bankroll) {
-            isLocked = true;
-            bar.innerText = "SESSION STOPPED: BANKROLL HIT";
-            bar.style.background = "#c0392b"; bar.style.color = "white";
-        } else if (net >= target) {
-            isLocked = true;
-            bar.innerText = "SESSION STOPPED: TARGET PROFIT REACHED";
-            bar.style.background = "#27ae60"; bar.style.color = "white";
-        }
-    }
-
-    function updateUI() {
-        const net = fin.p.pl + fin.u.pl;
-        document.getElementById('netTotal').innerText = net.toFixed(2);
-        document.getElementById('netTotal').className = `val ${net >= 0 ? 'win' : 'loss'}`;
-        ['p', 'u'].forEach(s => {
-            document.getElementById(s+'PL').innerText = fin[s].pl.toFixed(2);
-            document.getElementById(s+'StakeDisp').innerText = fin[s].stake;
-            document.getElementById(s+'Streak').innerText = fin[s].streak;
-        });
-        document.getElementById('histStrip').innerText = "History: " + history.join(" | ");
-    }
-
-    function runBulk() {
-        const input = document.getElementById('bulkInput').value;
-        const nums = input.match(/\b([0-9]|[12][0-9]|3[0-6])\b/g);
-        if(!nums) return;
-        nums.forEach(n => inputNum(parseInt(n)));
-        updateUI();
-    }
-
-    function undo() {
-        if(stateHistory.length > 0) {
-            isLocked = false;
-            let prev = JSON.parse(stateHistory.pop());
-            history = prev.history; fin = prev.fin; 
-            document.getElementById('bulkStatus').style.background="#222";
-            document.getElementById('bulkStatus').innerText="UNDO APPLIED";
-            updateUI(); calculateFreq();
-        }
-    }
-</script>
-</body>
-</html>
