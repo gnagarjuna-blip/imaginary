@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Straight High-Freq Pro</title>
+    <title>BIET - Terminal Neighbor Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 800px; }
@@ -40,11 +40,10 @@
 <div class="container">
     <div class="grid">
         <div class="header">
-            <div class="config-group" style="text-align:left">
+            <div class="config-group">
                 <span class="label">Last Number</span>
                 <div id="lastNum" style="font-size:28px; font-weight:bold; color:#f1c40f">--</div>
             </div>
-
             <div class="config-group" style="text-align:right">
                 <span class="label">Total Net P/L</span>
                 <span id="netTotal" class="val">0.00</span>
@@ -61,18 +60,13 @@
         </div>
 
         <div class="card">
-            <span class="label">Straight Up Prediction</span>
+            <span class="label">Neighbor Prediction</span>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top:10px;">
                 <div><span class="label">Base Unit</span><br><input type="number" id="pBase" value="10" style="width:80%"></div>
                 <div><span class="label">Step (+)</span><br><input type="number" id="pStep" value="10" style="width:80%"></div>
             </div>
-            
             <hr style="border:0; border-top:1px solid #222; margin:15px 0;">
-            <div class="fin-row">
-                <span class="label">Current Stake</span>
-                <span id="pStakeDisp" class="val">0</span>
-            </div>
-            
+            <div class="fin-row"><span class="label">Current Stake</span><span id="pStakeDisp" class="val">0</span></div>
             <div class="notation-area" id="pNot"></div>
         </div>
 
@@ -84,13 +78,13 @@
             <button onclick="undo()" style="background:#d35400; flex:1; padding:12px; color:white; border:0; border-radius:6px; cursor:pointer;">UNDO</button>
             <button onclick="location.reload()" style="background:#333; flex:1; padding:12px; color:white; border:0; border-radius:6px; cursor:pointer;">RESET</button>
         </div>
-
         <div id="bulkStatus" class="status-bar">SYSTEM READY</div>
     </div>
 </div>
 
 <script>
     const wheel = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+    const neighborsMap = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
     
     let history = [], stateHistory = [], isLocked = false;
     let fin = { pl: 0, stake: 0, streak: 0, activeNumbers: [] };
@@ -105,31 +99,24 @@
     function inputNum(n) {
         if(isLocked) return;
         stateHistory.push(JSON.stringify({history, fin}));
-
         const base = parseInt(document.getElementById('pBase').value);
         const step = parseInt(document.getElementById('pStep').value);
-        if(fin.stake === 0) fin.stake = base;
-
-        // 1. Process Results if a prediction was active
+        
         if (fin.activeNumbers.length > 0) {
+            if(fin.stake === 0) fin.stake = base;
             if (fin.activeNumbers.includes(n)) {
                 fin.pl += (fin.stake * 36) - (fin.activeNumbers.length * fin.stake);
                 fin.streak = 0;
-                // Decrease 4 units on win, but not below base
                 fin.stake = Math.max(base, fin.stake - 4); 
             } else {
                 fin.pl -= (fin.activeNumbers.length * fin.stake);
-                fin.streak++; // Increment only on active prediction losses
-                if(fin.streak % 4 === 0) {
-                    fin.stake += step;
-                }
+                fin.streak++;
+                if(fin.streak % 4 === 0) fin.stake += step;
             }
         }
 
         fin.activeNumbers = [];
         history.push(n);
-
-        // 2. High Frequency Logic
         let topOp = calculateFreq();
         process(topOp);
     }
@@ -137,7 +124,6 @@
     function calculateFreq() {
         let ops = {"+10":0, "-10":0, "+1":0, "-1":0};
         let start = Math.max(0, history.length - 17);
-        
         for(let i = start; i < history.length - 1; i++) {
             let prev = history[i], curr = history[i+1];
             for(let op in ops) {
@@ -145,7 +131,6 @@
                 if(target >=0 && target <= 36 && getWheelArea(target, 2).includes(curr)) ops[op]++;
             }
         }
-        
         let maxVal = -1, topOp = null;
         for(let op in ops) {
             document.getElementById('f'+op).innerText = ops[op];
@@ -157,7 +142,6 @@
             document.getElementById('activeOpLabel').innerText = topOp;
             return topOp;
         }
-        document.getElementById('activeOpLabel').innerText = "NONE";
         return null;
     }
 
@@ -166,7 +150,6 @@
             document.getElementById('lastNum').innerText = history[0] || "--";
             updateUI(); return; 
         }
-
         const last = history[history.length-1];
         const prev = history[history.length-2];
         document.getElementById('lastNum').innerText = last;
@@ -178,17 +161,17 @@
         });
 
         if(triggered && topOp) {
-            let pred = (topOp==="+10")?last+10:(topOp==="-10")?last-10:(topOp==="+1")?last+1:last-1;
-            if(pred >= 0 && pred <= 36) {
-                fin.activeNumbers = [pred];
+            let targetNum = (topOp==="+10")?last+10:(topOp==="-10")?last-10:(topOp==="+1")?last+1:last-1;
+            if(targetNum >= 0 && targetNum <= 36) {
+                // Logic: Predict the neighbors of the target number
+                fin.activeNumbers = neighborsMap[targetNum] || [];
             }
         }
         updateUI();
     }
 
     function getWheelArea(t, n) {
-        const neighbors = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
-        let s = new Set(), pts = [t, ...(neighbors[t]||[])];
+        let s = new Set(), pts = [t, ...(neighborsMap[t]||[])];
         pts.forEach(p => { 
             let idx = wheel.indexOf(p); 
             for(let i=-n; i<=n; i++) s.add(wheel[(idx+i+37)%37]); 
@@ -205,7 +188,6 @@
 
     function undo() {
         if(stateHistory.length > 0) {
-            isLocked = false;
             let prev = JSON.parse(stateHistory.pop());
             history = prev.history; fin = prev.fin; 
             calculateFreq(); updateUI();
