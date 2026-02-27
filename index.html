@@ -8,7 +8,7 @@
         .container { width: 100%; max-width: 800px; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         
-        .header { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: center; }
+        .header { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; align-items: center; }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
 
         .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; position: relative; border-top: 5px solid #3498db; }
@@ -40,14 +40,7 @@
 <div class="container">
     <div class="grid">
         <div class="header">
-            <div class="config-group">
-                <span class="label">Stop Loss</span>
-                <input type="number" id="sessionBank" value="1000">
-                <span class="label" style="margin-top:5px">Target</span>
-                <input type="number" id="targetProfit" value="500">
-            </div>
-
-            <div class="config-group" style="text-align:center">
+            <div class="config-group" style="text-align:left">
                 <span class="label">Last Number</span>
                 <div id="lastNum" style="font-size:28px; font-weight:bold; color:#f1c40f">--</div>
             </div>
@@ -68,15 +61,17 @@
         </div>
 
         <div class="card">
-            <span class="label">Straight Up Prediction (n0)</span>
+            <span class="label">Straight Up Prediction</span>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top:10px;">
                 <div><span class="label">Base Unit</span><br><input type="number" id="pBase" value="10" style="width:80%"></div>
                 <div><span class="label">Step (+)</span><br><input type="number" id="pStep" value="10" style="width:80%"></div>
             </div>
             
             <hr style="border:0; border-top:1px solid #222; margin:15px 0;">
-            <div class="fin-row"><span class="label">Current Stake</span><span id="pStakeDisp" class="val">0</span></div>
-            <div class="fin-row"><span class="label">Loss Streak</span><span id="pStreak" class="val">0</span></div>
+            <div class="fin-row">
+                <span class="label">Current Stake</span>
+                <span id="pStakeDisp" class="val">0</span>
+            </div>
             
             <div class="notation-area" id="pNot"></div>
         </div>
@@ -111,34 +106,32 @@
         if(isLocked) return;
         stateHistory.push(JSON.stringify({history, fin}));
 
-        // 1. Check Previous Bet Result
-        if (fin.activeNumbers.length > 0) {
-            const base = parseInt(document.getElementById('pBase').value);
-            const step = parseInt(document.getElementById('pStep').value);
-            
-            if(fin.stake === 0) fin.stake = base;
+        const base = parseInt(document.getElementById('pBase').value);
+        const step = parseInt(document.getElementById('pStep').value);
+        if(fin.stake === 0) fin.stake = base;
 
+        // 1. Process Results if a prediction was active
+        if (fin.activeNumbers.length > 0) {
             if (fin.activeNumbers.includes(n)) {
                 fin.pl += (fin.stake * 36) - (fin.activeNumbers.length * fin.stake);
                 fin.streak = 0;
-                fin.stake = base; 
+                // Decrease 4 units on win, but not below base
+                fin.stake = Math.max(base, fin.stake - 4); 
             } else {
                 fin.pl -= (fin.activeNumbers.length * fin.stake);
-                fin.streak++;
-                if(fin.streak % 2 === 0) fin.stake += step; // Simple progression every 2 losses
+                fin.streak++; // Increment only on active prediction losses
+                if(fin.streak % 4 === 0) {
+                    fin.stake += step;
+                }
             }
         }
 
-        // Always clear bet after a result
         fin.activeNumbers = [];
         history.push(n);
 
-        // 2. Calculate Highest Operator from last 16
+        // 2. High Frequency Logic
         let topOp = calculateFreq();
-        
-        // 3. Process Logic
         process(topOp);
-        checkGlobalLimits();
     }
 
     function calculateFreq() {
@@ -149,7 +142,6 @@
             let prev = history[i], curr = history[i+1];
             for(let op in ops) {
                 let target = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
-                // n2 search area for frequency calculation
                 if(target >=0 && target <= 36 && getWheelArea(target, 2).includes(curr)) ops[op]++;
             }
         }
@@ -179,21 +171,18 @@
         const prev = history[history.length-2];
         document.getElementById('lastNum').innerText = last;
 
-        // Trigger check: Did ANY operator result in the last hit?
         let triggered = false;
         ["+10","-10","+1","-1"].forEach(op => {
             let t = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
             if(t >=0 && t <= 36 && getWheelArea(t, 2).includes(last)) triggered = true;
         });
 
-        // If triggered, use the High-Frequency Operator to predict the next number (n0 mode)
         if(triggered && topOp) {
             let pred = (topOp==="+10")?last+10:(topOp==="-10")?last-10:(topOp==="+1")?last+1:last-1;
             if(pred >= 0 && pred <= 36) {
                 fin.activeNumbers = [pred];
             }
         }
-
         updateUI();
     }
 
@@ -211,19 +200,7 @@
         document.getElementById('netTotal').innerText = fin.pl.toFixed(2);
         document.getElementById('netTotal').className = `val ${fin.pl >= 0 ? 'win' : 'loss'}`;
         document.getElementById('pStakeDisp').innerText = fin.stake;
-        document.getElementById('pStreak').innerText = fin.streak;
         document.getElementById('pNot').innerHTML = fin.activeNumbers.map(n => `<div class="p-block">${n}</div>`).join('');
-    }
-
-    function checkGlobalLimits() {
-        const stop = parseInt(document.getElementById('sessionBank').value) * -1;
-        const target = parseInt(document.getElementById('targetProfit').value);
-        if (fin.pl <= stop || fin.pl >= target) {
-            isLocked = true;
-            document.getElementById('bulkStatus').innerText = "SESSION ENDED";
-            document.getElementById('bulkStatus').style.background = fin.pl >= target ? "#27ae60" : "#c0392b";
-            document.getElementById('bulkStatus').style.color = "white";
-        }
     }
 
     function undo() {
@@ -231,8 +208,6 @@
             isLocked = false;
             let prev = JSON.parse(stateHistory.pop());
             history = prev.history; fin = prev.fin; 
-            document.getElementById('bulkStatus').innerText = "SYSTEM READY";
-            document.getElementById('bulkStatus').style.background = "#222";
             calculateFreq(); updateUI();
         }
     }
