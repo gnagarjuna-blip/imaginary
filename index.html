@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Terminal Neighbor Pro</title>
+    <title>BIET - Terminal Exact Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 800px; }
@@ -60,7 +60,7 @@
         </div>
 
         <div class="card">
-            <span class="label">Neighbor Prediction</span>
+            <span class="label">Exact Terminal Prediction</span>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top:10px;">
                 <div><span class="label">Base Unit</span><br><input type="number" id="pBase" value="10" style="width:80%"></div>
                 <div><span class="label">Step (+)</span><br><input type="number" id="pStep" value="10" style="width:80%"></div>
@@ -128,6 +128,7 @@
             let prev = history[i], curr = history[i+1];
             for(let op in ops) {
                 let target = (op==="+10")?prev+10:(op==="-10")?prev-10:(op==="+1")?prev+1:prev-1;
+                // Frequency is still calculated based on if the result landed in the wheel area 
                 if(target >=0 && target <= 36 && getWheelArea(target, 2).includes(curr)) ops[op]++;
             }
         }
@@ -163,8 +164,8 @@
         if(triggered && topOp) {
             let targetNum = (topOp==="+10")?last+10:(topOp==="-10")?last-10:(topOp==="+1")?last+1:last-1;
             if(targetNum >= 0 && targetNum <= 36) {
-                // Logic: Predict the neighbors of the target number
-                fin.activeNumbers = neighborsMap[targetNum] || [];
+                // UPDATE: Predict ONLY the exact target number, no neighbors
+                fin.activeNumbers = [targetNum];
             }
         }
         updateUI();
