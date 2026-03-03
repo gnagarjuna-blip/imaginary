@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Pattern Trigger Pro</title>
+    <title>BIET - High Freq Terminal Trigger</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 800px; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         .header { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; align-items: center; }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
-        .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; border-top: 5px solid #2ecc71; }
+        .card { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; border-top: 5px solid #e74c3c; transition: border-color 0.3s; }
+        .card.active { border-top-color: #2ecc71; }
         .freq-box { background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-around; }
         .freq-item { text-align: center; padding: 5px 15px; border-radius: 6px; }
         .freq-leader { border: 1px solid #2ecc71; background: rgba(46, 204, 113, 0.1); }
@@ -19,13 +20,13 @@
         .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
         .val { font-family: monospace; font-weight: bold; font-size: 18px; }
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
-        .notation-area { background: #000; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 50px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;}
+        .notation-area { background: #000; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 60px; border: 1px inset #222; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;}
         .p-block { padding: 10px 20px; border-radius: 4px; font-size: 24px; font-weight: bold; border: 2px solid #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
         .num-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 6px; margin: 15px 0; }
         .n-btn { padding: 12px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
         .red { background: #c0392b; } .black { background: #2c3e50; } .green { background: #27ae60; grid-row: span 3; }
         input { background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 4px; }
-        .status-msg { font-size: 11px; text-align: center; color: #777; margin-top: 5px; }
+        .status-msg { font-size: 11px; text-align: center; color: #777; margin-top: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -40,7 +41,7 @@
             <div class="config-group" style="text-align:right">
                 <span class="label">Total Net P/L</span>
                 <span id="netTotal" class="val">0.00</span>
-                <span class="label" style="margin-top:5px">Active High Op</span>
+                <span class="label" style="margin-top:5px">High Freq Op</span>
                 <span id="activeOpLabel" style="color:#2ecc71; font-weight:bold; font-size:14px">NONE</span>
             </div>
         </div>
@@ -52,8 +53,8 @@
             <div id="box-1" class="freq-item"><span class="freq-lbl">-1</span><span id="f-1" class="freq-val">0</span></div>
         </div>
 
-        <div class="card">
-            <span class="label">Triggered Mapped Prediction</span>
+        <div class="card" id="mainCard">
+            <span class="label">Triggered Terminal Prediction</span>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top:10px;">
                 <div><span class="label">Base Unit</span><br><input type="number" id="pBase" value="10" style="width:80%"></div>
                 <div><span class="label">Step (+)</span><br><input type="number" id="pStep" value="10" style="width:80%"></div>
@@ -61,7 +62,7 @@
             <hr style="border:0; border-top:1px solid #222; margin:15px 0;">
             <div class="fin-row"><span class="label">Current Stake</span><span id="pStakeDisp" class="val">0</span></div>
             <div class="notation-area" id="pNot"></div>
-            <div id="pStatus" class="status-msg">WAITING FOR OPERATOR MATCH...</div>
+            <div id="pStatus" class="status-msg">WAITING FOR FREQUENCY MATCH...</div>
         </div>
 
         <div class="num-grid" id="grid">
@@ -144,29 +145,28 @@
     }
 
     function process(topOp) {
-        if (history.length < 2) {
-            document.getElementById('lastNum').innerText = history[0] || "--";
-            updateUI(); return;
-        }
-
         const last = history[history.length-1];
         const prev = history[history.length-2];
         document.getElementById('lastNum').innerText = last;
         fin.activeNumbers = [];
+        const card = document.getElementById('mainCard');
+        const status = document.getElementById('pStatus');
 
-        if(!topOp) {
-            document.getElementById('pStatus').innerText = "NO DATA";
+        if (history.length < 2 || !topOp) {
+            status.innerText = "COLLECTING DATA...";
+            card.classList.remove('active');
             updateUI(); return;
         }
 
-        // KEY UPDATE: Check if the last move actually matched the High Freq Operator
-        let lastMoveMatched = false;
-        if(topOp === "+10" && checkMapping(prev + 10, last)) lastMoveMatched = true;
-        if(topOp === "-10" && checkMapping(prev - 10, last)) lastMoveMatched = true;
-        if(topOp === "+1" && checkMapping(prev + 1, last)) lastMoveMatched = true;
-        if(topOp === "-1" && checkMapping(prev - 1, last)) lastMoveMatched = true;
+        // STRICT CHECK: Did the move (prev -> last) follow the High Freq Operator?
+        let moveFollowedFreq = false;
+        if(topOp === "+10" && checkMapping(prev + 10, last)) moveFollowedFreq = true;
+        if(topOp === "-10" && checkMapping(prev - 10, last)) moveFollowedFreq = true;
+        if(topOp === "+1" && checkMapping(prev + 1, last)) moveFollowedFreq = true;
+        if(topOp === "-1" && checkMapping(prev - 1, last)) moveFollowedFreq = true;
 
-        if (lastMoveMatched) {
+        if (moveFollowedFreq) {
+            // Predict the terminals of the NEXT step using the High Freq Op
             let baseTarget;
             if(topOp === "+10") baseTarget = last + 10;
             else if(topOp === "-10") baseTarget = last - 10;
@@ -175,10 +175,14 @@
 
             if (termMap[baseTarget]) {
                 fin.activeNumbers = termMap[baseTarget];
-                document.getElementById('pStatus').innerText = `PATTERN MATCH: USING ${topOp}`;
+                status.innerText = `HOT PATTERN: ${topOp} DETECTED!`;
+                status.style.color = "#2ecc71";
+                card.classList.add('active');
             }
         } else {
-            document.getElementById('pStatus').innerText = `WAITING FOR ${topOp} MATCH...`;
+            status.innerText = `WAITING FOR ${topOp} TERMINAL HIT...`;
+            status.style.color = "#777";
+            card.classList.remove('active');
         }
         
         updateUI();
