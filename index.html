@@ -2,24 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Terminal Simulator Pro</title>
+    <title>BIET - 8-Operator Terminal Simulator</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 1100px; }
+        .container { width: 100%; max-width: 1150px; }
         .header { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .stat-group { display: flex; flex-direction: column; }
         .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
         .val { font-family: monospace; font-weight: bold; font-size: 22px; }
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
 
-        /* Simulation Controls */
         .sim-area { background: #111; padding: 15px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; display: none; }
         textarea { background: #000; color: #2ecc71; border: 1px solid #333; width: 100%; height: 80px; padding: 10px; box-sizing: border-box; font-family: monospace; resize: none; margin-top: 10px; }
         
-        .freq-box { display: flex; gap: 10px; margin-bottom: 20px; }
-        .freq-item { background: #111; padding: 8px 20px; border-radius: 8px; border: 1px solid #333; text-align: center; flex: 1; }
-        .freq-leader { border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
-        .freq-val { font-size: 18px; font-weight: bold; color: #f1c40f; }
+        /* Expanded Frequency Box for 8 Operators */
+        .freq-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .freq-item { background: #111; padding: 8px; border-radius: 8px; border: 1px solid #333; text-align: center; }
+        .freq-leader { border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); box-shadow: 0 0 8px rgba(46, 204, 113, 0.3); }
+        .freq-val { font-size: 16px; font-weight: bold; color: #f1c40f; }
 
         .roulette-table { 
             display: grid; grid-template-columns: 60px repeat(12, 1fr); grid-template-rows: repeat(3, 80px); 
@@ -43,23 +43,23 @@
 <div class="container">
     <div class="header">
         <div class="stat-group">
-            <span class="label">Mode</span>
+            <span class="label">Input Mode</span>
             <button class="toggle-btn" id="modeBtn" onclick="toggleMode()">MANUAL INPUT</button>
         </div>
         <div class="stat-group" style="text-align:center">
-            <span class="label">Current Multiplier</span>
+            <span class="label">Stake Multiplier</span>
             <div id="multiDisp" class="val" style="color:#3498db">1x</div>
         </div>
         <div class="stat-group" style="text-align:right">
-            <span class="label">Session P/L</span>
+            <span class="label">Total Profit/Loss</span>
             <span id="netTotal" class="val">0.00</span>
         </div>
     </div>
 
     <div id="simArea" class="sim-area">
-        <span class="label">Bulk Paste (Last 200-1000 Results)</span>
-        <textarea id="bulkData" placeholder="Example: 32, 15, 19, 4, 21, 2, 25..."></textarea>
-        <button class="btn" style="background:#27ae60; width:100%; margin-top:10px;" onclick="runSimulation()">RUN BULK SIMULATION</button>
+        <span class="label">Bulk Data Input (Supports 200 - 1000 numbers)</span>
+        <textarea id="bulkData" placeholder="Paste numbers here..."></textarea>
+        <button class="btn" style="background:#27ae60; width:100%; margin-top:10px;" onclick="runSimulation()">PROCESS BULK DATA</button>
     </div>
 
     <div class="freq-box">
@@ -67,6 +67,10 @@
         <div id="box-10" class="freq-item"><span class="label">-10</span><br><span id="f-10" class="freq-val">0</span></div>
         <div id="box+1" class="freq-item"><span class="label">+1</span><br><span id="f+1" class="freq-val">0</span></div>
         <div id="box-1" class="freq-item"><span class="label">-1</span><br><span id="f-1" class="freq-val">0</span></div>
+        <div id="box+0" class="freq-item"><span class="label">+0</span><br><span id="f+0" class="freq-val">0</span></div>
+        <div id="box-0" class="freq-item"><span class="label">-0</span><br><span id="f-0" class="freq-val">0</span></div>
+        <div id="box+2" class="freq-item"><span class="label">+2</span><br><span id="f+2" class="freq-val">0</span></div>
+        <div id="box-2" class="freq-item"><span class="label">-2</span><br><span id="f-2" class="freq-val">0</span></div>
     </div>
 
     <div class="roulette-table" id="table">
@@ -79,7 +83,7 @@
             <input type="number" id="pBase" value="10" onchange="updateLogic()">
         </div>
         <div class="info-card">
-            <span class="label">Loss Factor Trigger</span>
+            <span class="label">Loss Factor (20x Base)</span>
             <div id="factorLabel" style="font-size:18px; font-weight:bold; color:#e67e22; margin-top:5px;">200.00</div>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -90,14 +94,10 @@
 </div>
 
 <script>
-    const termMap = { 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
+    const termMap = { 0:[0], 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
     const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-    
-    let history = [], stateHistory = [];
-    let fin = { pl: 0, activeNumbers: [] };
-    let isSimMode = false;
+    let history = [], stateHistory = [], fin = { pl: 0, activeNumbers: [] }, isSimMode = false;
 
-    // Build Table
     const table = document.getElementById('table');
     for (let col = 1; col <= 12; col++) {
         for (let row = 3; row >= 1; row--) {
@@ -106,8 +106,7 @@
             div.className = `cell ${reds.includes(num) ? 'red' : 'black'}`;
             div.style.gridColumn = col + 1; div.style.gridRow = 4 - row;
             div.innerHTML = `${num}<div id="chip-${num}"></div>`;
-            div.onclick = () => inputNum(num);
-            table.appendChild(div);
+            div.onclick = () => inputNum(num); table.appendChild(div);
         }
     }
 
@@ -115,59 +114,43 @@
         isSimMode = !isSimMode;
         document.getElementById('simArea').style.display = isSimMode ? 'block' : 'none';
         document.getElementById('modeBtn').innerText = isSimMode ? 'SIMULATION MODE' : 'MANUAL INPUT';
-        document.getElementById('modeBtn').style.background = isSimMode ? '#e67e22' : '#2c3e50';
     }
 
-    function updateLogic() {
-        const base = parseInt(document.getElementById('pBase').value);
-        document.getElementById('factorLabel').innerText = (base * 20).toFixed(2);
-    }
+    function updateLogic() { document.getElementById('factorLabel').innerText = (parseInt(document.getElementById('pBase').value) * 20).toFixed(2); }
 
     function calculateDynamicStake() {
         const base = parseInt(document.getElementById('pBase').value);
         const factor = base * 20;
-        if (fin.pl >= 0) return base;
-        return base * (Math.floor(Math.abs(fin.pl) / factor) + 1);
+        return (fin.pl >= 0) ? base : base * (Math.floor(Math.abs(fin.pl) / factor) + 1);
     }
 
     function runSimulation() {
-        const raw = document.getElementById('bulkData').value;
-        const nums = raw.split(/[\s, \n]+/).filter(x => x !== "").map(Number);
-        if(nums.length === 0) return alert("Please paste valid numbers.");
-        
-        // Reset and run through all numbers
+        const nums = document.getElementById('bulkData').value.split(/[\s, \n]+/).filter(x => x !== "").map(Number);
         history = []; fin.pl = 0; fin.activeNumbers = [];
         nums.forEach(n => inputNum(n));
     }
 
     function inputNum(n) {
         stateHistory.push(JSON.stringify({history, fin}));
-        
         if (fin.activeNumbers.length > 0) {
             let bet = calculateDynamicStake();
             if (fin.activeNumbers.includes(n)) fin.pl += (bet * 36) - (fin.activeNumbers.length * bet);
             else fin.pl -= (fin.activeNumbers.length * bet);
         }
-
-        history.push(n);
-        process();
+        history.push(n); process();
     }
 
     function process() {
-        const last = history[history.length-1];
-        const prev = history[history.length-2];
-        
-        // Freq Logic L40
-        let ops = {"+10":0, "-10":0, "+1":0, "-1":0};
+        const last = history[history.length-1], prev = history[history.length-2];
+        let ops = {"+10":0, "-10":0, "+1":0, "-1":0, "+0":0, "-0":0, "+2":0, "-2":0};
         let start = Math.max(0, history.length - 40);
         for(let i = start; i < history.length - 1; i++) {
             let p = history[i], c = history[i+1];
-            if (termMap[p+10]?.includes(c)) ops["+10"]++;
-            if (termMap[p-10]?.includes(c)) ops["-10"]++;
-            if (termMap[p+1]?.includes(c)) ops["+1"]++;
-            if (termMap[p-1]?.includes(c)) ops["-1"]++;
+            if (termMap[p+10]?.includes(c)) ops["+10"]++; if (termMap[p-10]?.includes(c)) ops["-10"]++;
+            if (termMap[p+1]?.includes(c)) ops["+1"]++; if (termMap[p-1]?.includes(c)) ops["-1"]++;
+            if (termMap[p+0]?.includes(c)) ops["+0"]++; if (termMap[p-0]?.includes(c)) ops["-0"]++;
+            if (termMap[p+2]?.includes(c)) ops["+2"]++; if (termMap[p-2]?.includes(c)) ops["-2"]++;
         }
-        
         let maxVal = 0, topOp = null;
         for(let op in ops) {
             document.getElementById('f'+op).innerText = ops[op];
@@ -175,26 +158,21 @@
             if(ops[op] > maxVal) { maxVal = ops[op]; topOp = op; }
         }
         if(topOp) document.getElementById('box'+topOp).classList.add('freq-leader');
-
-        // Clear Chips
         for(let i=0; i<=36; i++) document.getElementById(`chip-${i}`).innerHTML = "";
         fin.activeNumbers = [];
-
         if (history.length >= 2 && topOp) {
             let matched = false;
-            if(topOp === "+10" && termMap[prev+10]?.includes(last)) matched = true;
-            if(topOp === "-10" && termMap[prev-10]?.includes(last)) matched = true;
-            if(topOp === "+1" && termMap[prev+1]?.includes(last)) matched = true;
-            if(topOp === "-1" && termMap[prev-1]?.includes(last)) matched = true;
+            let checkVal = parseInt(topOp.replace('+', '').replace('-', ''));
+            let opSign = topOp.includes('+') ? '+' : '-';
+            let targetCheck = (opSign === '+') ? prev + checkVal : prev - checkVal;
+            if(termMap[targetCheck]?.includes(last)) matched = true;
 
             if (matched) {
-                let target = (topOp==="+10")?last+10:(topOp==="-10")?last-10:(topOp==="+1")?last+1:last-1;
+                let target = (opSign === '+') ? last + checkVal : last - checkVal;
                 if (termMap[target]) {
                     fin.activeNumbers = termMap[target];
                     let s = calculateDynamicStake();
-                    fin.activeNumbers.forEach(num => {
-                        document.getElementById(`chip-${num}`).innerHTML = `<div class="chip">${s}</div>`;
-                    });
+                    fin.activeNumbers.forEach(num => { document.getElementById(`chip-${num}`).innerHTML = `<div class="chip">${s}</div>`; });
                 }
             }
         }
@@ -204,16 +182,10 @@
     function updateUI() {
         document.getElementById('netTotal').innerText = fin.pl.toFixed(2);
         document.getElementById('netTotal').className = `val ${fin.pl >= 0 ? 'win' : 'loss'}`;
-        const base = parseInt(document.getElementById('pBase').value);
-        document.getElementById('multiDisp').innerText = (calculateDynamicStake() / base) + "x";
+        document.getElementById('multiDisp').innerText = (calculateDynamicStake() / parseInt(document.getElementById('pBase').value)) + "x";
     }
 
-    function undo() {
-        if(stateHistory.length > 0) {
-            let prev = JSON.parse(stateHistory.pop());
-            history = prev.history; fin = prev.fin; process();
-        }
-    }
+    function undo() { if(stateHistory.length > 0) { let p = JSON.parse(stateHistory.pop()); history = p.history; fin = p.fin; process(); } }
     updateLogic();
 </script>
 </body>
