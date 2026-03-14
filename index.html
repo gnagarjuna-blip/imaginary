@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Dynamic Loss-Factor Tracker</title>
+    <title>BIET - Terminal Simulator Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1100px; }
@@ -12,34 +12,30 @@
         .val { font-family: monospace; font-weight: bold; font-size: 22px; }
         .win { color: #2ecc71; } .loss { color: #e74c3c; }
 
+        /* Simulation Controls */
+        .sim-area { background: #111; padding: 15px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; display: none; }
+        textarea { background: #000; color: #2ecc71; border: 1px solid #333; width: 100%; height: 80px; padding: 10px; box-sizing: border-box; font-family: monospace; resize: none; margin-top: 10px; }
+        
         .freq-box { display: flex; gap: 10px; margin-bottom: 20px; }
         .freq-item { background: #111; padding: 8px 20px; border-radius: 8px; border: 1px solid #333; text-align: center; flex: 1; }
         .freq-leader { border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
         .freq-val { font-size: 18px; font-weight: bold; color: #f1c40f; }
 
         .roulette-table { 
-            display: grid; 
-            grid-template-columns: 60px repeat(12, 1fr); 
-            grid-template-rows: repeat(3, 80px); 
-            gap: 4px; background: #064e3b; padding: 10px; 
-            border: 8px solid #3d2b1f; border-radius: 12px; 
+            display: grid; grid-template-columns: 60px repeat(12, 1fr); grid-template-rows: repeat(3, 80px); 
+            gap: 4px; background: #064e3b; padding: 10px; border: 8px solid #3d2b1f; border-radius: 12px; 
         }
         .cell { position: relative; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: white; cursor: pointer; border-radius: 4px; }
         .zero { grid-row: span 3; background: #059669; border: 1px solid #10b981; }
         .red { background: #dc2626; border: 1px solid #ef4444; }
         .black { background: #18181b; border: 1px solid #3f3f46; }
+        .chip { position: absolute; bottom: 5px; right: 5px; background: #f1c40f; color: #000; font-size: 11px; font-weight: 900; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px dashed #000; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
-        .chip { 
-            position: absolute; bottom: 5px; right: 5px; background: #f1c40f; color: #000; 
-            font-size: 11px; font-weight: 900; width: 30px; height: 30px; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; border: 2px dashed #000;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .controls { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 15px; margin-top: 20px; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px; margin-top: 20px; }
         .info-card { background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #333; }
-        input { background: #000; color: #fff; border: 1px solid #444; width: 100%; padding: 8px; box-sizing: border-box; font-weight: bold; }
+        input { background: #000; color: #fff; border: 1px solid #444; width: 100%; padding: 8px; box-sizing: border-box; }
         .btn { padding: 15px; border: 0; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
+        .toggle-btn { background: #2c3e50; color: #fff; border: 1px solid #34495e; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -47,17 +43,23 @@
 <div class="container">
     <div class="header">
         <div class="stat-group">
-            <span class="label">Last Num</span>
-            <div id="lastNum" class="val" style="color:#f1c40f">--</div>
+            <span class="label">Mode</span>
+            <button class="toggle-btn" id="modeBtn" onclick="toggleMode()">MANUAL INPUT</button>
         </div>
         <div class="stat-group" style="text-align:center">
             <span class="label">Current Multiplier</span>
             <div id="multiDisp" class="val" style="color:#3498db">1x</div>
         </div>
         <div class="stat-group" style="text-align:right">
-            <span class="label">Net P/L</span>
+            <span class="label">Session P/L</span>
             <span id="netTotal" class="val">0.00</span>
         </div>
+    </div>
+
+    <div id="simArea" class="sim-area">
+        <span class="label">Bulk Paste (Last 200-1000 Results)</span>
+        <textarea id="bulkData" placeholder="Example: 32, 15, 19, 4, 21, 2, 25..."></textarea>
+        <button class="btn" style="background:#27ae60; width:100%; margin-top:10px;" onclick="runSimulation()">RUN BULK SIMULATION</button>
     </div>
 
     <div class="freq-box">
@@ -92,9 +94,10 @@
     const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     
     let history = [], stateHistory = [];
-    let fin = { pl: 0, currentStake: 0, activeNumbers: [] };
+    let fin = { pl: 0, activeNumbers: [] };
+    let isSimMode = false;
 
-    // Init Table
+    // Build Table
     const table = document.getElementById('table');
     for (let col = 1; col <= 12; col++) {
         for (let row = 3; row >= 1; row--) {
@@ -108,6 +111,13 @@
         }
     }
 
+    function toggleMode() {
+        isSimMode = !isSimMode;
+        document.getElementById('simArea').style.display = isSimMode ? 'block' : 'none';
+        document.getElementById('modeBtn').innerText = isSimMode ? 'SIMULATION MODE' : 'MANUAL INPUT';
+        document.getElementById('modeBtn').style.background = isSimMode ? '#e67e22' : '#2c3e50';
+    }
+
     function updateLogic() {
         const base = parseInt(document.getElementById('pBase').value);
         document.getElementById('factorLabel').innerText = (base * 20).toFixed(2);
@@ -116,32 +126,38 @@
     function calculateDynamicStake() {
         const base = parseInt(document.getElementById('pBase').value);
         const factor = base * 20;
-        
         if (fin.pl >= 0) return base;
+        return base * (Math.floor(Math.abs(fin.pl) / factor) + 1);
+    }
+
+    function runSimulation() {
+        const raw = document.getElementById('bulkData').value;
+        const nums = raw.split(/[\s, \n]+/).filter(x => x !== "").map(Number);
+        if(nums.length === 0) return alert("Please paste valid numbers.");
         
-        // Loss-based progression: every 'factor' amount lost increases stake by 1 base unit
-        let lossAmount = Math.abs(fin.pl);
-        let multiplier = Math.floor(lossAmount / factor) + 1;
-        return base * multiplier;
+        // Reset and run through all numbers
+        history = []; fin.pl = 0; fin.activeNumbers = [];
+        nums.forEach(n => inputNum(n));
     }
 
     function inputNum(n) {
         stateHistory.push(JSON.stringify({history, fin}));
         
         if (fin.activeNumbers.length > 0) {
-            let betPerNo = calculateDynamicStake();
-            if (fin.activeNumbers.includes(n)) {
-                fin.pl += (betPerNo * 36) - (fin.activeNumbers.length * betPerNo);
-            } else {
-                fin.pl -= (fin.activeNumbers.length * betPerNo);
-            }
+            let bet = calculateDynamicStake();
+            if (fin.activeNumbers.includes(n)) fin.pl += (bet * 36) - (fin.activeNumbers.length * bet);
+            else fin.pl -= (fin.activeNumbers.length * bet);
         }
 
         history.push(n);
         process();
     }
 
-    function calculateFreq() {
+    function process() {
+        const last = history[history.length-1];
+        const prev = history[history.length-2];
+        
+        // Freq Logic L40
         let ops = {"+10":0, "-10":0, "+1":0, "-1":0};
         let start = Math.max(0, history.length - 40);
         for(let i = start; i < history.length - 1; i++) {
@@ -151,6 +167,7 @@
             if (termMap[p+1]?.includes(c)) ops["+1"]++;
             if (termMap[p-1]?.includes(c)) ops["-1"]++;
         }
+        
         let maxVal = 0, topOp = null;
         for(let op in ops) {
             document.getElementById('f'+op).innerText = ops[op];
@@ -158,17 +175,10 @@
             if(ops[op] > maxVal) { maxVal = ops[op]; topOp = op; }
         }
         if(topOp) document.getElementById('box'+topOp).classList.add('freq-leader');
-        return topOp;
-    }
 
-    function process() {
-        const last = history[history.length-1];
-        const prev = history[history.length-2];
-        const topOp = calculateFreq();
-        
-        document.getElementById('lastNum').innerText = last;
-        fin.activeNumbers = [];
+        // Clear Chips
         for(let i=0; i<=36; i++) document.getElementById(`chip-${i}`).innerHTML = "";
+        fin.activeNumbers = [];
 
         if (history.length >= 2 && topOp) {
             let matched = false;
@@ -181,9 +191,9 @@
                 let target = (topOp==="+10")?last+10:(topOp==="-10")?last-10:(topOp==="+1")?last+1:last-1;
                 if (termMap[target]) {
                     fin.activeNumbers = termMap[target];
-                    let currentStake = calculateDynamicStake();
+                    let s = calculateDynamicStake();
                     fin.activeNumbers.forEach(num => {
-                        document.getElementById(`chip-${num}`).innerHTML = `<div class="chip">${currentStake}</div>`;
+                        document.getElementById(`chip-${num}`).innerHTML = `<div class="chip">${s}</div>`;
                     });
                 }
             }
