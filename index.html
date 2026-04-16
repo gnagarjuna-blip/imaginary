@@ -2,231 +2,202 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BIET - Interactive Terminal Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roulette Section Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #080808; color: #eee; padding: 20px; margin: 0; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 1150px; }
-        .header { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .stat-group { display: flex; flex-direction: column; }
-        .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
-        .val { font-family: monospace; font-weight: bold; font-size: 22px; }
-        .win { color: #2ecc71; } .loss { color: #e74c3c; }
-
-        .sim-area { background: #111; padding: 15px; border-radius: 12px; border: 1px solid #444; margin-bottom: 20px; display: none; }
-        textarea { background: #000; color: #2ecc71; border: 1px solid #333; width: 100%; height: 80px; padding: 10px; box-sizing: border-box; font-family: monospace; resize: none; margin-top: 10px; }
-        
-        .freq-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .freq-item { background: #111; padding: 8px; border-radius: 8px; border: 1px solid #333; text-align: center; }
-        .freq-leader { border-color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
-        .freq-val { font-size: 16px; font-weight: bold; color: #f1c40f; }
-
-        /* Roulette Table with Active States */
-        .roulette-table { 
-            display: grid; grid-template-columns: 60px repeat(12, 1fr); grid-template-rows: repeat(3, 80px); 
-            gap: 4px; background: #064e3b; padding: 10px; border: 8px solid #3d2b1f; border-radius: 12px; 
+        :root {
+            --green: #2e7d32;
+            --red: #c62828;
+            --black: #212121;
+            --gold: #fbc02d;
+            --blue: #1976d2;
         }
-        .cell { 
-            position: relative; display: flex; align-items: center; justify-content: center; 
-            font-size: 22px; font-weight: bold; color: white; cursor: pointer; border-radius: 4px; 
-            transition: all 0.1s ease; border: 1px solid rgba(255,255,255,0.1);
-        }
-        .cell:hover { filter: brightness(1.3); transform: scale(1.02); z-index: 2; }
-        /* Visual feedback for click */
-        .cell:active { transform: scale(0.9); filter: brightness(0.7); }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         
-        /* Highlight for the Last Number entered */
-        .cell.last-hit { border: 3px solid #f1c40f !important; box-shadow: inset 0 0 15px rgba(241, 196, 15, 0.5); z-index: 3; }
+        /* Table Styling */
+        .roulette-table { display: grid; grid-template-columns: repeat(14, 1fr); gap: 2px; background: #444; padding: 10px; border-radius: 8px; margin-bottom: 20px; }
+        .cell { width: 45px; height: 60px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border-radius: 4px; transition: transform 0.1s; border: 1px solid rgba(255,255,255,0.1); }
+        .cell:hover { transform: scale(1.05); filter: brightness(1.2); }
+        .cell.red { background: var(--red); }
+        .cell.black { background: var(--black); }
+        .cell.green { background: var(--green); grid-row: span 3; height: auto; }
+        .cell.betting { border: 3px solid var(--gold); box-shadow: 0 0 10px var(--gold); }
 
-        .zero { grid-row: span 3; background: #059669; }
-        .red { background: #dc2626; }
-        .black { background: #18181b; }
-
-        .chip { position: absolute; bottom: 5px; right: 5px; background: #f1c40f; color: #000; font-size: 11px; font-weight: 900; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px dashed #000; box-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: none; }
-
-        .controls { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 15px; margin-top: 20px; }
-        .info-card { background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #333; }
-        input { background: #000; color: #fff; border: 1px solid #444; width: 100%; padding: 8px; box-sizing: border-box; }
-        .btn { padding: 15px; border: 0; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
-        .toggle-btn { background: #2c3e50; color: #fff; border: 1px solid #34495e; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+        /* Dashboard Styling */
+        .dashboard { width: 90%; max-width: 1000px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .panel { background: #2d2d2d; padding: 15px; border-radius: 8px; border-top: 4px solid var(--blue); }
+        .stat-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        .stat-table th, .stat-table td { padding: 8px; border-bottom: 1px solid #444; text-align: left; }
+        
+        .win-banner { color: #4caf50; font-weight: bold; font-size: 1.2em; margin-top: 10px; }
+        .loss-banner { color: #f44336; font-weight: bold; font-size: 1.2em; margin-top: 10px; }
+        .bet-badge { background: var(--gold); color: black; padding: 2px 6px; border-radius: 4px; margin-right: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div class="stat-group">
-            <span class="label">Input Mode</span>
-            <button class="toggle-btn" id="modeBtn" onclick="toggleMode()">MANUAL INPUT</button>
-        </div>
-        <div class="stat-group" style="text-align:center">
-            <span class="label">Stake Multiplier</span>
-            <div id="multiDisp" class="val" style="color:#3498db">1x</div>
-        </div>
-        <div class="stat-group" style="text-align:right">
-            <span class="label">Total Profit/Loss</span>
-            <span id="netTotal" class="val">0.00</span>
-        </div>
-    </div>
-
-    <div id="simArea" class="sim-area">
-        <textarea id="bulkData" placeholder="Paste 200-1000 numbers here..."></textarea>
-        <button class="btn" style="background:#27ae60; width:100%; margin-top:10px;" onclick="runSimulation()">PROCESS BULK DATA</button>
-    </div>
-
-    <div class="freq-box">
-        <div id="box+10" class="freq-item"><span class="label">+10</span><br><span id="f+10" class="freq-val">0</span></div>
-        <div id="box-10" class="freq-item"><span class="label">-10</span><br><span id="f-10" class="freq-val">0</span></div>
-        <div id="box+1" class="freq-item"><span class="label">+1</span><br><span id="f+1" class="freq-val">0</span></div>
-        <div id="box-1" class="freq-item"><span class="label">-1</span><br><span id="f-1" class="freq-val">0</span></div>
-        <div id="box+0" class="freq-item"><span class="label">+0</span><br><span id="f+0" class="freq-val">0</span></div>
-        <div id="box-0" class="freq-item"><span class="label">-0</span><br><span id="f-0" class="freq-val">0</span></div>
-        <div id="box+2" class="freq-item"><span class="label">+2</span><br><span id="f+2" class="freq-val">0</span></div>
-        <div id="box-2" class="freq-item"><span class="label">-2</span><br><span id="f-2" class="freq-val">0</span></div>
-    </div>
+    <h1>Roulette Section Tracker</h1>
 
     <div class="roulette-table" id="table">
-        <div id="cell-0" class="cell zero" onclick="inputNum(0)">0<div id="chip-0"></div></div>
-    </div>
+        <div class="cell green" onclick="inputSpin(0)">0</div>
+        </div>
 
-    <div class="controls">
-        <div class="info-card">
-            <span class="label">Base Unit</span>
-            <input type="number" id="pBase" value="10" onchange="updateLogic()">
+    <div class="dashboard">
+        <div class="panel">
+            <h3>Section Analysis</h3>
+            <table class="stat-table" id="sectionData">
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th>Coldest</th>
+                        <th>Hottest</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
         </div>
-        <div class="info-card">
-            <span class="label">Loss Factor (20x Base)</span>
-            <div id="factorLabel" style="font-size:18px; font-weight:bold; color:#e67e22; margin-top:5px;">200.00</div>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn" style="background:#d35400; flex:1" onclick="undo()">UNDO</button>
-            <button class="btn" style="background:#333; flex:1" onclick="location.reload()">RESET</button>
+
+        <div class="panel">
+            <h3>Betting Strategy</h3>
+            <div id="statusMessage">Enter results by clicking the table.</div>
+            <div id="currentBetsDisplay" style="margin-top: 15px;">
+                <strong>Active Bets:</strong> <span id="betsList">None</span>
+            </div>
+            <div id="winLossAnalysis" style="margin-top: 15px; border-top: 1px solid #555; padding-top: 10px;">
+                </div>
         </div>
     </div>
-</div>
 
 <script>
-    const termMap = { 0:[0], 1:[8], 2:[7,9], 3:[8], 4:[11], 5:[10,12], 6:[11], 7:[2,9], 8:[1,3,13,15], 9:[2,14], 10:[5,17], 11:[4,6,16,18], 12:[5,17], 13:[8,20], 14:[7,9,19,21], 15:[8,20], 16:[11,23], 17:[10,12,22,24], 18:[11,23], 19:[14,26], 20:[13,15,25,27], 21:[14,26], 22:[17,29], 23:[16,18,28,30], 24:[17,29], 25:[20,32], 26:[19,21,31,33], 27:[20,32], 28:[23,35], 29:[22,24,34,36], 30:[23,35], 31:[26], 32:[25,27], 33:[26], 34:[29], 35:[28,30], 36:[29] };
-    const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-    let history = [], stateHistory = [], fin = { pl: 0, activeNumbers: [] }, isSimMode = false;
+    // Configuration from Java
+    const SECTIONS = {
+        TIER: [27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33],
+        ORPHILINE: [17, 34, 6, 1, 20, 14, 31, 9],
+        VOISION: [22, 18, 29, 7, 28, 19, 4, 21, 2, 25],
+        ZERO: [15, 32, 0, 26, 3, 35, 12]
+    };
+    const SEC_NAMES = ["TIER", "ORPHILINE", "VOISION", "ZERO"];
+    const RED_NUMS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 
-    // Initialize Table
-    const table = document.getElementById('table');
-    for (let col = 1; col <= 12; col++) {
-        for (let row = 3; row >= 1; row--) {
-            let num = (col - 1) * 3 + row;
-            let div = document.createElement('div');
-            div.id = `cell-${num}`;
-            div.className = `cell ${reds.includes(num) ? 'red' : 'black'}`;
-            div.style.gridColumn = col + 1; div.style.gridRow = 4 - row;
-            div.innerHTML = `${num}<div id="chip-${num}"></div>`;
-            div.onclick = () => inputNum(num); table.appendChild(div);
+    // State
+    let spinHistory = [];
+    let occurrenceMap = {};
+    let currentBets = [];
+    let currentSectionIdx = 0;
+    let usedIndexBySection = {0: new Set(), 1: new Set(), 2: new Set(), 3: new Set()};
+    let totalWins = 0;
+    let last5Wins = [];
+
+    // Initialize Table View
+    function initTable() {
+        const table = document.getElementById('table');
+        for (let i = 1; i <= 36; i++) {
+            const cell = document.createElement('div');
+            cell.className = `cell ${RED_NUMS.includes(i) ? 'red' : 'black'}`;
+            cell.id = `cell-${i}`;
+            cell.innerText = i;
+            cell.onclick = () => inputSpin(i);
+            table.appendChild(cell);
         }
     }
 
-    function inputNum(n) {
-        stateHistory.push(JSON.stringify({history, fin}));
+    function inputSpin(num) {
+        spinHistory.push(num);
+        occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
         
-        // P/L Logic
-        if (fin.activeNumbers.length > 0) {
-            let bet = calculateDynamicStake();
-            if (fin.activeNumbers.includes(n)) fin.pl += (bet * 36) - (fin.activeNumbers.length * bet);
-            else fin.pl -= (fin.activeNumbers.length * bet);
-        }
-
-        history.push(n);
-        
-        // Visual: Update Last Hit Highlight
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('last-hit'));
-        document.getElementById(`cell-${n}`).classList.add('last-hit');
-        
-        process();
-    }
-
-    function calculateDynamicStake() {
-        const base = parseInt(document.getElementById('pBase').value);
-        const factor = base * 20;
-        return (fin.pl >= 0) ? base : base * (Math.floor(Math.abs(fin.pl) / factor) + 1);
-    }
-
-    function process() {
-        const last = history[history.length-1], prev = history[history.length-2];
-        let ops = {"+10":0, "-10":0, "+1":0, "-1":0, "+0":0, "-0":0, "+2":0, "-2":0};
-        let start = Math.max(0, history.length - 40);
-        
-        for(let i = start; i < history.length - 1; i++) {
-            let p = history[i], c = history[i+1];
-            if (termMap[p+10]?.includes(c)) ops["+10"]++; if (termMap[p-10]?.includes(c)) ops["-10"]++;
-            if (termMap[p+1]?.includes(c)) ops["+1"]++; if (termMap[p-1]?.includes(c)) ops["-1"]++;
-            if (termMap[p+0]?.includes(c)) ops["+0"]++; if (termMap[p-0]?.includes(c)) ops["-0"]++;
-            if (termMap[p+2]?.includes(c)) ops["+2"]++; if (termMap[p-2]?.includes(c)) ops["-2"]++;
-        }
-
-        let maxVal = 0, topOp = null;
-        for(let op in ops) {
-            document.getElementById('f'+op).innerText = ops[op];
-            document.getElementById('box'+op).classList.remove('freq-leader');
-            if(ops[op] > maxVal) { maxVal = ops[op]; topOp = op; }
-        }
-        if(topOp) document.getElementById('box'+topOp).classList.add('freq-leader');
-
-        // Reset Chips and Predictions
-        for(let i=0; i<=36; i++) document.getElementById(`chip-${i}`).innerHTML = "";
-        fin.activeNumbers = [];
-
-        if (history.length >= 2 && topOp) {
-            let matched = false;
-            let checkVal = parseInt(topOp.replace('+', '').replace('-', ''));
-            let opSign = topOp.includes('+') ? '+' : '-';
-            let targetCheck = (opSign === '+') ? prev + checkVal : prev - checkVal;
-
-            if(termMap[targetCheck]?.includes(last)) matched = true;
-
-            if (matched) {
-                let target = (opSign === '+') ? last + checkVal : last - checkVal;
-                if (termMap[target]) {
-                    fin.activeNumbers = termMap[target];
-                    let s = calculateDynamicStake();
-                    fin.activeNumbers.forEach(num => {
-                        document.getElementById(`chip-${num}`).innerHTML = `<div class="chip">${s}</div>`;
-                    });
-                }
-            }
-        }
+        checkWin(num);
         updateUI();
     }
 
-    function toggleMode() {
-        isSimMode = !isSimMode;
-        document.getElementById('simArea').style.display = isSimMode ? 'block' : 'none';
-        document.getElementById('modeBtn').innerText = isSimMode ? 'SIMULATION MODE' : 'MANUAL INPUT';
+    function checkWin(num) {
+        const status = document.getElementById('statusMessage');
+        if (currentBets.includes(num)) {
+            totalWins++;
+            last5Wins.push(num);
+            if(last5Wins.length > 5) last5Wins.shift();
+            
+            status.innerHTML = `<div class="win-banner">WIN! Result: ${num} (Total: ${totalWins})</div>`;
+            resetStrategy();
+        } else if (currentBets.length > 0) {
+            status.innerHTML = `<div class="loss-banner">Loss: ${num}. Adding next section...</div>`;
+            progressStrategy();
+        } else {
+            // First time or starting over
+            progressStrategy();
+        }
     }
 
-    function updateLogic() { document.getElementById('factorLabel').innerText = (parseInt(document.getElementById('pBase').value) * 20).toFixed(2); }
+    function resetStrategy() {
+        currentBets = [];
+        SEC_NAMES.forEach((_, i) => usedIndexBySection[i].clear());
+        currentSectionIdx = (currentSectionIdx + 1) % 4;
+        progressStrategy();
+    }
 
-    function runSimulation() {
-        const nums = document.getElementById('bulkData').value.split(/[\s, \n]+/).filter(x => x !== "").map(Number);
-        history = []; fin.pl = 0; fin.activeNumbers = [];
-        nums.forEach(n => inputNum(n));
+    function progressStrategy() {
+        // Logic from getNextColdNumberFromCurrentSection
+        let found = false;
+        let attempts = 0;
+
+        while(!found && attempts < 4) {
+            const secName = SEC_NAMES[currentSectionIdx];
+            const sectionNums = SECTIONS[secName];
+            
+            // Sort by occurrences
+            let sorted = [...sectionNums].sort((a, b) => (occurrenceMap[a] || 0) - (occurrenceMap[b] || 0));
+            
+            // Find first unused index in sorted list
+            let nextNum = -1;
+            for(let i=0; i<sorted.length; i++) {
+                if(!usedIndexBySection[currentSectionIdx].has(i)) {
+                    usedIndexBySection[currentSectionIdx].add(i);
+                    nextNum = sorted[i];
+                    break;
+                }
+            }
+
+            if(nextNum !== -1) {
+                currentBets.push(nextNum);
+                found = true;
+            } else {
+                currentSectionIdx = (currentSectionIdx + 1) % 4;
+                attempts++;
+            }
+        }
     }
 
     function updateUI() {
-        document.getElementById('netTotal').innerText = fin.pl.toFixed(2);
-        document.getElementById('netTotal').className = `val ${fin.pl >= 0 ? 'win' : 'loss'}`;
-        document.getElementById('multiDisp').innerText = (calculateDynamicStake() / parseInt(document.getElementById('pBase').value)) + "x";
+        // Update Table Highlighting
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('betting'));
+        currentBets.forEach(num => {
+            const cell = document.getElementById(`cell-${num}`) || document.querySelector('.cell.green');
+            if(num === 0) document.querySelector('.cell.green').classList.add('betting');
+            else cell.classList.add('betting');
+        });
+
+        // Update Section Table
+        const tbody = document.querySelector('#sectionData tbody');
+        tbody.innerHTML = '';
+        SEC_NAMES.forEach((name, idx) => {
+            let sorted = [...SECTIONS[name]].sort((a, b) => (occurrenceMap[a] || 0) - (occurrenceMap[b] || 0));
+            let coldest = sorted[0];
+            let hottest = sorted[sorted.length - 1];
+            
+            tbody.innerHTML += `<tr>
+                <td>${name}</td>
+                <td>${coldest} (${occurrenceMap[coldest] || 0})</td>
+                <td>${hottest} (${occurrenceMap[hottest] || 0})</td>
+            </tr>`;
+        });
+
+        // Update Current Bets List
+        const list = document.getElementById('betsList');
+        list.innerHTML = currentBets.map(b => `<span class="bet-badge">${b}</span>`).join('');
     }
 
-    function undo() {
-        if(stateHistory.length > 0) {
-            let p = JSON.parse(stateHistory.pop());
-            history = p.history; fin = p.fin;
-            if(history.length > 0) {
-                document.querySelectorAll('.cell').forEach(c => c.classList.remove('last-hit'));
-                document.getElementById(`cell-${history[history.length-1]}`).classList.add('last-hit');
-            }
-            process();
-        }
-    }
-    updateLogic();
+    initTable();
 </script>
 </body>
 </html>
