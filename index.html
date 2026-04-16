@@ -3,83 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Roulette Section Tracker</title>
+    <title>Roulette Section Tracker Pro</title>
     <style>
         :root {
             --casino-green: #00703c;
-            --table-border: #ffffff;
             --cell-red: #d32f2f;
             --cell-black: #1a1a1a;
             --cell-zero: #2e7d32;
             --highlight: #ffeb3b;
+            --panel-bg: #222;
         }
 
-        body { font-family: 'Arial', sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
-
-        /* Bulk Input Styles */
-        .setup-area { background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; width: 100%; max-width: 800px; border: 1px solid #444; }
-        textarea { width: 100%; height: 60px; background: #333; color: #00ff00; border: 1px solid #555; padding: 10px; box-sizing: border-box; resize: none; }
-        .btn { background: #00703c; color: white; border: none; padding: 10px 20px; cursor: pointer; margin-top: 10px; border-radius: 4px; font-weight: bold; }
-        .btn:hover { background: #00a050; }
-
-        /* Roulette Table Grid Layout */
-        .roulette-container { position: relative; background: var(--casino-green); padding: 20px; border: 10px solid #5d4037; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .betting-mat { display: grid; grid-template-columns: 60px repeat(12, 50px); grid-template-rows: repeat(3, 60px); gap: 2px; border: 2px solid var(--table-border); }
+        body { font-family: 'Courier New', Courier, monospace; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; font-size: 14px; }
         
+        /* Layout */
+        .top-row { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+        
+        /* Setup/Input */
+        .setup-area { background: var(--panel-bg); padding: 15px; border-radius: 8px; flex: 1; min-width: 300px; border: 1px solid #444; }
+        textarea { width: 100%; height: 50px; background: #333; color: #00ff00; border: 1px solid #555; padding: 8px; box-sizing: border-box; resize: none; }
+        .btn { background: var(--casino-green); color: white; border: none; padding: 10px 15px; cursor: pointer; margin-top: 10px; border-radius: 4px; font-weight: bold; }
+
+        /* Table Grid */
+        .roulette-container { background: var(--casino-green); padding: 15px; border: 8px solid #5d4037; border-radius: 12px; }
+        .betting-mat { display: grid; grid-template-columns: 50px repeat(12, 45px); grid-template-rows: repeat(3, 50px); gap: 2px; border: 2px solid white; }
+        .cell { display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: 0.1s; }
         .n0 { grid-row: 1 / span 3; background: var(--cell-zero); }
-        .cell { display: flex; align-items: center; justify-content: center; font-size: 1.2em; font-weight: bold; cursor: pointer; position: relative; transition: all 0.1s; border: 1px solid rgba(255,255,255,0.2); }
-        .cell:hover { opacity: 0.8; transform: scale(1.02); }
         .red { background: var(--cell-red); }
         .black { background: var(--cell-black); }
-        
-        /* Active Bet Marker */
-        .active-bet::after {
-            content: ''; position: absolute; width: 35px; height: 35px; 
-            background: rgba(255, 235, 59, 0.6); border: 3px solid var(--highlight);
-            border-radius: 50%; box-shadow: 0 0 10px #000;
-        }
+        .active-bet { position: relative; }
+        .active-bet::after { content: '●'; color: var(--highlight); font-size: 30px; position: absolute; text-shadow: 0 0 5px #000; }
 
-        /* Stats Dashboard */
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; width: 100%; max-width: 900px; margin-top: 20px; }
-        .stat-card { background: #1e1e1e; padding: 15px; border-radius: 8px; border-bottom: 3px solid var(--casino-green); }
-        .counter { font-size: 2em; color: var(--highlight); }
-        .history-strip { margin-top: 10px; overflow-x: auto; white-space: nowrap; padding: 10px; background: #000; border-radius: 5px; }
-        .history-item { display: inline-block; width: 30px; height: 30px; line-height: 30px; text-align: center; margin-right: 5px; border-radius: 50%; font-size: 0.8em; }
+        /* Console Dashboard */
+        .console-dashboard { width: 100%; max-width: 1100px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #1a1a1a; }
+        th, td { border: 1px solid #444; padding: 8px; text-align: left; vertical-align: top; }
+        th { background: #333; color: #fff; text-transform: uppercase; font-size: 12px; }
+        
+        .section-name { font-weight: bold; color: #4fc3f7; }
+        .cold-text { color: #fff176; font-size: 12px; }
+        .hot-text { color: #ff8a65; font-size: 12px; }
+        .bet-text { color: #81c784; font-weight: bold; }
+
+        /* Summary Box */
+        .summary-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; border: 2px double #444; padding: 10px; }
+        .summary-title { grid-column: 1 / span 2; text-align: center; font-weight: bold; background: #333; padding: 5px; }
+        .type-label { font-weight: bold; background: #262626; padding: 5px; border: 1px solid #444; }
+        .nums-val { padding: 5px; border: 1px solid #444; min-height: 25px; }
+        
+        .next-instruction { margin-top: 15px; padding: 10px; border-left: 5px solid var(--highlight); background: #332b00; color: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="setup-area">
-        <h3>Step 1: Data Initialization (Min 50 Spins)</h3>
-        <textarea id="bulkInput" placeholder="Paste numbers here (e.g., 32, 15, 19...) or click the table below"></textarea>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <button class="btn" onclick="processBulk()">Process Initial Data</button>
-            <span id="spinCountText">Spins entered: 0 / 50</span>
-        </div>
-    </div>
-
-    <div class="roulette-container">
-        <div class="betting-mat" id="mat">
-            <div class="cell n0" onclick="handleTableClick(0)">0</div>
+    <div class="top-row">
+        <div class="setup-area">
+            <strong>INITIAL SETUP (Min 50 Spins)</strong>
+            <textarea id="bulkInput" placeholder="Paste: 32, 15, 19..."></textarea>
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <button class="btn" onclick="processBulk()">IMPORT DATA</button>
+                <span id="spinCountText">Spins: 0 / 50</span>
             </div>
-    </div>
+        </div>
 
-    <div class="dashboard">
-        <div class="stat-card">
-            <div>Current Strategy Section</div>
-            <div class="counter" id="activeSection">---</div>
-        </div>
-        <div class="stat-card">
-            <div>Total Wins</div>
-            <div class="counter" id="winCount">0</div>
-        </div>
-        <div class="stat-card">
-            <div>Strategy Status</div>
-            <div id="strategyStatus">Awaiting 50 spins...</div>
+        <div class="roulette-container">
+            <div class="betting-mat" id="mat">
+                <div class="cell n0" onclick="handleTableClick(0)">0</div>
+            </div>
         </div>
     </div>
 
-    <div class="history-strip" id="history">History: </div>
+    <div class="console-dashboard">
+        <strong>NUMBERS AND CURRENT BETS IN SECTIONS:</strong>
+        <table id="sectionTable">
+            <thead>
+                <tr>
+                    <th style="width: 120px;">Section</th>
+                    <th>Cold Numbers (Least to Most)</th>
+                    <th>Hot Numbers (Most to Least)</th>
+                    <th style="width: 200px;">Current Bets</th>
+                </tr>
+            </thead>
+            <tbody id="sectionBody">
+                </tbody>
+        </table>
+
+        <div class="summary-box">
+            <div class="summary-title">>>>>> CURRENT BETS <<<<<</div>
+            <div class="type-label">COLD BETS</div>
+            <div class="nums-val" id="coldBetsVal"></div>
+            <div class="type-label">HOT BETS</div>
+            <div class="nums-val" id="hotBetsVal"></div>
+        </div>
+
+        <div id="nextInstruction" class="next-instruction">Awaiting initial 50 spins to begin strategy...</div>
+    </div>
 
 <script>
     const REDS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
@@ -96,15 +114,10 @@
     let currentBets = [];
     let secIdx = 0;
     let usedInSec = {0: new Set(), 1: new Set(), 2: new Set(), 3: new Set()};
-    let wins = 0;
     let isLive = false;
 
     function initMat() {
         const mat = document.getElementById('mat');
-        // Roulette board is organized in 3 rows
-        // Row 1: 3, 6, 9...
-        // Row 2: 2, 5, 8...
-        // Row 3: 1, 4, 7...
         for (let col = 1; col <= 12; col++) {
             for (let row = 3; row >= 1; row--) {
                 const num = (col - 1) * 3 + row;
@@ -118,12 +131,14 @@
                 mat.appendChild(cell);
             }
         }
+        updateDashboard(); // Initial empty state
     }
 
     function handleTableClick(n) {
         if (!isLive) {
             spins.push(n);
-            updatePreLiveUI();
+            document.getElementById('spinCountText').innerText = `Spins: ${spins.length} / 50`;
+            if (spins.length >= 50) startLiveMode();
         } else {
             processSpin(n);
         }
@@ -134,41 +149,30 @@
         const nums = input.split(/[ ,]+/).filter(x => x !== "").map(Number);
         nums.forEach(n => { if(n >= 0 && n <= 36) spins.push(n); });
         
-        if (spins.length >= 50) {
-            startLiveMode();
-        } else {
-            updatePreLiveUI();
-            alert(`Need ${50 - spins.length} more spins.`);
-        }
-    }
-
-    function updatePreLiveUI() {
-        document.getElementById('spinCountText').innerText = `Spins entered: ${spins.length} / 50`;
-        updateHistory();
+        if (spins.length >= 50) startLiveMode();
+        else alert(`Need ${50 - spins.length} more spins.`);
     }
 
     function startLiveMode() {
         isLive = true;
-        document.querySelector('.setup-area').style.opacity = "0.5";
-        document.getElementById('strategyStatus').innerText = "STRATEGY ACTIVE";
-        
-        // Initial Calculation
         spins.forEach(n => counts[n] = (counts[n] || 0) + 1);
         calculateNextBet();
-        refreshUI();
+        updateDashboard();
     }
 
     function processSpin(n) {
         counts[n] = (counts[n] || 0) + 1;
         spins.push(n);
-
+        
         if (currentBets.includes(n)) {
-            wins++;
-            resetAndCycle();
+            currentBets = [];
+            Object.keys(usedInSec).forEach(k => usedInSec[k].clear());
+            secIdx = (secIdx + 1) % 4;
         } else {
-            cycleSectionAndAdd();
+            secIdx = (secIdx + 1) % 4;
         }
-        refreshUI();
+        calculateNextBet();
+        updateDashboard();
     }
 
     function calculateNextBet() {
@@ -185,41 +189,49 @@
         }
     }
 
-    function cycleSectionAndAdd() {
-        secIdx = (secIdx + 1) % 4;
-        calculateNextBet();
-    }
+    function updateDashboard() {
+        const tbody = document.getElementById('sectionBody');
+        tbody.innerHTML = '';
 
-    function resetAndCycle() {
-        currentBets = [];
-        Object.keys(usedInSec).forEach(k => usedInSec[k].clear());
-        secIdx = (secIdx + 1) % 4;
-        calculateNextBet();
-    }
+        SEC_ORDER.forEach((name, idx) => {
+            const sectionNums = SECTIONS[name];
+            // Sort Cold (Asc)
+            const coldSorted = [...sectionNums].sort((a,b) => (counts[a]||0) - (counts[b]||0));
+            // Sort Hot (Desc)
+            const hotSorted = [...sectionNums].sort((a,b) => (counts[b]||0) - (counts[a]||0));
 
-    function refreshUI() {
-        // Clear old highlights
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('active-bet'));
-        
-        // Add highlights for current cold numbers
-        currentBets.forEach(n => {
-            const id = n === 0 ? 'cell-0' : `cell-${n}`;
-            const el = n === 0 ? document.querySelector('.n0') : document.getElementById(id);
-            if(el) el.classList.add('active-bet');
+            const coldStr = coldSorted.map(n => `${n}(${counts[n]||0})`).join(', ');
+            const hotStr = hotSorted.map(n => `${n}(${counts[n]||0})`).join(', ');
+            
+            // Filter current bets for this specific section
+            const sectionBets = currentBets.filter(b => sectionNums.includes(b)).join(', ');
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="section-name">${name}</td>
+                    <td class="cold-text">${coldStr}</td>
+                    <td class="hot-text">${hotStr}</td>
+                    <td class="bet-text">${sectionBets || '-'}</td>
+                </tr>
+            `;
         });
 
-        document.getElementById('winCount').innerText = wins;
-        document.getElementById('activeSection').innerText = SEC_ORDER[secIdx];
-        updateHistory();
-    }
+        // Update Bottom Summaries
+        document.getElementById('coldBetsVal').innerText = currentBets.join(', ');
+        
+        if (isLive) {
+            document.getElementById('nextInstruction').innerText = 
+                `Next number to bet on from ${SEC_ORDER[secIdx]} section: ${currentBets[currentBets.length-1] || 'None'}`;
+        }
 
-    function updateHistory() {
-        const h = document.getElementById('history');
-        const last10 = spins.slice(-15).reverse();
-        h.innerHTML = 'History: ' + last10.map(n => {
-            let color = n === 0 ? 'var(--cell-zero)' : (REDS.includes(n) ? 'var(--cell-red)' : 'var(--cell-black)');
-            return `<span class="history-item" style="background:${color}">${n}</span>`;
-        }).join('');
+        // Table Highlighting
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('active-bet'));
+        if (isLive) {
+            currentBets.forEach(n => {
+                const el = n === 0 ? document.querySelector('.n0') : document.getElementById(`cell-${n}`);
+                if (el) el.classList.add('active-bet');
+            });
+        }
     }
 
     initMat();
