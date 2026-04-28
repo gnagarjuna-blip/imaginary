@@ -3,238 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roulette Section Tracker Pro</title>
+    <title>Marks Distribution System</title>
     <style>
-        :root {
-            --casino-green: #00703c;
-            --cell-red: #d32f2f;
-            --cell-black: #1a1a1a;
-            --cell-zero: #2e7d32;
-            --highlight: #ffeb3b;
-            --panel-bg: #222;
-        }
-
-        body { font-family: 'Courier New', Courier, monospace; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; font-size: 14px; }
-        
-        /* Layout */
-        .top-row { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
-        
-        /* Setup/Input */
-        .setup-area { background: var(--panel-bg); padding: 15px; border-radius: 8px; flex: 1; min-width: 300px; border: 1px solid #444; }
-        textarea { width: 100%; height: 50px; background: #333; color: #00ff00; border: 1px solid #555; padding: 8px; box-sizing: border-box; resize: none; }
-        .btn { background: var(--casino-green); color: white; border: none; padding: 10px 15px; cursor: pointer; margin-top: 10px; border-radius: 4px; font-weight: bold; }
-
-        /* Table Grid */
-        .roulette-container { background: var(--casino-green); padding: 15px; border: 8px solid #5d4037; border-radius: 12px; }
-        .betting-mat { display: grid; grid-template-columns: 50px repeat(12, 45px); grid-template-rows: repeat(3, 50px); gap: 2px; border: 2px solid white; }
-        .cell { display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: 0.1s; }
-        .n0 { grid-row: 1 / span 3; background: var(--cell-zero); }
-        .red { background: var(--cell-red); }
-        .black { background: var(--cell-black); }
-        .active-bet { position: relative; }
-        .active-bet::after { content: '●'; color: var(--highlight); font-size: 30px; position: absolute; text-shadow: 0 0 5px #000; }
-
-        /* Console Dashboard */
-        .console-dashboard { width: 100%; max-width: 1100px; margin: 0 auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #1a1a1a; }
-        th, td { border: 1px solid #444; padding: 8px; text-align: left; vertical-align: top; }
-        th { background: #333; color: #fff; text-transform: uppercase; font-size: 12px; }
-        
-        .section-name { font-weight: bold; color: #4fc3f7; }
-        .cold-text { color: #fff176; font-size: 12px; }
-        .hot-text { color: #ff8a65; font-size: 12px; }
-        .bet-text { color: #81c784; font-weight: bold; }
-
-        /* Summary Box */
-        .summary-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; border: 2px double #444; padding: 10px; }
-        .summary-title { grid-column: 1 / span 2; text-align: center; font-weight: bold; background: #333; padding: 5px; }
-        .type-label { font-weight: bold; background: #262626; padding: 5px; border: 1px solid #444; }
-        .nums-val { padding: 5px; border: 1px solid #444; min-height: 25px; }
-        
-        .next-instruction { margin-top: 15px; padding: 10px; border-left: 5px solid var(--highlight); background: #332b00; color: #fff; font-weight: bold; }
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fffde7; }
+        th, td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 14px; }
+        th { background-color: #fff9c4; }
+        .input-group { margin-bottom: 15px; }
+        input[type="text"], input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px 15px; background: #2e7d32; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #1b5e20; }
     </style>
 </head>
 <body>
 
-    <div class="top-row">
-        <div class="setup-area">
-            <strong>INITIAL SETUP (Min 50 Spins)</strong>
-            <textarea id="bulkInput" placeholder="Paste: 32, 15, 19..."></textarea>
-            <div style="display:flex; justify-content: space-between; align-items: center;">
-                <button class="btn" onclick="processBulk()">IMPORT DATA</button>
-                <span id="spinCountText">Spins: 0 / 50</span>
-            </div>
-        </div>
-
-        <div class="roulette-container">
-            <div class="betting-mat" id="mat">
-                <div class="cell n0" onclick="handleTableClick(0)">0</div>
-            </div>
-        </div>
+<div class="container">
+    <h2>Student Marks Distribution</h2>
+    
+    <div class="input-group">
+        <label>Roll No: </label>
+        <input type="text" id="rollNo" placeholder="e.g. 101">
+        <label>Total Marks (Max 35): </label>
+        <input type="number" id="totalMarks" max="35" min="0">
+        <button onclick="distributeMarks()">Generate Distribution</button>
     </div>
 
-    <div class="console-dashboard">
-        <strong>NUMBERS AND CURRENT BETS IN SECTIONS:</strong>
-        <table id="sectionTable">
-            <thead>
-                <tr>
-                    <th style="width: 120px;">Section</th>
-                    <th>Cold Numbers (Least to Most)</th>
-                    <th>Hot Numbers (Most to Least)</th>
-                    <th style="width: 200px;">Current Bets</th>
-                </tr>
-            </thead>
-            <tbody id="sectionBody">
-                </tbody>
-        </table>
-
-        <div class="summary-box">
-            <div class="summary-title">>>>>> CURRENT BETS <<<<<</div>
-            <div class="type-label">COLD BETS</div>
-            <div class="nums-val" id="coldBetsVal"></div>
-            <div class="type-label">HOT BETS</div>
-            <div class="nums-val" id="hotBetsVal"></div>
-        </div>
-
-        <div id="nextInstruction" class="next-instruction">Awaiting initial 50 spins to begin strategy...</div>
-    </div>
+    <table id="marksTable">
+        <thead>
+            <tr>
+                <th colspan="6">Descriptive Questions (Max 5 Each)</th>
+                <th rowspan="2">Objective<br>(10M)</th>
+                <th colspan="2">Assignment (5M)</th>
+                <th rowspan="2">Total Marks<br>Obtained (35)</th>
+            </tr>
+            <tr>
+                <th>Q1 (5)<br>CO1</th>
+                <th>Q2 (5)<br>CO1</th>
+                <th>Q3 (5)<br>CO1</th>
+                <th>Q4 (5)<br>CO2</th>
+                <th>Q5 (5)<br>CO2</th>
+                <th>Q6 (5)<br>CO2</th>
+                <th>CO-1</th>
+                <th>CO-2</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+</div>
 
 <script>
-    const REDS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-    const SECTIONS = {
-        TIER: [27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33],
-        ORPHILINE: [17, 34, 6, 1, 20, 14, 31, 9],
-        VOISION: [22, 18, 29, 7, 28, 19, 4, 21, 2, 25],
-        ZERO: [15, 32, 0, 26, 3, 35, 12]
-    };
-    const SEC_ORDER = ["TIER", "ORPHILINE", "VOISION", "ZERO"];
+function distributeMarks() {
+    const rollNo = document.getElementById('rollNo').value;
+    const totalInput = parseFloat(document.getElementById('totalMarks').value);
 
-    let spins = [];
-    let counts = {};
-    let currentBets = [];
-    let secIdx = 0;
-    let usedInSec = {0: new Set(), 1: new Set(), 2: new Set(), 3: new Set()};
-    let isLive = false;
-
-    function initMat() {
-        const mat = document.getElementById('mat');
-        for (let col = 1; col <= 12; col++) {
-            for (let row = 3; row >= 1; row--) {
-                const num = (col - 1) * 3 + row;
-                const cell = document.createElement('div');
-                cell.className = `cell ${REDS.includes(num) ? 'red' : 'black'}`;
-                cell.id = `cell-${num}`;
-                cell.style.gridColumn = col + 1;
-                cell.style.gridRow = 4 - row;
-                cell.innerText = num;
-                cell.onclick = () => handleTableClick(num);
-                mat.appendChild(cell);
-            }
-        }
-        updateDashboard(); // Initial empty state
+    if (!rollNo || isNaN(totalInput) || totalInput > 35 || totalInput < 0) {
+        alert("Please enter a valid Roll No and Total Marks (0-35).");
+        return;
     }
 
-    function handleTableClick(n) {
-        if (!isLive) {
-            spins.push(n);
-            document.getElementById('spinCountText').innerText = `Spins: ${spins.length} / 50`;
-            if (spins.length >= 50) startLiveMode();
-        } else {
-            processSpin(n);
-        }
+    let remaining = totalInput;
+
+    // 1. Assign Objective Marks (Max 10)
+    let objective = Math.min(remaining, 10);
+    remaining -= objective;
+
+    // 2. Assign Assignment Marks (Max 5)
+    // Logic: Alternate between CO1 and CO2 based on Roll Number or Random
+    let assCO1 = 0;
+    let assCO2 = 0;
+    let assValue = Math.min(remaining, 5);
+    
+    if (parseInt(rollNo) % 2 === 0) {
+        assCO2 = assValue;
+    } else {
+        assCO1 = assValue;
+    }
+    remaining -= assValue;
+
+    // 3. Assign Descriptive Questions (Only 4 questions can have marks)
+    let questions = [0, 0, 0, 0, 0, 0];
+    // Randomly pick 4 indices out of 6
+    let indices = [0, 1, 2, 3, 4, 5].sort(() => 0.5 - Math.random()).slice(0, 4);
+
+    for (let idx of indices) {
+        if (remaining <= 0) break;
+        let score = Math.min(remaining, 5);
+        questions[idx] = score;
+        remaining -= score;
     }
 
-    function processBulk() {
-        const input = document.getElementById('bulkInput').value;
-        const nums = input.split(/[ ,]+/).filter(x => x !== "").map(Number);
-        nums.forEach(n => { if(n >= 0 && n <= 36) spins.push(n); });
-        
-        if (spins.length >= 50) startLiveMode();
-        else alert(`Need ${50 - spins.length} more spins.`);
-    }
-
-    function startLiveMode() {
-        isLive = true;
-        spins.forEach(n => counts[n] = (counts[n] || 0) + 1);
-        calculateNextBet();
-        updateDashboard();
-    }
-
-    function processSpin(n) {
-        counts[n] = (counts[n] || 0) + 1;
-        spins.push(n);
-        
-        if (currentBets.includes(n)) {
-            currentBets = [];
-            Object.keys(usedInSec).forEach(k => usedInSec[k].clear());
-            secIdx = (secIdx + 1) % 4;
-        } else {
-            secIdx = (secIdx + 1) % 4;
-        }
-        calculateNextBet();
-        updateDashboard();
-    }
-
-    function calculateNextBet() {
-        const name = SEC_ORDER[secIdx];
-        const nums = SECTIONS[name];
-        let sorted = [...nums].sort((a,b) => (counts[a]||0) - (counts[b]||0));
-        
-        for(let i=0; i<sorted.length; i++) {
-            if(!usedInSec[secIdx].has(i)) {
-                usedInSec[secIdx].add(i);
-                currentBets.push(sorted[i]);
-                break;
-            }
-        }
-    }
-
-    function updateDashboard() {
-        const tbody = document.getElementById('sectionBody');
-        tbody.innerHTML = '';
-
-        SEC_ORDER.forEach((name, idx) => {
-            const sectionNums = SECTIONS[name];
-            // Sort Cold (Asc)
-            const coldSorted = [...sectionNums].sort((a,b) => (counts[a]||0) - (counts[b]||0));
-            // Sort Hot (Desc)
-            const hotSorted = [...sectionNums].sort((a,b) => (counts[b]||0) - (counts[a]||0));
-
-            const coldStr = coldSorted.map(n => `${n}(${counts[n]||0})`).join(', ');
-            const hotStr = hotSorted.map(n => `${n}(${counts[n]||0})`).join(', ');
-            
-            // Filter current bets for this specific section
-            const sectionBets = currentBets.filter(b => sectionNums.includes(b)).join(', ');
-
-            tbody.innerHTML += `
-                <tr>
-                    <td class="section-name">${name}</td>
-                    <td class="cold-text">${coldStr}</td>
-                    <td class="hot-text">${hotStr}</td>
-                    <td class="bet-text">${sectionBets || '-'}</td>
-                </tr>
-            `;
-        });
-
-        // Update Bottom Summaries
-        document.getElementById('coldBetsVal').innerText = currentBets.join(', ');
-        
-        if (isLive) {
-            document.getElementById('nextInstruction').innerText = 
-                `Next number to bet on from ${SEC_ORDER[secIdx]} section: ${currentBets[currentBets.length-1] || 'None'}`;
-        }
-
-        // Table Highlighting
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('active-bet'));
-        if (isLive) {
-            currentBets.forEach(n => {
-                const el = n === 0 ? document.querySelector('.n0') : document.getElementById(`cell-${n}`);
-                if (el) el.classList.add('active-bet');
-            });
-        }
-    }
-
-    initMat();
+    // Update Table
+    const tbody = document.getElementById('tableBody');
+    const newRow = `<tr>
+        <td>${questions[0]}</td>
+        <td>${questions[1]}</td>
+        <td>${questions[2]}</td>
+        <td>${questions[3]}</td>
+        <td>${questions[4]}</td>
+        <td>${questions[5]}</td>
+        <td>${objective}</td>
+        <td>${assCO1}</td>
+        <td>${assCO2}</td>
+        <td><strong>${totalInput}</strong></td>
+    </tr>`;
+    
+    tbody.innerHTML = newRow;
+}
 </script>
+
 </body>
 </html>
