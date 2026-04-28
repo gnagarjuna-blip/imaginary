@@ -3,114 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marks Distribution System</title>
+    <title>Bulk Marks Distributor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
-        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #fffde7; }
-        th, td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 14px; }
-        th { background-color: #fff9c4; }
-        .input-group { margin-bottom: 15px; }
-        input[type="text"], input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 8px 15px; background: #2e7d32; color: white; border: none; cursor: pointer; border-radius: 4px; }
-        button:hover { background: #1b5e20; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background-color: #f0f2f5; line-height: 1.6; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
+        .upload-section { border: 2px dashed #4285f4; padding: 30px; text-align: center; border-radius: 8px; background: #f8fbff; margin: 20px 0; }
+        .instructions { font-size: 0.9em; color: #5f6368; background: #fff3cd; padding: 10px; border-radius: 5px; border-left: 5px solid #ffca28; }
+        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        button { padding: 12px 24px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.3s; }
+        .btn-process { background: #1a73e8; color: white; }
+        .btn-process:hover { background: #1557b0; }
+        .btn-download { background: #34a853; color: white; display: none; }
+        #status { margin-top: 15px; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Student Marks Distribution</h2>
+    <h2>Academic Marks Distribution System</h2>
     
-    <div class="input-group">
-        <label>Roll No: </label>
-        <input type="text" id="rollNo" placeholder="e.g. 101">
-        <label>Total Marks (Max 35): </label>
-        <input type="number" id="totalMarks" max="35" min="0">
-        <button onclick="distributeMarks()">Generate Distribution</button>
+    <div class="instructions">
+        <strong>Upload Format:</strong> Your Excel/CSV must have two columns in the first sheet: <br>
+        1. <b>Roll No</b> | 2. <b>Total Marks</b> (Max 35)
     </div>
 
-    <table id="marksTable">
-        <thead>
-            <tr>
-                <th colspan="6">Descriptive Questions (Max 5 Each)</th>
-                <th rowspan="2">Objective<br>(10M)</th>
-                <th colspan="2">Assignment (5M)</th>
-                <th rowspan="2">Total Marks<br>Obtained (35)</th>
-            </tr>
-            <tr>
-                <th>Q1 (5)<br>CO1</th>
-                <th>Q2 (5)<br>CO1</th>
-                <th>Q3 (5)<br>CO1</th>
-                <th>Q4 (5)<br>CO2</th>
-                <th>Q5 (5)<br>CO2</th>
-                <th>Q6 (5)<br>CO2</th>
-                <th>CO-1</th>
-                <th>CO-2</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-            </tbody>
-    </table>
+    <div class="upload-section">
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" />
+        <p>Click to upload or drag and drop your student list</p>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-process" onclick="processFile()">Generate Distribution</button>
+        <button id="downloadBtn" class="btn-download" onclick="downloadExcel()">Download Formatted Excel</button>
+    </div>
+
+    <div id="status"></div>
 </div>
 
 <script>
-function distributeMarks() {
-    const rollNo = document.getElementById('rollNo').value;
-    const totalInput = parseFloat(document.getElementById('totalMarks').value);
+    let processedData = [];
 
-    if (!rollNo || isNaN(totalInput) || totalInput > 35 || totalInput < 0) {
-        alert("Please enter a valid Roll No and Total Marks (0-35).");
-        return;
+    function processFile() {
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        
+        if (!fileInput.files[0]) {
+            alert("Please select a file first!");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+            if (json.length === 0) {
+                status.innerHTML = "❌ Error: The file is empty.";
+                return;
+            }
+
+            processedData = json.map(row => {
+                // Find keys regardless of case
+                const roll = row["Roll No"] || row["roll no"] || row["Roll"] || Object.values(row)[0];
+                const total = parseFloat(row["Total Marks"] || row["total"] || Object.values(row)[1]);
+
+                return calculateDistribution(roll, total);
+            });
+
+            status.innerHTML = `✅ Successfully processed ${processedData.length} students!`;
+            document.getElementById('downloadBtn').style.display = 'inline-block';
+        };
+        reader.readAsArrayBuffer(fileInput.files[0]);
     }
 
-    let remaining = totalInput;
+    function calculateDistribution(roll, total) {
+        let remaining = total;
+        
+        // 1. Objective (Max 10)
+        let obj = Math.min(remaining, 10);
+        remaining -= obj;
 
-    // 1. Assign Objective Marks (Max 10)
-    let objective = Math.min(remaining, 10);
-    remaining -= objective;
+        // 2. Assignment (Max 5) - Logic: Randomly pick CO1 or CO2
+        let assCO1 = 0;
+        let assCO2 = 0;
+        let assVal = Math.min(remaining, 5);
+        if (Math.random() > 0.5) {
+            assCO1 = assVal;
+        } else {
+            assCO2 = assVal;
+        }
+        remaining -= assVal;
 
-    // 2. Assign Assignment Marks (Max 5)
-    // Logic: Alternate between CO1 and CO2 based on Roll Number or Random
-    let assCO1 = 0;
-    let assCO2 = 0;
-    let assValue = Math.min(remaining, 5);
-    
-    if (parseInt(rollNo) % 2 === 0) {
-        assCO2 = assValue;
-    } else {
-        assCO1 = assValue;
+        // 3. Descriptive (Only 4 questions can have marks out of 6)
+        let qs = [0, 0, 0, 0, 0, 0];
+        let indices = [0, 1, 2, 3, 4, 5].sort(() => 0.5 - Math.random()).slice(0, 4);
+
+        for (let idx of indices) {
+            if (remaining <= 0) break;
+            let score = Math.min(remaining, 5);
+            qs[idx] = score;
+            remaining -= score;
+        }
+
+        return {
+            "Roll No": roll,
+            "Q1(5) CO1": qs[0],
+            "Q2(5) CO1": qs[1],
+            "Q3(5) CO1": qs[2],
+            "Q4(5) CO2": qs[3],
+            "Q5(5) CO2": qs[4],
+            "Q6(5) CO2": qs[5],
+            "Objective(10)": obj,
+            "Assign-CO1": assCO1,
+            "Assign-CO2": assCO2,
+            "Total Obtained": total
+        };
     }
-    remaining -= assValue;
 
-    // 3. Assign Descriptive Questions (Only 4 questions can have marks)
-    let questions = [0, 0, 0, 0, 0, 0];
-    // Randomly pick 4 indices out of 6
-    let indices = [0, 1, 2, 3, 4, 5].sort(() => 0.5 - Math.random()).slice(0, 4);
-
-    for (let idx of indices) {
-        if (remaining <= 0) break;
-        let score = Math.min(remaining, 5);
-        questions[idx] = score;
-        remaining -= score;
+    function downloadExcel() {
+        const worksheet = XLSX.utils.json_to_sheet(processedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Marks Distribution");
+        
+        // Generate file and trigger download
+        XLSX.writeFile(workbook, "Marks_Distribution_Output.xlsx");
     }
-
-    // Update Table
-    const tbody = document.getElementById('tableBody');
-    const newRow = `<tr>
-        <td>${questions[0]}</td>
-        <td>${questions[1]}</td>
-        <td>${questions[2]}</td>
-        <td>${questions[3]}</td>
-        <td>${questions[4]}</td>
-        <td>${questions[5]}</td>
-        <td>${objective}</td>
-        <td>${assCO1}</td>
-        <td>${assCO2}</td>
-        <td><strong>${totalInput}</strong></td>
-    </tr>`;
-    
-    tbody.innerHTML = newRow;
-}
 </script>
 
 </body>
