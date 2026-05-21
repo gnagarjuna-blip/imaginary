@@ -3,134 +3,530 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Marks Distributor</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>European Roulette Section Tracker</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background-color: #f0f2f5; line-height: 1.6; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h2 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
-        .upload-section { border: 2px dashed #4285f4; padding: 30px; text-align: center; border-radius: 8px; background: #f8fbff; margin: 20px 0; }
-        .instructions { font-size: 0.9em; color: #5f6368; background: #fff3cd; padding: 10px; border-radius: 5px; border-left: 5px solid #ffca28; }
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        button { padding: 12px 24px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.3s; }
-        .btn-process { background: #1a73e8; color: white; }
-        .btn-process:hover { background: #1557b0; }
-        .btn-download { background: #34a853; color: white; display: none; }
-        #status { margin-top: 15px; font-weight: bold; text-align: center; }
+        :root {
+            --bg-color: #1a1a1a;
+            --card-color: #2a2a2a;
+            --text-color: #ffffff;
+            --roulette-green: #008751;
+            --roulette-red: #d62828;
+            --roulette-black: #111111;
+            --accent-yellow: #ffd166;
+            --accent-blue: #06d6a0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #f1f1f1;
+        }
+
+        .panel {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        button {
+            background-color: var(--roulette-green);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+        }
+
+        /* Roulette Table Styling */
+        .roulette-table-wrapper {
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .roulette-table {
+            display: grid;
+            grid-template-columns: 60px repeat(12, 1fr) 80px;
+            grid-template-rows: repeat(3, 50px) 40px;
+            gap: 4px;
+            min-width: 900px;
+            margin: 20px 0;
+            user-select: none;
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .cell:hover {
+            transform: scale(1.03);
+            filter: brightness(1.3);
+        }
+
+        .cell.green { background-color: var(--roulette-green); }
+        .cell.red { background-color: var(--roulette-red); }
+        .cell.black { background-color: var(--roulette-black); color: white;}
+
+        .cell.zero {
+            grid-column: 1;
+            grid-row: 1 / span 3;
+            font-size: 24px;
+        }
+
+        .cell.bet-target {
+            border: 2px dashed var(--accent-yellow);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 2px var(--accent-yellow); }
+            100% { box-shadow: 0 0 12px var(--accent-yellow); }
+        }
+
+        /* Layout Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard { grid-template-columns: 1fr; }
+        }
+
+        /* Predictions Box */
+        .predictions-box {
+            background: #1e3a2f;
+            border: 2px solid var(--roulette-green);
+            text-align: center;
+        }
+
+        .pred-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .pred-item {
+            background: rgba(0,0,0,0.4);
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid var(--accent-yellow);
+        }
+
+        .pred-section-name {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #aaa;
+        }
+
+        .pred-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--accent-yellow);
+        }
+
+        /* Statistics Grid */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .stats-table th, .stats-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+
+        .stats-table th { background-color: rgba(0,0,0,0.2); }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge.win { background-color: var(--roulette-green); }
+        .badge.loss { background-color: var(--roulette-red); }
+
+        .log-box {
+            max-height: 150px;
+            overflow-y: auto;
+            background: #111;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 2px;}
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Academic Marks Distribution System</h2>
-    
-    <div class="instructions">
-        <strong>Upload Format:</strong> Your Excel/CSV must have two columns in the first sheet: <br>
-        1. <b>Roll No</b> | 2. <b>Total Marks</b> (Max 35)
+    <h1>European Roulette Advanced Tracker</h1>
+
+    <div class="panel">
+        <h3>1. Paste Initial Spin Numbers (Comma separated, minimum suggested: 100)</h3>
+        <textarea id="initialNumbers" placeholder="e.g. 27,13,36,11,30,8,23,10,5,24,16,33,1,20..."></textarea>
+        <button onclick="processInitialSpins()">Initialize Tracker Data</button>
     </div>
 
-    <div class="upload-section">
-        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" />
-        <p>Click to upload or drag and drop your student list</p>
+    <div class="panel">
+        <h3>2. Live Betting Board (Click numbers to record real-time spins)</h3>
+        <div class="roulette-table-wrapper">
+            <div class="roulette-table" id="rouletteBoard">
+                </div>
+        </div>
     </div>
 
-    <div class="btn-group">
-        <button class="btn-process" onclick="processFile()">Generate Distribution</button>
-        <button id="downloadBtn" class="btn-download" onclick="downloadExcel()">Download Formatted Excel</button>
-    </div>
+    <div class="dashboard">
+        
+        <div class="panel">
+            <h3>Wheel Sections Analytics</h3>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th>Cold Numbers (Least → Most)</th>
+                        <th>Hot Numbers (Most → Least)</th>
+                    </tr>
+                </thead>
+                <tbody id="sectionsTableBody">
+                    </tbody>
+            </table>
 
-    <div id="status"></div>
+            <h3 style="margin-top:20px;">System Console Logs</h3>
+            <div class="log-box" id="consoleLogs"></div>
+        </div>
+
+        <div>
+            <div class="panel predictions-box">
+                <h3 style="margin:0; color:#fff;">⚡ TARGET BETS FOR NEXT SPIN ⚡</h3>
+                <p style="font-size:12px; margin:4px 0 15px 0; color:#b3ffd6;">(1 Absolute Coldest Number Selected From Each Section)</p>
+                <div class="pred-grid" id="predictionGrid">
+                    <div class="pred-item"><div class="pred-section-name">Tier</div><div class="pred-number" id="pred-0">-</div></div>
+                    <div class="pred-item"><div class="pred-section-name">Orphiline</div><div class="pred-number" id="pred-1">-</div></div>
+                    <div class="pred-item"><div class="pred-section-name">Voision</div><div class="pred-number" id="pred-2">-</div></div>
+                    <div class="pred-item"><div class="pred-section-name">Zero</div><div class="pred-number" id="pred-3">-</div></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Session Performance</h3>
+                <p>Total Live Tracked Spins: <strong id="statTotalSpins">0</strong></p>
+                <p>Total Wins: <strong id="statWins" style="color:var(--accent-blue);">0</strong></p>
+                <div id="winLossIndicator" style="margin-top:10px;"></div>
+                
+                <h4 style="margin-top:20px; margin-bottom:5px;">Last 5 Hits Type Distribution:</h4>
+                <div id="hitAnalysis" style="font-size:14px; font-weight:bold;">Hot Hits: 0 | Cold Hits: 0</div>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <script>
-    let processedData = [];
+    // System Definitions matching the Java Application Architecture
+    const TIER = [27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33];
+    const ORPHILINE = [17, 34, 6, 1, 20, 14, 31, 9];
+    const VOISION = [22, 18, 29, 7, 28, 19, 4, 21, 2, 25];
+    const ZERO_SECTION = [15, 32, 0, 26, 3, 35, 12];
+    
+    const SECTIONS = [TIER, ORPHILINE, VOISION, ZERO_SECTION];
+    const SECTION_NAMES = ["TIER", "ORPHILINE", "VOISION", "ZERO"];
 
-    function processFile() {
-        const fileInput = document.getElementById('fileInput');
-        const status = document.getElementById('status');
-        
-        if (!fileInput.files[0]) {
-            alert("Please select a file first!");
+    // Color distributions for the physical layout
+    const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+    
+    // Application States
+    let spinResults = [];
+    let occurrenceMap = {};
+    let currentBets = [];
+    let winCount = 0;
+    let liveSpinsCount = 0;
+    let lastWinNumbers = []; // Holds up to last 5 winning numbers
+
+    // Standard Layout configuration generation logic for Board UI
+    const tableLayout = [
+        [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
+        [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
+        [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
+    ];
+
+    // Initialize System Architecture on Page Load
+    window.onload = function() {
+        buildRouletteTableUI();
+        resetOccurrenceMap();
+        updateUI();
+    };
+
+    function resetOccurrenceMap() {
+        occurrenceMap = {};
+        for(let i = 0; i <= 36; i++) {
+            occurrenceMap[i] = 0;
+        }
+    }
+
+    // Build functional Interactive Virtual Table Layout 
+    function buildRouletteTableUI() {
+        const board = document.getElementById('rouletteBoard');
+        board.innerHTML = '';
+
+        // Generate Green Zero Element
+        const zeroCell = document.createElement('div');
+        zeroCell.className = 'cell green zero';
+        zeroCell.innerText = '0';
+        zeroCell.onclick = () => recordSpin(0);
+        zeroCell.setAttribute('data-number', '0');
+        board.appendChild(zeroCell);
+
+        // Generate Numbers 1-36 systematically by Matrix columns
+        for(let col = 0; col < 12; col++) {
+            for(let row = 0; row < 3; row++) {
+                const num = tableLayout[row][col];
+                const cell = document.createElement('div');
+                const isRed = RED_NUMBERS.includes(num);
+                cell.className = `cell ${isRed ? 'red' : 'black'}`;
+                cell.innerText = num;
+                cell.onclick = () => recordSpin(num);
+                cell.setAttribute('data-number', num);
+                // Control layout assignments explicitly within functional CSS grid definitions
+                cell.style.gridColumn = col + 2;
+                cell.style.gridRow = row + 1;
+                board.appendChild(cell);
+            }
+        }
+    }
+
+    // Processing Framework for Initial Bulk Datasets 
+    function processInitialSpins() {
+        const inputString = document.getElementById('initialNumbers').value;
+        if(!inputString.trim()) {
+            alert("Please enter comma-separated numbers first!");
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        resetOccurrenceMap();
+        spinResults = [];
+        
+        const parts = inputString.split(',');
+        let validCounter = 0;
 
-            if (json.length === 0) {
-                status.innerHTML = "❌ Error: The file is empty.";
-                return;
+        parts.forEach(part => {
+            const num = parseInt(part.trim(), 10);
+            if(!isNaN(num) && num >= 0 && num <= 36) {
+                spinResults.push(num);
+                occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
+                validCounter++;
             }
+        });
 
-            processedData = json.map(row => {
-                // Find keys regardless of case
-                const roll = row["Roll No"] || row["roll no"] || row["Roll"] || Object.values(row)[0];
-                const total = parseFloat(row["Total Marks"] || row["total"] || Object.values(row)[1]);
+        logToConsole(`Successfully parsed and registered ${validCounter} initial spin records.`);
+        calculateNextBets();
+        updateUI();
+    }
 
-                return calculateDistribution(roll, total);
+    // Dynamic Engine handling Single Turn Transitions
+    function recordSpin(num) {
+        liveSpinsCount++;
+        spinResults.push(num);
+        occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
+
+        // Check verification conditions against historical target bet models
+        const isWin = currentBets.includes(num);
+        
+        if (currentBets.length > 0) {
+            if (isWin) {
+                winCount++;
+                if (lastWinNumbers.length === 5) lastWinNumbers.shift();
+                lastWinNumbers.push(num);
+                logToConsole(`<span style="color:#06d6a0; font-weight:bold;">[WIN] Number ${num} hit! Total Wins: ${winCount}.</span>`);
+                showStatusBadge(true, num);
+            } else {
+                logToConsole(`<span style="color:#ff4d4d;">[LOSS] Number ${num} hit. Recalculating cold strategies...</span>`);
+                showStatusBadge(false, num);
+            }
+        } else {
+            logToConsole(`Tracked standalone data point: ${num} (No active target bets verified).`);
+        }
+
+        // Execute updated matrix configurations for predictions 
+        calculateNextBets();
+        updateUI();
+    }
+
+    // Core Concept Mutation Engine: Computes 4 Absolute Cold Numbers simultaneously
+    function calculateNextBets() {
+        currentBets = [];
+        
+        for (let i = 0; i < SECTIONS.length; i++) {
+            const section = SECTIONS[i];
+            
+            // Build temporary frequency evaluation profiles 
+            let sectionData = section.map(num => {
+                return { number: num, count: occurrenceMap[num] || 0 };
             });
 
-            status.innerHTML = `✅ Successfully processed ${processedData.length} students!`;
-            document.getElementById('downloadBtn').style.display = 'inline-block';
-        };
-        reader.readAsArrayBuffer(fileInput.files[0]);
+            // Sort configurations targeting absolute minimum weights (Cold Matrix Processing)
+            sectionData.sort((a, b) => a.count - b.count);
+
+            // Fetch absolute first index element representing current cold selection constraints
+            if(sectionData.length > 0) {
+                currentBets.push(sectionData[0].number);
+            }
+        }
     }
 
-    function calculateDistribution(roll, total) {
-        let remaining = total;
-        
-        // 1. Objective (Max 10)
-        let obj = Math.min(remaining, 10);
-        remaining -= obj;
-
-        // 2. Assignment (Max 5) - Logic: Randomly pick CO1 or CO2
-        let assCO1 = 0;
-        let assCO2 = 0;
-        let assVal = Math.min(remaining, 5);
-        if (Math.random() > 0.5) {
-            assCO1 = assVal;
-        } else {
-            assCO2 = assVal;
-        }
-        remaining -= assVal;
-
-        // 3. Descriptive (Only 4 questions can have marks out of 6)
-        let qs = [0, 0, 0, 0, 0, 0];
-        let indices = [0, 1, 2, 3, 4, 5].sort(() => 0.5 - Math.random()).slice(0, 4);
-
-        for (let idx of indices) {
-            if (remaining <= 0) break;
-            let score = Math.min(remaining, 5);
-            qs[idx] = score;
-            remaining -= score;
+    // Dashboard UI Rendering Engine
+    function updateUI() {
+        // 1. Refresh Dynamic Graphical Betting Box Targets
+        for(let i = 0; i < 4; i++) {
+            const predElement = document.getElementById(`pred-${i}`);
+            if(currentBets[i] !== undefined) {
+                predElement.innerText = currentBets[i];
+            } else {
+                predElement.innerText = "-";
+            }
         }
 
-        return {
-            "Roll No": roll,
-            "Q1(5) CO1": qs[0],
-            "Q2(5) CO1": qs[1],
-            "Q3(5) CO1": qs[2],
-            "Q4(5) CO2": qs[3],
-            "Q5(5) CO2": qs[4],
-            "Q6(5) CO2": qs[5],
-            "Objective(10)": obj,
-            "Assign-CO1": assCO1,
-            "Assign-CO2": assCO2,
-            "Total Obtained": total
-        };
+        // 2. Highlighting borders on matching Grid Cells 
+        document.querySelectorAll('.cell').forEach(cell => {
+            cell.classList.remove('bet-target');
+            const cellNum = parseInt(cell.getAttribute('data-number'), 10);
+            if(currentBets.includes(cellNum)) {
+                cell.classList.add('bet-target');
+            }
+        });
+
+        // 3. Populate Analytical section breakdown data rows
+        const tableBody = document.getElementById('sectionsTableBody');
+        tableBody.innerHTML = '';
+
+        for (let i = 0; i < SECTIONS.length; i++) {
+            const section = SECTIONS[i];
+            let sectionData = section.map(num => {
+                return { number: num, count: occurrenceMap[num] || 0 };
+            });
+
+            // Cold Order Sequence Formulation (Least to Most)
+            let coldSorted = [...sectionData].sort((a, b) => a.count - b.count);
+            // Hot Order Sequence Formulation (Most to Least)
+            let hotSorted = [...sectionData].sort((a, b) => b.count - a.count);
+
+            const coldStr = coldSorted.map(item => `${item.number}(${item.count})`).join(', ');
+            const hotStr = hotSorted.map(item => `${item.number}(${item.count})`).join(', ');
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${SECTION_NAMES[i]}</strong></td>
+                <td style="font-size: 13px; color:#ffd166;">${coldStr}</td>
+                <td style="font-size: 13px; color:#4ea8de;">${hotStr}</td>
+            `;
+            tableBody.appendChild(row);
+        }
+
+        // 4. Update standard statistical summary text widgets
+        document.getElementById('statTotalSpins').innerText = liveSpinsCount;
+        document.getElementById('statWins').innerText = winCount;
+
+        analyzeLastWinsDistribution();
     }
 
-    function downloadExcel() {
-        const worksheet = XLSX.utils.json_to_sheet(processedData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Marks Distribution");
-        
-        // Generate file and trigger download
-        XLSX.writeFile(workbook, "Marks_Distribution_Output.xlsx");
+    // Historical Section Distribution Parser Component
+    function analyzeLastWinsDistribution() {
+        let hotHits = 0;
+        let coldHits = 0;
+
+        lastWinNumbers.forEach(winNum => {
+            let sectionIndex = -1;
+            for(let i = 0; i < SECTIONS.length; i++) {
+                if(SECTIONS[i].includes(winNum)) {
+                    sectionIndex = i;
+                    break;
+                }
+            }
+
+            if(sectionIndex !== -1) {
+                const section = SECTIONS[sectionIndex];
+                let sectionData = section.map(num => {
+                    return { number: num, count: occurrenceMap[num] || 0 };
+                });
+
+                // Establish 30% parsing tier markers matching back-end boundaries
+                let thresholdCount = Math.ceil(section.length * 0.3);
+
+                // Sort and extract benchmarks
+                let hotList = [...sectionData].sort((a, b) => b.count - a.count).slice(0, thresholdCount).map(o => o.number);
+                let coldList = [...sectionData].sort((a, b) => a.count - b.count).slice(0, thresholdCount).map(o => o.number);
+
+                if(hotList.includes(winNum)) hotHits++;
+                else if(coldList.includes(winNum)) coldHits++;
+            }
+        });
+
+        document.getElementById('hitAnalysis').innerHTML = `
+            <span style="color:#4ea8de;">Hot Hits: ${hotHits}</span> | 
+            <span style="color:#ffd166;">Cold Hits: ${coldHits}</span> 
+            <span style="font-weight:normal; font-size:11px; color:#aaa;">(From last ${lastWinNumbers.length} wins)</span>
+        `;
+    }
+
+    function showStatusBadge(isWin, num) {
+        const targetDiv = document.getElementById('winLossIndicator');
+        targetDiv.innerHTML = isWin ? 
+            `<span class="badge win">HIT WIN ON ${num}!</span>` : 
+            `<span class="badge loss">MISS ON ${num}</span>`;
+    }
+
+    function logToConsole(message) {
+        const consoleLog = document.getElementById('consoleLogs');
+        const timestamp = new Date().toLocaleTimeString();
+        consoleLog.innerHTML = `<div class="log-entry">[${timestamp}] ${message}</div>` + consoleLog.innerHTML;
     }
 </script>
 
