@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roulette Section Split-Side Tracker</title>
+    <title>Roulette Section Split-Side Tracker (Last 40 Spins)</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -31,7 +31,7 @@
             margin: 0 auto;
         }
 
-        h1, h3 {
+        h3 {
             text-align: center;
             color: #f1f1f1;
             margin-top: 0;
@@ -250,7 +250,7 @@
     </div>
 
     <div class="panel predictions-panel">
-        <h3 style="margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">⚡ ACTIVE TARGET BET DASHBOARD (SPLIT SECTIONS) ⚡</h3>
+        <h3 style="margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">⚡ ACTIVE TARGET BET DASHBOARD (LAST 40 SPINS METRIC) ⚡</h3>
         
         <div class="pred-split-container">
             <div class="side-block left-master">
@@ -318,7 +318,7 @@
     <div class="dashboard-split">
         
         <div class="panel">
-            <h3>Wheel Sections Deep Breakdown</h3>
+            <h3>Wheel Sections Analytics (Based on last 40 spins)</h3>
             <table class="stats-table">
                 <thead>
                     <tr>
@@ -336,9 +336,9 @@
                 <h3>Performance Status</h3>
                 <div id="winLossIndicator" style="margin-bottom:10px;"></div>
                 <div class="performance-grid">
-                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">SPINS</div><strong id="statTotalSpins" style="font-size:18px;">0</strong></div>
+                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">TOTAL LIVE</div><strong id="statTotalSpins" style="font-size:18px;">0</strong></div>
                     <div class="perf-item"><div style="font-size:11px; color:#aaa;">WINS</div><strong id="statWins" style="font-size:18px; color:var(--accent-blue);">0</strong></div>
-                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">L/R LOSS TRACK</div><strong id="statStreaks" style="font-size:15px; color:var(--accent-yellow);">0 / 0</strong></div>
+                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">L/R LOSS STEPS</div><strong id="statStreaks" style="font-size:15px; color:var(--accent-yellow);">0 / 0</strong></div>
                 </div>
             </div>
 
@@ -352,14 +352,11 @@
 </div>
 
 <script>
-    // Standard European Wheel Layout definition
     const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     
-    // Physical split boundary maps
     const LEFT_BOUNDARIES = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23];
     const RIGHT_BOUNDARIES = [26, 3, 35, 12, 28, 7, 29, 18, 22, 9, 31, 14, 20, 1, 33, 16, 24, 5, 10];
 
-    // Core original track layouts
     const TIER = [27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33];
     const ORPHILINE = [17, 34, 6, 1, 20, 14, 31, 9];
     const VOISION = [22, 18, 29, 7, 28, 19, 4, 21, 2, 25];
@@ -369,16 +366,14 @@
     const SECTION_NAMES = ["TIER", "ORPHILINE", "VOISION", "ZERO"];
     const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     
-    let spinResults = [];
-    let occurrenceMap = {};
+    let spinResults = [];       // Master data array
+    let occurrenceMap = {};    // Holds frequencies ONLY for the last 40 spins
     
-    // Split State Matrix Storage Engine
     let leftTargets = [null, null, null, null];
     let leftNeighbors = [[], [], [], []];
     let rightTargets = [null, null, null, null];
     let rightNeighbors = [[], [], [], []];
     
-    // System progression models
     let leftUnits = 1;
     let rightUnits = 1;
     let leftLossStreak = 0;
@@ -395,14 +390,9 @@
 
     window.onload = function() {
         buildRouletteTableUI();
-        resetOccurrenceMap();
+        recalculateLast40Map();
         updateUI();
     };
-
-    function resetOccurrenceMap() {
-        occurrenceMap = {};
-        for(let i = 0; i <= 36; i++) occurrenceMap[i] = 0;
-    }
 
     function buildRouletteTableUI() {
         const board = document.getElementById('rouletteBoard');
@@ -430,6 +420,18 @@
         }
     }
 
+    // Isolate calculation data to strictly the last 40 items in the master array
+    function recalculateLast40Map() {
+        occurrenceMap = {};
+        for(let i = 0; i <= 36; i++) occurrenceMap[i] = 0;
+
+        // Slice the last 40 numbers from the dataset
+        let targetWindow = spinResults.slice(-40);
+        targetWindow.forEach(num => {
+            occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
+        });
+    }
+
     function getWheelNeighbors(num) {
         const index = WHEEL_ORDER.indexOf(num);
         if (index === -1) return [];
@@ -440,12 +442,12 @@
 
     function processInitialSpins() {
         const inputString = document.getElementById('initialNumbers').value.trim();
-        if(!inputString) return alert("Please paste database strings first!");
+        if(!inputString) return alert("Please paste dataset strings first!");
 
-        resetOccurrenceMap();
         spinResults = [];
         leftUnits = 1; rightUnits = 1;
         leftLossStreak = 0; rightLossStreak = 0;
+        liveSpinsCount = 0; winCount = 0;
         
         let rawParts = inputString.split(/[\n,;\s]+/);
         let parsedNumbers = [];
@@ -462,24 +464,21 @@
 
         parsedNumbers.forEach(num => {
             spinResults.push(num);
-            occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
         });
 
-        logToConsole(`Imported ${parsedNumbers.length} spins into active filters.`);
+        logToConsole(`Imported ${parsedNumbers.length} spins total. Analyzing latest 40 for cold tracking.`);
+        recalculateLast40Map();
         calculateNextBets();
         updateUI();
     }
 
     function recordSpin(num) {
         liveSpinsCount++;
-        spinResults.push(num);
-        occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
-
+        
         if (leftTargets[0] !== null || rightTargets[0] !== null) {
             let hitLeft = false;
             let hitRight = false;
 
-            // Analyze every section's customized side partitions
             for(let i=0; i<4; i++) {
                 if(leftTargets[i] === num || leftNeighbors[i].includes(num)) hitLeft = true;
                 if(rightTargets[i] === num || rightNeighbors[i].includes(num)) hitRight = true;
@@ -493,12 +492,12 @@
                 if (hitLeft) {
                     leftUnits = Math.max(1, leftUnits - 2);
                     leftLossStreak = 0;
-                    msg += `<span style="color:var(--left-color);">Left-Side Units reduced to ${leftUnits}.</span> `;
+                    msg += `<span style="color:var(--left-color);">Left-Side lowered to ${leftUnits}.</span> `;
                 }
                 if (hitRight) {
                     rightUnits = Math.max(1, rightUnits - 2);
                     rightLossStreak = 0;
-                    msg += `<span style="color:var(--right-color);">Right-Side Units reduced to ${rightUnits}.</span>`;
+                    msg += `<span style="color:var(--right-color);">Right-Side lowered to ${rightUnits}.</span>`;
                 }
                 logToConsole(msg);
             } else {
@@ -520,6 +519,8 @@
             }
         }
 
+        spinResults.push(num);
+        recalculateLast40Map();
         calculateNextBets();
         updateUI();
     }
@@ -528,11 +529,10 @@
         for (let i = 0; i < SECTIONS.length; i++) {
             const section = SECTIONS[i];
             
-            // Subdivide sections using exact requested boundaries maps
             let leftSubPool = section.filter(n => LEFT_BOUNDARIES.includes(n));
             let rightSubPool = section.filter(n => RIGHT_BOUNDARIES.includes(n));
 
-            // Extract minimums from Left Pool side subsets
+            // Extract from Left Pool
             if(leftSubPool.length > 0) {
                 let leftData = leftSubPool.map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
                 leftData.sort((a, b) => a.count - b.count);
@@ -542,7 +542,7 @@
                 leftTargets[i] = null; leftNeighbors[i] = [];
             }
 
-            // Extract minimums from Right Pool side subsets
+            // Extract from Right Pool
             if(rightSubPool.length > 0) {
                 let rightData = rightSubPool.map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
                 rightData.sort((a, b) => a.count - b.count);
@@ -555,7 +555,6 @@
     }
 
     function updateUI() {
-        // Render control text panels UI fields
         document.getElementById('left-unit-display').innerText = `Wager: ${leftUnits} Unit(s)`;
         document.getElementById('right-unit-display').innerText = `Wager: ${rightUnits} Unit(s)`;
 
@@ -575,7 +574,6 @@
             }
         }
 
-        // Apply visual updates across standard board matrix views
         let flatTargets = [...leftTargets, ...rightTargets].filter(x => x !== null);
         let flatNeighbors = [...leftNeighbors.flat(), ...rightNeighbors.flat()];
 
@@ -590,7 +588,6 @@
             }
         });
 
-        // Rebuild side analytical charts matching exact subsets
         const tableBody = document.getElementById('sectionsTableBody');
         tableBody.innerHTML = '';
         for (let i = 0; i < SECTIONS.length; i++) {
@@ -614,8 +611,8 @@
     function showStatusBadge(isWin, num) {
         const targetDiv = document.getElementById('winLossIndicator');
         targetDiv.innerHTML = isWin ? 
-            `<span class="badge win">HIT WIN ON ${num}! UNITS BALANCED.</span>` : 
-            `<span class="badge loss">MISS ON ${num} (Loss Steps Updated)</span>`;
+            `<span class="badge win">HIT WIN ON ${num}! RECENT DATA SYNCHRONIZED.</span>` : 
+            `<span class="badge loss">MISS ON ${num} (Rolling Window Shifted)</span>`;
     }
 
     function logToConsole(message) {
