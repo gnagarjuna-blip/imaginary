@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>European Roulette Section Tracker (Top = Latest)</title>
+    <title>European Roulette Advanced Section Tracker</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -14,6 +14,7 @@
             --roulette-black: #111111;
             --accent-yellow: #ffd166;
             --accent-blue: #06d6a0;
+            --neighbor-color: rgba(255, 209, 102, 0.4);
         }
 
         body {
@@ -97,6 +98,7 @@
             cursor: pointer;
             transition: transform 0.1s, filter 0.2s;
             border: 2px solid transparent;
+            position: relative;
         }
 
         .cell:hover {
@@ -114,14 +116,15 @@
             font-size: 24px;
         }
 
+        /* Target Styles */
         .cell.bet-target {
             border: 2px dashed var(--accent-yellow);
-            animation: pulse 1.5s infinite alternate;
+            box-shadow: 0 0 8px var(--accent-yellow);
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 2px var(--accent-yellow); }
-            100% { box-shadow: 0 0 12px var(--accent-yellow); }
+        .cell.neighbor-target {
+            background-image: linear-gradient(rgba(255,209,102,0.2), rgba(255,209,102,0.2));
+            border: 2px dotted #fff;
         }
 
         /* Layout Grid */
@@ -139,33 +142,45 @@
         .predictions-box {
             background: #1e3a2f;
             border: 2px solid var(--roulette-green);
-            text-align: center;
         }
 
         .pred-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr;
             gap: 10px;
             margin-top: 15px;
         }
 
         .pred-item {
             background: rgba(0,0,0,0.4);
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
             border-left: 4px solid var(--accent-yellow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .pred-section-name {
-            font-size: 12px;
+            font-weight: bold;
             text-transform: uppercase;
             color: #aaa;
         }
 
+        .pred-numbers-container {
+            text-align: right;
+        }
+
         .pred-number {
-            font-size: 28px;
+            font-size: 20px;
             font-weight: bold;
             color: var(--accent-yellow);
+        }
+
+        .neighbor-span {
+            font-size: 12px;
+            color: #bbb;
+            display: block;
         }
 
         /* Statistics Grid */
@@ -185,16 +200,19 @@
 
         .badge {
             display: inline-block;
-            padding: 2px 6px;
+            padding: 5px 10px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
         }
-        .badge.win { background-color: var(--roulette-green); }
-        .badge.loss { background-color: var(--roulette-red); }
+        .badge.win { background-color: var(--roulette-green); color: white; }
+        .badge.loss { background-color: var(--roulette-red); color: white; }
 
         .log-box {
-            max-height: 150px;
+            max-height: 200px;
             overflow-y: auto;
             background: #111;
             padding: 10px;
@@ -211,14 +229,14 @@
     <h1>European Roulette Advanced Tracker</h1>
 
     <div class="panel">
-        <h3>1. Paste Initial Spin Numbers (Comma or Line separated)</h3>
-        <p style="margin: 0 0 10px 0; font-size: 13px; color: #bbb;">⚠️ Note: Paste data with the <strong>TOP number as the LATEST spin</strong>. The system will auto-reverse it to simulate chronologically.</p>
-        <textarea id="initialNumbers" placeholder="Example format (Top is newest):&#10;14&#10;32&#10;0&#10;27"></textarea>
+        <h3>1. Paste Initial Spin Numbers (Top is Latest Spin)</h3>
+        <p style="margin: 0 0 10px 0; font-size: 13px; color: #bbb;">ℹ️ Numbers can be separated by lines or commas. The top number represents your most recent spin.</p>
+        <textarea id="initialNumbers" placeholder="Example layout:&#10;14 (Latest)&#10;32&#10;0&#10;27 (Oldest)"></textarea>
         <button onclick="processInitialSpins()">Initialize Tracker Data</button>
     </div>
 
     <div class="panel">
-        <h3>2. Live Betting Board (Click numbers to record real-time spins)</h3>
+        <h3>2. Live Betting Board (Solid border = Main Bet, Dotted border = Neighbor Win Zone)</h3>
         <div class="roulette-table-wrapper">
             <div class="roulette-table" id="rouletteBoard">
                 </div>
@@ -233,38 +251,48 @@
                 <thead>
                     <tr>
                         <th>Section</th>
-                        <th>Cold Numbers (Least → Most Hits)</th>
-                        <th>Hot Numbers (Most → Least Hits)</th>
+                        <th>Cold Numbers (Least → Most)</th>
+                        <th>Hot Numbers (Most → Least)</th>
                     </tr>
                 </thead>
                 <tbody id="sectionsTableBody">
                     </tbody>
             </table>
 
-            <h3 style="margin-top:20px; text-align: left;">System Console Logs</h3>
+            <h3 style="margin-top:20px; text-align: left;">System Activity Logs</h3>
             <div class="log-box" id="consoleLogs"></div>
         </div>
 
         <div>
             <div class="panel predictions-box">
-                <h3 style="margin:0; color:#fff;">⚡ TARGET BETS FOR NEXT SPIN ⚡</h3>
-                <p style="font-size:12px; margin:4px 0 15px 0; color:#b3ffd6;">(1 Coldest Number Selected From Each Section)</p>
+                <h3 style="margin:0; color:#fff;">⚡ ACTIVE TARGET BETS ⚡</h3>
+                <p style="font-size:12px; margin:4px 0 15px 0; color:#b3ffd6;">(Loss increments +1 colder number per section. Win resets system.)</p>
                 <div class="pred-grid" id="predictionGrid">
-                    <div class="pred-item"><div class="pred-section-name">Tier</div><div class="pred-number" id="pred-0">-</div></div>
-                    <div class="pred-item"><div class="pred-section-name">Orphiline</div><div class="pred-number" id="pred-1">-</div></div>
-                    <div class="pred-item"><div class="pred-section-name">Voision</div><div class="pred-number" id="pred-2">-</div></div>
-                    <div class="pred-item"><div class="pred-section-name">Zero</div><div class="pred-number" id="pred-3">-</div></div>
+                    <div class="pred-item" id="item-0">
+                        <div class="pred-section-name">Tier</div>
+                        <div class="pred-numbers-container" id="pred-0">-</div>
+                    </div>
+                    <div class="pred-item" id="item-1">
+                        <div class="pred-section-name">Orphiline</div>
+                        <div class="pred-numbers-container" id="pred-1">-</div>
+                    </div>
+                    <div class="pred-item" id="item-2">
+                        <div class="pred-section-name">Voision</div>
+                        <div class="pred-numbers-container" id="pred-2">-</div>
+                    </div>
+                    <div class="pred-item" id="item-3">
+                        <div class="pred-section-name">Zero</div>
+                        <div class="pred-numbers-container" id="pred-3">-</div>
+                    </div>
                 </div>
             </div>
 
             <div class="panel">
                 <h3>Session Performance</h3>
+                <div id="winLossIndicator" style="margin-bottom:15px;"></div>
                 <p>Total Live Tracked Spins: <strong id="statTotalSpins">0</strong></p>
                 <p>Total Wins: <strong id="statWins" style="color:var(--accent-blue);">0</strong></p>
-                <div id="winLossIndicator" style="margin-top:10px;"></div>
-                
-                <h4 style="margin-top:20px; margin-bottom:5px;">Last 5 Hits Type Distribution:</h4>
-                <div id="hitAnalysis" style="font-size:14px; font-weight:bold;">Hot Hits: 0 | Cold Hits: 0</div>
+                <p>Current Betting Level: <strong id="statLevel" style="color:var(--accent-yellow);">1 cold number/section</strong></p>
             </div>
         </div>
 
@@ -272,6 +300,9 @@
 </div>
 
 <script>
+    // Exact European wheel layout order to resolve physical neighbors accurately
+    const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+
     const TIER = [27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33];
     const ORPHILINE = [17, 34, 6, 1, 20, 14, 31, 9];
     const VOISION = [22, 18, 29, 7, 28, 19, 4, 21, 2, 25];
@@ -283,10 +314,14 @@
     
     let spinResults = [];
     let occurrenceMap = {};
-    let currentBets = [];
+    
+    // Core tracking state lists
+    let currentPredictionsBySection = [[], [], [], []]; // Holds main predicted numbers per section [[Tier], [Orph], etc.]
+    let currentWinningNumbersZone = [];                 // Main predictions + all their wheel neighbors combined
+    let currentLossStreakLevel = 1;                     // Number of cold items picked per section deep
+    
     let winCount = 0;
     let liveSpinsCount = 0;
-    let lastWinNumbers = [];
 
     const tableLayout = [
         [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
@@ -334,18 +369,28 @@
         }
     }
 
-    // UPDATED PARSING ENGINE: Treats top as the newest spin element
+    // Helper to extract the 1 left and 1 right physical neighbor on the wheel circle
+    function getWheelNeighbors(num) {
+        const index = WHEEL_ORDER.indexOf(num);
+        if (index === -1) return [];
+        
+        const leftNeighbor = WHEEL_ORDER[(index - 1 + WHEEL_ORDER.length) % WHEEL_ORDER.length];
+        const rightNeighbor = WHEEL_ORDER[(index + 1) % WHEEL_ORDER.length];
+        
+        return [leftNeighbor, rightNeighbor];
+    }
+
     function processInitialSpins() {
         const inputString = document.getElementById('initialNumbers').value.trim();
         if(!inputString) {
-            alert("Please paste numbers first!");
+            alert("Please paste data rows first!");
             return;
         }
 
         resetOccurrenceMap();
         spinResults = [];
+        currentLossStreakLevel = 1; // Reset progression
         
-        // Handle variations of separation (lines, commas, or spaces)
         let rawParts = inputString.split(/[\n,;\s]+/);
         let parsedNumbers = [];
 
@@ -359,21 +404,19 @@
         });
 
         if(parsedNumbers.length === 0) {
-            alert("No valid roulette numbers (0-36) found.");
+            alert("No valid roulette numbers found.");
             return;
         }
 
-        // CRITICAL STEP: Since TOP is the latest, we reverse the list to process it chronologically 
-        // (from oldest historical background up to the latest live state)
+        // Top is latest, reverse to parse oldest to newest chronologically
         parsedNumbers.reverse();
 
-        // Feed the dataset to the system tracking logic
         parsedNumbers.forEach(num => {
             spinResults.push(num);
             occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
         });
 
-        logToConsole(`Loaded ${parsedNumbers.length} spins. Read from bottom to top (Top item prioritized as the latest spin).`);
+        logToConsole(`Loaded ${parsedNumbers.length} spins. Data normalized successfully.`);
         calculateNextBets();
         updateUI();
     }
@@ -383,17 +426,20 @@
         spinResults.push(num);
         occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
 
-        const isWin = currentBets.includes(num);
+        // Determine active target qualification status (Checks if hit was inside main numbers OR neighbor rings)
+        let totalMainPredictions = currentPredictionsBySection.flat();
         
-        if (currentBets.length > 0) {
+        if (totalMainPredictions.length > 0) {
+            const isWin = currentWinningNumbersZone.includes(num);
+            
             if (isWin) {
                 winCount++;
-                if (lastWinNumbers.length === 5) lastWinNumbers.shift();
-                lastWinNumbers.push(num);
-                logToConsole(`<span style="color:#06d6a0; font-weight:bold;">[WIN] Target number ${num} hit! Total wins: ${winCount}.</span>`);
+                logToConsole(`<span style="color:#06d6a0; font-weight:bold;">[WIN] Hit verified on ${num}! (Target/Neighbor Zone covered). Resetting stack.</span>`);
                 showStatusBadge(true, num);
+                currentLossStreakLevel = 1; // RESET STRATEGY BACK TO BASE LEVEL
             } else {
-                logToConsole(`<span style="color:#ff4d4d;">[LOSS] Number ${num} hit. Recalculating cold trends...</span>`);
+                currentLossStreakLevel++; // INCREMENT COLD TARGET LEVEL DEPTH
+                logToConsole(`<span style="color:#ff4d4d;">[LOSS] Number ${num} hit. Strategy expanded to +1 colder level deep (Level ${currentLossStreakLevel}).</span>`);
                 showStatusBadge(false, num);
             }
         }
@@ -402,34 +448,79 @@
         updateUI();
     }
 
+    // Engine executing matrix progression calculations based on cold sorting steps
     function calculateNextBets() {
-        currentBets = [];
+        currentPredictionsBySection = [[], [], [], []];
+        currentWinningNumbersZone = [];
+
         for (let i = 0; i < SECTIONS.length; i++) {
             const section = SECTIONS[i];
+            
             let sectionData = section.map(num => {
                 return { number: num, count: occurrenceMap[num] || 0 };
             });
+
+            // Absolute sorting targeting primary cold matrix patterns (Least hits to highest hits)
             sectionData.sort((a, b) => a.count - b.count);
-            if(sectionData.length > 0) {
-                currentBets.push(sectionData[0].number);
+
+            // Fetch 'currentLossStreakLevel' amount of numbers from the sorted cold sequence
+            for (let depth = 0; depth < currentLossStreakLevel && depth < sectionData.length; depth++) {
+                let targetNum = sectionData[depth].number;
+                currentPredictionsBySection[i].push(targetNum);
+                
+                // Add the target selection to valid win maps
+                if (!currentWinningNumbersZone.includes(targetNum)) {
+                    currentWinningNumbersZone.push(targetNum);
+                }
+                
+                // Fetch neighbors and map them to standard win checks automatically
+                let neighbors = getWheelNeighbors(targetNum);
+                neighbors.forEach(n => {
+                    if (!currentWinningNumbersZone.includes(n)) {
+                        currentWinningNumbersZone.push(n);
+                    }
+                });
             }
         }
     }
 
     function updateUI() {
+        // 1. Render active betting box list rows with detailed neighbor displays
         for(let i = 0; i < 4; i++) {
-            const predElement = document.getElementById(`pred-${i}`);
-            predElement.innerText = currentBets[i] !== undefined ? currentBets[i] : "-";
+            const containerElement = document.getElementById(`pred-${i}`);
+            containerElement.innerHTML = '';
+            
+            if(currentPredictionsBySection[i].length > 0) {
+                currentPredictionsBySection[i].forEach(num => {
+                    let neighbors = getWheelNeighbors(num);
+                    let block = document.createElement('div');
+                    block.style.marginBottom = '6px';
+                    block.innerHTML = `
+                        <span class="pred-number">${num}</span>
+                        <span class="neighbor-span">Neighbors: ${neighbors[0]}, ${neighbors[1]}</span>
+                    `;
+                    containerElement.appendChild(block);
+                });
+            } else {
+                containerElement.innerText = "-";
+            }
         }
 
+        // 2. Map structural borders onto standard board layout items dynamically
+        let totalMainPredictions = currentPredictionsBySection.flat();
+        
         document.querySelectorAll('.cell').forEach(cell => {
-            cell.classList.remove('bet-target');
+            cell.classList.remove('bet-target', 'neighbor-target');
             const cellNum = parseInt(cell.getAttribute('data-number'), 10);
-            if(currentBets.includes(cellNum)) {
-                cell.classList.add('bet-target');
+            
+            if(totalMainPredictions.includes(cellNum)) {
+                cell.classList.add('bet-target'); // Highlight main direct target numbers
+            } else if (currentWinningNumbersZone.includes(cellNum)) {
+                cell.classList.add('neighbor-target'); // Highlight passive target neighbor zones
             }
         });
 
+        // 3. Populate Analytical table metrics breakdown panel
         const tableBody = document.getElementById('sectionsTableBody');
         tableBody.innerHTML = '';
 
@@ -454,51 +545,17 @@
             tableBody.appendChild(row);
         }
 
+        // Update performance panels
         document.getElementById('statTotalSpins').innerText = liveSpinsCount;
         document.getElementById('statWins').innerText = winCount;
-        analyzeLastWinsDistribution();
-    }
-
-    function analyzeLastWinsDistribution() {
-        let hotHits = 0;
-        let coldHits = 0;
-
-        lastWinNumbers.forEach(winNum => {
-            let sectionIndex = -1;
-            for(let i = 0; i < SECTIONS.length; i++) {
-                if(SECTIONS[i].includes(winNum)) {
-                    sectionIndex = i;
-                    break;
-                }
-            }
-
-            if(sectionIndex !== -1) {
-                const section = SECTIONS[sectionIndex];
-                let sectionData = section.map(num => {
-                    return { number: num, count: occurrenceMap[num] || 0 };
-                });
-
-                let thresholdCount = Math.ceil(section.length * 0.3);
-                let hotList = [...sectionData].sort((a, b) => b.count - a.count).slice(0, thresholdCount).map(o => o.number);
-                let coldList = [...sectionData].sort((a, b) => a.count - b.count).slice(0, thresholdCount).map(o => o.number);
-
-                if(hotList.includes(winNum)) hotHits++;
-                else if(coldList.includes(winNum)) coldHits++;
-            }
-        });
-
-        document.getElementById('hitAnalysis').innerHTML = `
-            <span style="color:#4ea8de;">Hot Hits: ${hotHits}</span> | 
-            <span style="color:#ffd166;">Cold Hits: ${coldHits}</span> 
-            <span style="font-weight:normal; font-size:11px; color:#aaa;">(From last ${lastWinNumbers.length} wins)</span>
-        `;
+        document.getElementById('statLevel').innerText = `${currentLossStreakLevel} cold number(s) per section`;
     }
 
     function showStatusBadge(isWin, num) {
         const targetDiv = document.getElementById('winLossIndicator');
         targetDiv.innerHTML = isWin ? 
             `<span class="badge win">HIT WIN ON ${num}!</span>` : 
-            `<span class="badge loss">MISS ON ${num}</span>`;
+            `<span class="badge loss">MISS ON ${num} (Bet Stack Grows)</span>`;
     }
 
     function logToConsole(message) {
