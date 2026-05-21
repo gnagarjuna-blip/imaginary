@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>European Roulette Advanced Side Split Tracker</title>
+    <title>Roulette Section Split-Side Tracker</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -14,6 +14,8 @@
             --roulette-black: #111111;
             --accent-yellow: #ffd166;
             --accent-blue: #06d6a0;
+            --left-color: #2980b9;
+            --right-color: #e67e22;
         }
 
         body {
@@ -123,47 +125,57 @@
             border: 2px solid var(--roulette-green);
         }
 
-        .pred-horizontal-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: stretch;
-            gap: 15px;
+        .pred-split-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
             margin-top: 10px;
         }
 
-        .section-card {
-            flex: 1;
-            background: rgba(0,0,0,0.4);
+        .side-block {
+            background: rgba(0,0,0,0.2);
             padding: 12px;
-            border-radius: 6px;
-            border-left: 4px solid var(--accent-yellow);
+            border-radius: 8px;
+            border-top: 4px solid #fff;
+        }
+        .side-block.left-master { border-top-color: var(--left-color); }
+        .side-block.right-master { border-top-color: var(--right-color); }
+
+        .side-header {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
         }
 
-        .section-title {
-            font-size: 12px;
-            font-weight: bold;
-            color: #aaa;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+        .section-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.04);
+            margin-bottom: 6px;
+            padding: 8px;
+            border-radius: 4px;
         }
 
-        .numbers-inline {
-            font-size: 18px;
+        .sec-name {
             font-weight: bold;
+            font-size: 13px;
+            width: 90px;
+        }
+
+        .sec-target {
             color: var(--accent-yellow);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 16px;
+            font-weight: bold;
         }
 
-        .neighbors-inline {
+        .sec-neighbors {
             font-size: 11px;
             color: #bbb;
-            margin-top: 3px;
         }
 
         .dashboard-split {
@@ -174,7 +186,7 @@
 
         @media (max-width: 950px) {
             .dashboard-split { grid-template-columns: 1fr; }
-            .pred-horizontal-container { flex-direction: column; }
+            .pred-split-container { grid-template-columns: 1fr; }
         }
 
         .stats-table {
@@ -191,7 +203,7 @@
 
         .performance-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             text-align: center;
             margin-top: 5px;
@@ -216,7 +228,7 @@
         .badge.loss { background-color: var(--roulette-red); color: white; }
 
         .log-box {
-            max-height: 140px;
+            max-height: 160px;
             overflow-y: auto;
             background: #111;
             padding: 8px;
@@ -238,17 +250,61 @@
     </div>
 
     <div class="panel predictions-panel">
-        <h3 style="margin: 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">⚡ ACTIVE TARGET BET DASHBOARD ⚡</h3>
-        <div class="pred-horizontal-container">
-            <div class="section-card" style="border-left-color: var(--accent-blue);">
-                <div class="section-title">LEFT SIDE POOL (0 to 23)</div>
-                <div class="numbers-inline" id="box-num-left">-</div>
-                <div class="neighbors-inline" id="box-nei-left">Wager Units: 1</div>
+        <h3 style="margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">⚡ ACTIVE TARGET BET DASHBOARD (SPLIT SECTIONS) ⚡</h3>
+        
+        <div class="pred-split-container">
+            <div class="side-block left-master">
+                <div class="side-header">
+                    <span style="color:var(--left-color);">LEFT SIDE (0 TO 23 ARC)</span>
+                    <span id="left-unit-display" style="color:var(--accent-blue);">Wager: 1 Unit</span>
+                </div>
+                <div class="section-row">
+                    <div class="sec-name">TIER</div>
+                    <div class="sec-target" id="target-L-0">-</div>
+                    <div class="sec-neighbors" id="neighbors-L-0">Neighbors: -</div>
+                </div>
+                <div class="section-row">
+                    <div class="sec-name">ORPHILINE</div>
+                    <div class="sec-target" id="target-L-1">-</div>
+                    <div class="sec-neighbors" id="neighbors-L-1">Neighbors: -</div>
+                </div>
+                <div class="section-row">
+                    <div class="sec-name">VOISION</div>
+                    <div class="sec-target" id="target-L-2">-</div>
+                    <div class="sec-neighbors" id="neighbors-L-2">Neighbors: -</div>
+                </div>
+                <div class="section-row">
+                    <div class="sec-name">ZERO</div>
+                    <div class="sec-target" id="target-L-3">-</div>
+                    <div class="sec-neighbors" id="neighbors-L-3">Neighbors: -</div>
+                </div>
             </div>
-            <div class="section-card" style="border-left-color: var(--roulette-red);">
-                <div class="section-title">RIGHT SIDE POOL (26 to 10)</div>
-                <div class="numbers-inline" id="box-num-right">-</div>
-                <div class="neighbors-inline" id="box-nei-right">Wager Units: 1</div>
+
+            <div class="side-block right-master">
+                <div class="side-header">
+                    <span style="color:var(--right-color);">RIGHT SIDE (26 TO 10 ARC)</span>
+                    <span id="right-unit-display" style="color:var(--accent-yellow);">Wager: 1 Unit</span>
+                </div>
+                <div class="section-row">
+                    <div class="sec-name">TIER</div>
+                    <div class="sec-target" id="target-R-0">-</div>
+                    <div class="sec-neighbors" id="neighbors-R-0">Neighbors: -</div>
+                </div>
+                <div class="section-row">
+                    <div class="sec-name">ORPHILINE</div>
+                    <div class="sec-target" id="target-R-1">-</div>
+                    <div class="sec-neighbors" id="neighbors-R-1">Neighbors: -</div>
+                </div>
+                <div class="section-row">
+                    <div class="sec-name">VOISION</div>
+                    <div class="sec-target" id="target-R-2">-</div>
+                    <div class="sec-neighbors" id="neighbors-R-2">Neighbors: -</div>
+                </div>
+                <div class="section-row">
+                    <div class="sec-name">ZERO</div>
+                    <div class="sec-target" id="target-R-3">-</div>
+                    <div class="sec-neighbors" id="neighbors-R-3">Neighbors: -</div>
+                </div>
             </div>
         </div>
     </div>
@@ -262,13 +318,13 @@
     <div class="dashboard-split">
         
         <div class="panel">
-            <h3>Side Split Hot / Cold Analytics</h3>
+            <h3>Wheel Sections Deep Breakdown</h3>
             <table class="stats-table">
                 <thead>
                     <tr>
-                        <th>Section</th>
-                        <th>Cold Numbers (Least → Most)</th>
-                        <th>Hot Numbers (Most → Least)</th>
+                        <th>Section Name</th>
+                        <th>Left Side Sub-Pool (0-23) Cold → Hot</th>
+                        <th>Right Side Sub-Pool (26-10) Cold → Hot</th>
                     </tr>
                 </thead>
                 <tbody id="sectionsTableBody"></tbody>
@@ -280,8 +336,9 @@
                 <h3>Performance Status</h3>
                 <div id="winLossIndicator" style="margin-bottom:10px;"></div>
                 <div class="performance-grid">
-                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">TOTAL SPINS</div><strong id="statTotalSpins" style="font-size:18px;">0</strong></div>
-                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">TOTAL WINS</div><strong id="statWins" style="font-size:18px; color:var(--accent-blue);">0</strong></div>
+                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">SPINS</div><strong id="statTotalSpins" style="font-size:18px;">0</strong></div>
+                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">WINS</div><strong id="statWins" style="font-size:18px; color:var(--accent-blue);">0</strong></div>
+                    <div class="perf-item"><div style="font-size:11px; color:#aaa;">L/R LOSS TRACK</div><strong id="statStreaks" style="font-size:15px; color:var(--accent-yellow);">0 / 0</strong></div>
                 </div>
             </div>
 
@@ -295,23 +352,33 @@
 </div>
 
 <script>
+    // Standard European Wheel Layout definition
     const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
     
-    // Explicit requested side parameters split zones mapping structures
-    const LEFT_SIDE_WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23];
-    const RIGHT_SIDE_WHEEL = [26, 3, 35, 12, 28, 7, 29, 18, 22, 9, 31, 14, 20, 1, 33, 16, 24, 5, 10];
+    // Physical split boundary maps
+    const LEFT_BOUNDARIES = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23];
+    const RIGHT_BOUNDARIES = [26, 3, 35, 12, 28, 7, 29, 18, 22, 9, 31, 14, 20, 1, 33, 16, 24, 5, 10];
 
+    // Core original track layouts
+    const TIER = [27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33];
+    const ORPHILINE = [17, 34, 6, 1, 20, 14, 31, 9];
+    const VOISION = [22, 18, 29, 7, 28, 19, 4, 21, 2, 25];
+    const ZERO_SECTION = [15, 32, 0, 26, 3, 35, 12];
+    
+    const SECTIONS = [TIER, ORPHILINE, VOISION, ZERO_SECTION];
+    const SECTION_NAMES = ["TIER", "ORPHILINE", "VOISION", "ZERO"];
     const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     
     let spinResults = [];
     let occurrenceMap = {};
     
-    // State metrics variables
-    let leftTarget = null;
-    let rightTarget = null;
-    let leftNeighbors = [];
-    let rightNeighbors = [];
-
+    // Split State Matrix Storage Engine
+    let leftTargets = [null, null, null, null];
+    let leftNeighbors = [[], [], [], []];
+    let rightTargets = [null, null, null, null];
+    let rightNeighbors = [[], [], [], []];
+    
+    // System progression models
     let leftUnits = 1;
     let rightUnits = 1;
     let leftLossStreak = 0;
@@ -373,14 +440,12 @@
 
     function processInitialSpins() {
         const inputString = document.getElementById('initialNumbers').value.trim();
-        if(!inputString) return alert("Please paste database elements first!");
+        if(!inputString) return alert("Please paste database strings first!");
 
         resetOccurrenceMap();
         spinResults = [];
-        leftUnits = 1;
-        rightUnits = 1;
-        leftLossStreak = 0;
-        rightLossStreak = 0;
+        leftUnits = 1; rightUnits = 1;
+        leftLossStreak = 0; rightLossStreak = 0;
         
         let rawParts = inputString.split(/[\n,;\s]+/);
         let parsedNumbers = [];
@@ -400,7 +465,7 @@
             occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
         });
 
-        logToConsole(`Imported ${parsedNumbers.length} spins into processing arrays.`);
+        logToConsole(`Imported ${parsedNumbers.length} spins into active filters.`);
         calculateNextBets();
         updateUI();
     }
@@ -410,47 +475,47 @@
         spinResults.push(num);
         occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
 
-        // Verify win status checks against specific sectors
-        if (leftTarget !== null && rightTarget !== null) {
-            let leftFullSector = [leftTarget, ...leftNeighbors];
-            let rightFullSector = [rightTarget, ...rightNeighbors];
+        if (leftTargets[0] !== null || rightTargets[0] !== null) {
+            let hitLeft = false;
+            let hitRight = false;
 
-            let leftWin = leftFullSector.includes(num);
-            let rightWin = rightFullSector.includes(num);
+            // Analyze every section's customized side partitions
+            for(let i=0; i<4; i++) {
+                if(leftTargets[i] === num || leftNeighbors[i].includes(num)) hitLeft = true;
+                if(rightTargets[i] === num || rightNeighbors[i].includes(num)) hitRight = true;
+            }
 
-            if (leftWin || rightWin) {
+            if (hitLeft || hitRight) {
                 winCount++;
-                let hitText = leftWin ? `LEFT SIDE [${leftTarget}]` : `RIGHT SIDE [${rightTarget}]`;
-                logToConsole(`<span style="color:#06d6a0; font-weight:bold;">[WIN] ${num} hit on ${hitText}!</span>`);
+                let msg = `[WIN] ${num} Hit! `;
                 showStatusBadge(true, num);
-                
-                // Dynamic side processing progressions execution lines
-                if (leftWin) {
+
+                if (hitLeft) {
                     leftUnits = Math.max(1, leftUnits - 2);
                     leftLossStreak = 0;
-                    logToConsole(`Left Side Win: Decreased Left side to ${leftUnits} units.`);
+                    msg += `<span style="color:var(--left-color);">Left-Side Units reduced to ${leftUnits}.</span> `;
                 }
-                if (rightWin) {
+                if (hitRight) {
                     rightUnits = Math.max(1, rightUnits - 2);
                     rightLossStreak = 0;
-                    logToConsole(`Right Side Win: Decreased Right side to ${rightUnits} units.`);
+                    msg += `<span style="color:var(--right-color);">Right-Side Units reduced to ${rightUnits}.</span>`;
                 }
+                logToConsole(msg);
             } else {
-                // Unit incremental modifications logic setup path rules criteria
                 leftLossStreak++;
                 rightLossStreak++;
-                logToConsole(`<span style="color:#ff4d4d;">[LOSS] ${num} did not hit active fields.</span>`);
+                logToConsole(`<span style="color:#ff4d4d;">[LOSS] ${num} missed all target fields.</span>`);
                 showStatusBadge(false, num);
 
                 if (leftLossStreak >= 2) {
                     leftUnits += 1;
                     leftLossStreak = 0;
-                    logToConsole(`Two Losses on Left Side: Increased Left stake to ${leftUnits} units.`);
+                    logToConsole(`Left Split Pool (2 Losses): Scaled up to ${leftUnits} Units.`);
                 }
                 if (rightLossStreak >= 2) {
                     rightUnits += 1;
                     rightLossStreak = 0;
-                    logToConsole(`Two Losses on Right Side: Increased Right stake to ${rightUnits} units.`);
+                    logToConsole(`Right Split Pool (2 Losses): Scaled up to ${rightUnits} Units.`);
                 }
             }
         }
@@ -460,72 +525,97 @@
     }
 
     function calculateNextBets() {
-        // Map Left Side Least Occurred number criteria setup
-        let leftData = LEFT_SIDE_WHEEL.map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
-        leftData.sort((a, b) => a.count - b.count);
-        leftTarget = leftData[0].number;
-        leftNeighbors = getWheelNeighbors(leftTarget);
+        for (let i = 0; i < SECTIONS.length; i++) {
+            const section = SECTIONS[i];
+            
+            // Subdivide sections using exact requested boundaries maps
+            let leftSubPool = section.filter(n => LEFT_BOUNDARIES.includes(n));
+            let rightSubPool = section.filter(n => RIGHT_BOUNDARIES.includes(n));
 
-        // Map Right Side Least Occurred number criteria setup
-        let rightData = RIGHT_SIDE_WHEEL.map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
-        rightData.sort((a, b) => a.count - b.count);
-        rightTarget = rightData[0].number;
-        rightNeighbors = getWheelNeighbors(rightTarget);
+            // Extract minimums from Left Pool side subsets
+            if(leftSubPool.length > 0) {
+                let leftData = leftSubPool.map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
+                leftData.sort((a, b) => a.count - b.count);
+                leftTargets[i] = leftData[0].number;
+                leftNeighbors[i] = getWheelNeighbors(leftTargets[i]);
+            } else {
+                leftTargets[i] = null; leftNeighbors[i] = [];
+            }
+
+            // Extract minimums from Right Pool side subsets
+            if(rightSubPool.length > 0) {
+                let rightData = rightSubPool.map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
+                rightData.sort((a, b) => a.count - b.count);
+                rightTargets[i] = rightData[0].number;
+                rightNeighbors[i] = getWheelNeighbors(rightTargets[i]);
+            } else {
+                rightTargets[i] = null; rightNeighbors[i] = [];
+            }
+        }
     }
 
     function updateUI() {
-        const leftNumBox = document.getElementById('box-num-left');
-        const leftNeiBox = document.getElementById('box-nei-left');
-        const rightNumBox = document.getElementById('box-num-right');
-        const rightNeiBox = document.getElementById('box-nei-right');
+        // Render control text panels UI fields
+        document.getElementById('left-unit-display').innerText = `Wager: ${leftUnits} Unit(s)`;
+        document.getElementById('right-unit-display').innerText = `Wager: ${rightUnits} Unit(s)`;
 
-        if (leftTarget !== null) {
-            leftNumBox.innerText = `Target: ${leftTarget}`;
-            leftNeiBox.innerText = `Neighbors: [${leftNeighbors.join(', ')}] | Size: ${leftUnits} Unit(s)`;
-        }
-        if (rightTarget !== null) {
-            rightNumBox.innerText = `Target: ${rightTarget}`;
-            rightNeiBox.innerText = `Neighbors: [${rightNeighbors.join(', ')}] | Size: ${rightUnits} Unit(s)`;
+        for (let i = 0; i < 4; i++) {
+            const lTargetBox = document.getElementById(`target-L-${i}`);
+            const lNeiBox = document.getElementById(`neighbors-L-${i}`);
+            const rTargetBox = document.getElementById(`target-R-${i}`);
+            const rNeiBox = document.getElementById(`neighbors-R-${i}`);
+
+            if (leftTargets[i] !== null) {
+                lTargetBox.innerText = leftTargets[i];
+                lNeiBox.innerText = `Zone: [${leftNeighbors[i].join(', ')}]`;
+            }
+            if (rightTargets[i] !== null) {
+                rTargetBox.innerText = rightTargets[i];
+                rNeiBox.innerText = `Zone: [${rightNeighbors[i].join(', ')}]`;
+            }
         }
 
-        // Table board rendering engine matching rules configuration settings
+        // Apply visual updates across standard board matrix views
+        let flatTargets = [...leftTargets, ...rightTargets].filter(x => x !== null);
+        let flatNeighbors = [...leftNeighbors.flat(), ...rightNeighbors.flat()];
+
         document.querySelectorAll('.cell').forEach(cell => {
             cell.classList.remove('bet-target', 'neighbor-target');
             const cellNum = parseInt(cell.getAttribute('data-number'), 10);
             
-            if (cellNum === leftTarget || cellNum === rightTarget) {
+            if (flatTargets.includes(cellNum)) {
                 cell.classList.add('bet-target');
-            } else if (leftNeighbors.includes(cellNum) || rightNeighbors.includes(cellNum)) {
+            } else if (flatNeighbors.includes(cellNum)) {
                 cell.classList.add('neighbor-target');
             }
         });
 
-        // Populate metrics data rows elements lists presentation metrics table
+        // Rebuild side analytical charts matching exact subsets
         const tableBody = document.getElementById('sectionsTableBody');
         tableBody.innerHTML = '';
+        for (let i = 0; i < SECTIONS.length; i++) {
+            const section = SECTIONS[i];
+            let leftSub = section.filter(n => LEFT_BOUNDARIES.includes(n)).map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
+            let rightSub = section.filter(n => RIGHT_BOUNDARIES.includes(n)).map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
 
-        // Left Side Sort presentation output parameters calculation
-        let leftStats = LEFT_SIDE_WHEEL.map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
-        let leftColdSorted = [...leftStats].sort((a, b) => a.count - b.count).map(item => `${item.number}(${item.count})`).join(', ');
-        let leftHotSorted = [...leftStats].sort((a, b) => b.count - a.count).map(item => `${item.number}(${item.count})`).join(', ');
+            let leftSortedText = leftSub.sort((a, b) => a.count - b.count).map(item => `${item.number}(${item.count})`).join(', ') || 'None';
+            let rightSortedText = rightSub.sort((a, b) => a.count - b.count).map(item => `${item.number}(${item.count})`).join(', ') || 'None';
 
-        // Right Side Sort presentation output parameters calculation
-        let rightStats = RIGHT_SIDE_WHEEL.map(num => ({ number: num, count: occurrenceMap[num] || 0 }));
-        let rightColdSorted = [...rightStats].sort((a, b) => a.count - b.count).map(item => `${item.number}(${item.count})`).join(', ');
-        let rightHotSorted = [...rightStats].sort((a, b) => b.count - a.count).map(item => `${item.number}(${item.count})`).join(', ');
-
-        tableBody.innerHTML += `<tr><td><strong>LEFT SIDE (0-23)</strong></td><td style="color:#ffd166;">${leftColdSorted}</td><td style="color:#4ea8de;">${leftHotSorted}</td></tr>`;
-        tableBody.innerHTML += `<tr><td><strong>RIGHT SIDE (26-10)</strong></td><td style="color:#ffd166;">${rightColdSorted}</td><td style="color:#4ea8de;">${rightHotSorted}</td></tr>`;
+            const row = document.createElement('tr');
+            row.innerHTML = `<td><strong>${SECTION_NAMES[i]}</strong></td><td style="color:#ffd166;">${leftSortedText}</td><td style="color:#4ea8de;">${rightSortedText}</td>`;
+            tableBody.appendChild(row);
+        }
 
         document.getElementById('statTotalSpins').innerText = liveSpinsCount;
         document.getElementById('statWins').innerText = winCount;
+        document.getElementById('statStreaks').innerText = `${leftLossStreak} / ${rightLossStreak}`;
     }
 
     function showStatusBadge(isWin, num) {
         const targetDiv = document.getElementById('winLossIndicator');
         targetDiv.innerHTML = isWin ? 
-            `<span class="badge win">HIT WIN ON ${num}! UNIT SCALED DOWN.</span>` : 
-            `<span class="badge loss">MISS ON ${num} (Tracking Progress Checks Engaged)</span>`;
+            `<span class="badge win">HIT WIN ON ${num}! UNITS BALANCED.</span>` : 
+            `<span class="badge loss">MISS ON ${num} (Loss Steps Updated)</span>`;
     }
 
     function logToConsole(message) {
