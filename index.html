@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>European Roulette Section Tracker</title>
+    <title>European Roulette Section Tracker (Top = Latest)</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -29,7 +29,7 @@
             margin: 0 auto;
         }
 
-        h1, h2 {
+        h1, h3 {
             text-align: center;
             color: #f1f1f1;
         }
@@ -44,7 +44,7 @@
 
         textarea {
             width: 100%;
-            height: 80px;
+            height: 120px;
             background: #333;
             color: #fff;
             border: 1px solid #555;
@@ -79,8 +79,8 @@
 
         .roulette-table {
             display: grid;
-            grid-template-columns: 60px repeat(12, 1fr) 80px;
-            grid-template-rows: repeat(3, 50px) 40px;
+            grid-template-columns: 60px repeat(12, 1fr);
+            grid-template-rows: repeat(3, 50px);
             gap: 4px;
             min-width: 900px;
             margin: 20px 0;
@@ -211,8 +211,9 @@
     <h1>European Roulette Advanced Tracker</h1>
 
     <div class="panel">
-        <h3>1. Paste Initial Spin Numbers (Comma separated, minimum suggested: 100)</h3>
-        <textarea id="initialNumbers" placeholder="e.g. 27,13,36,11,30,8,23,10,5,24,16,33,1,20..."></textarea>
+        <h3>1. Paste Initial Spin Numbers (Comma or Line separated)</h3>
+        <p style="margin: 0 0 10px 0; font-size: 13px; color: #bbb;">⚠️ Note: Paste data with the <strong>TOP number as the LATEST spin</strong>. The system will auto-reverse it to simulate chronologically.</p>
+        <textarea id="initialNumbers" placeholder="Example format (Top is newest):&#10;14&#10;32&#10;0&#10;27"></textarea>
         <button onclick="processInitialSpins()">Initialize Tracker Data</button>
     </div>
 
@@ -232,22 +233,22 @@
                 <thead>
                     <tr>
                         <th>Section</th>
-                        <th>Cold Numbers (Least → Most)</th>
-                        <th>Hot Numbers (Most → Least)</th>
+                        <th>Cold Numbers (Least → Most Hits)</th>
+                        <th>Hot Numbers (Most → Least Hits)</th>
                     </tr>
                 </thead>
                 <tbody id="sectionsTableBody">
                     </tbody>
             </table>
 
-            <h3 style="margin-top:20px;">System Console Logs</h3>
+            <h3 style="margin-top:20px; text-align: left;">System Console Logs</h3>
             <div class="log-box" id="consoleLogs"></div>
         </div>
 
         <div>
             <div class="panel predictions-box">
                 <h3 style="margin:0; color:#fff;">⚡ TARGET BETS FOR NEXT SPIN ⚡</h3>
-                <p style="font-size:12px; margin:4px 0 15px 0; color:#b3ffd6;">(1 Absolute Coldest Number Selected From Each Section)</p>
+                <p style="font-size:12px; margin:4px 0 15px 0; color:#b3ffd6;">(1 Coldest Number Selected From Each Section)</p>
                 <div class="pred-grid" id="predictionGrid">
                     <div class="pred-item"><div class="pred-section-name">Tier</div><div class="pred-number" id="pred-0">-</div></div>
                     <div class="pred-item"><div class="pred-section-name">Orphiline</div><div class="pred-number" id="pred-1">-</div></div>
@@ -271,7 +272,6 @@
 </div>
 
 <script>
-    // System Definitions matching the Java Application Architecture
     const TIER = [27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33];
     const ORPHILINE = [17, 34, 6, 1, 20, 14, 31, 9];
     const VOISION = [22, 18, 29, 7, 28, 19, 4, 21, 2, 25];
@@ -279,26 +279,21 @@
     
     const SECTIONS = [TIER, ORPHILINE, VOISION, ZERO_SECTION];
     const SECTION_NAMES = ["TIER", "ORPHILINE", "VOISION", "ZERO"];
-
-    // Color distributions for the physical layout
     const RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
     
-    // Application States
     let spinResults = [];
     let occurrenceMap = {};
     let currentBets = [];
     let winCount = 0;
     let liveSpinsCount = 0;
-    let lastWinNumbers = []; // Holds up to last 5 winning numbers
+    let lastWinNumbers = [];
 
-    // Standard Layout configuration generation logic for Board UI
     const tableLayout = [
         [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
         [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35],
         [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
     ];
 
-    // Initialize System Architecture on Page Load
     window.onload = function() {
         buildRouletteTableUI();
         resetOccurrenceMap();
@@ -312,12 +307,10 @@
         }
     }
 
-    // Build functional Interactive Virtual Table Layout 
     function buildRouletteTableUI() {
         const board = document.getElementById('rouletteBoard');
         board.innerHTML = '';
 
-        // Generate Green Zero Element
         const zeroCell = document.createElement('div');
         zeroCell.className = 'cell green zero';
         zeroCell.innerText = '0';
@@ -325,7 +318,6 @@
         zeroCell.setAttribute('data-number', '0');
         board.appendChild(zeroCell);
 
-        // Generate Numbers 1-36 systematically by Matrix columns
         for(let col = 0; col < 12; col++) {
             for(let row = 0; row < 3; row++) {
                 const num = tableLayout[row][col];
@@ -335,7 +327,6 @@
                 cell.innerText = num;
                 cell.onclick = () => recordSpin(num);
                 cell.setAttribute('data-number', num);
-                // Control layout assignments explicitly within functional CSS grid definitions
                 cell.style.gridColumn = col + 2;
                 cell.style.gridRow = row + 1;
                 board.appendChild(cell);
@@ -343,41 +334,55 @@
         }
     }
 
-    // Processing Framework for Initial Bulk Datasets 
+    // UPDATED PARSING ENGINE: Treats top as the newest spin element
     function processInitialSpins() {
-        const inputString = document.getElementById('initialNumbers').value;
-        if(!inputString.trim()) {
-            alert("Please enter comma-separated numbers first!");
+        const inputString = document.getElementById('initialNumbers').value.trim();
+        if(!inputString) {
+            alert("Please paste numbers first!");
             return;
         }
 
         resetOccurrenceMap();
         spinResults = [];
         
-        const parts = inputString.split(',');
-        let validCounter = 0;
+        // Handle variations of separation (lines, commas, or spaces)
+        let rawParts = inputString.split(/[\n,;\s]+/);
+        let parsedNumbers = [];
 
-        parts.forEach(part => {
-            const num = parseInt(part.trim(), 10);
-            if(!isNaN(num) && num >= 0 && num <= 36) {
-                spinResults.push(num);
-                occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
-                validCounter++;
+        rawParts.forEach(part => {
+            if(part.trim() !== "") {
+                const num = parseInt(part.trim(), 10);
+                if(!isNaN(num) && num >= 0 && num <= 36) {
+                    parsedNumbers.push(num);
+                }
             }
         });
 
-        logToConsole(`Successfully parsed and registered ${validCounter} initial spin records.`);
+        if(parsedNumbers.length === 0) {
+            alert("No valid roulette numbers (0-36) found.");
+            return;
+        }
+
+        // CRITICAL STEP: Since TOP is the latest, we reverse the list to process it chronologically 
+        // (from oldest historical background up to the latest live state)
+        parsedNumbers.reverse();
+
+        // Feed the dataset to the system tracking logic
+        parsedNumbers.forEach(num => {
+            spinResults.push(num);
+            occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
+        });
+
+        logToConsole(`Loaded ${parsedNumbers.length} spins. Read from bottom to top (Top item prioritized as the latest spin).`);
         calculateNextBets();
         updateUI();
     }
 
-    // Dynamic Engine handling Single Turn Transitions
     function recordSpin(num) {
         liveSpinsCount++;
         spinResults.push(num);
         occurrenceMap[num] = (occurrenceMap[num] || 0) + 1;
 
-        // Check verification conditions against historical target bet models
         const isWin = currentBets.includes(num);
         
         if (currentBets.length > 0) {
@@ -385,56 +390,38 @@
                 winCount++;
                 if (lastWinNumbers.length === 5) lastWinNumbers.shift();
                 lastWinNumbers.push(num);
-                logToConsole(`<span style="color:#06d6a0; font-weight:bold;">[WIN] Number ${num} hit! Total Wins: ${winCount}.</span>`);
+                logToConsole(`<span style="color:#06d6a0; font-weight:bold;">[WIN] Target number ${num} hit! Total wins: ${winCount}.</span>`);
                 showStatusBadge(true, num);
             } else {
-                logToConsole(`<span style="color:#ff4d4d;">[LOSS] Number ${num} hit. Recalculating cold strategies...</span>`);
+                logToConsole(`<span style="color:#ff4d4d;">[LOSS] Number ${num} hit. Recalculating cold trends...</span>`);
                 showStatusBadge(false, num);
             }
-        } else {
-            logToConsole(`Tracked standalone data point: ${num} (No active target bets verified).`);
         }
 
-        // Execute updated matrix configurations for predictions 
         calculateNextBets();
         updateUI();
     }
 
-    // Core Concept Mutation Engine: Computes 4 Absolute Cold Numbers simultaneously
     function calculateNextBets() {
         currentBets = [];
-        
         for (let i = 0; i < SECTIONS.length; i++) {
             const section = SECTIONS[i];
-            
-            // Build temporary frequency evaluation profiles 
             let sectionData = section.map(num => {
                 return { number: num, count: occurrenceMap[num] || 0 };
             });
-
-            // Sort configurations targeting absolute minimum weights (Cold Matrix Processing)
             sectionData.sort((a, b) => a.count - b.count);
-
-            // Fetch absolute first index element representing current cold selection constraints
             if(sectionData.length > 0) {
                 currentBets.push(sectionData[0].number);
             }
         }
     }
 
-    // Dashboard UI Rendering Engine
     function updateUI() {
-        // 1. Refresh Dynamic Graphical Betting Box Targets
         for(let i = 0; i < 4; i++) {
             const predElement = document.getElementById(`pred-${i}`);
-            if(currentBets[i] !== undefined) {
-                predElement.innerText = currentBets[i];
-            } else {
-                predElement.innerText = "-";
-            }
+            predElement.innerText = currentBets[i] !== undefined ? currentBets[i] : "-";
         }
 
-        // 2. Highlighting borders on matching Grid Cells 
         document.querySelectorAll('.cell').forEach(cell => {
             cell.classList.remove('bet-target');
             const cellNum = parseInt(cell.getAttribute('data-number'), 10);
@@ -443,7 +430,6 @@
             }
         });
 
-        // 3. Populate Analytical section breakdown data rows
         const tableBody = document.getElementById('sectionsTableBody');
         tableBody.innerHTML = '';
 
@@ -453,9 +439,7 @@
                 return { number: num, count: occurrenceMap[num] || 0 };
             });
 
-            // Cold Order Sequence Formulation (Least to Most)
             let coldSorted = [...sectionData].sort((a, b) => a.count - b.count);
-            // Hot Order Sequence Formulation (Most to Least)
             let hotSorted = [...sectionData].sort((a, b) => b.count - a.count);
 
             const coldStr = coldSorted.map(item => `${item.number}(${item.count})`).join(', ');
@@ -470,14 +454,11 @@
             tableBody.appendChild(row);
         }
 
-        // 4. Update standard statistical summary text widgets
         document.getElementById('statTotalSpins').innerText = liveSpinsCount;
         document.getElementById('statWins').innerText = winCount;
-
         analyzeLastWinsDistribution();
     }
 
-    // Historical Section Distribution Parser Component
     function analyzeLastWinsDistribution() {
         let hotHits = 0;
         let coldHits = 0;
@@ -497,10 +478,7 @@
                     return { number: num, count: occurrenceMap[num] || 0 };
                 });
 
-                // Establish 30% parsing tier markers matching back-end boundaries
                 let thresholdCount = Math.ceil(section.length * 0.3);
-
-                // Sort and extract benchmarks
                 let hotList = [...sectionData].sort((a, b) => b.count - a.count).slice(0, thresholdCount).map(o => o.number);
                 let coldList = [...sectionData].sort((a, b) => a.count - b.count).slice(0, thresholdCount).map(o => o.number);
 
