@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Roulette Resonance Pocket Engine</title>
+    <title>Auto-Roulette Circular Vector Engine</title>
     <style>
         :root { --bg: #0b0f19; --panel: #161e2d; --accent: #38bdf8; --green: #10b981; --red: #ef4444; --black: #1e293b; --text: #f1f5f9; }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
@@ -91,10 +91,10 @@
         </div>
 
         <div class="prediction-hero">
-            <div class="pred-row">Resonance: <span id="pred-notation">--</span> <span class="w-rate" id="w-rate-display">(W-RATE: 0.00%)</span></div>
+            <div class="pred-row">True Target: <span id="pred-notation">--</span> <span class="w-rate" id="w-rate-display">(W-RATE: 0.00%)</span></div>
             <div class="streak-txt-container">W/L Streak: <span id="streak-txt-span">-</span></div>
             <div class="pattern-next">Pattern Predicted next: <span id="pattern-next-val" class="pattern-win">WIN</span></div>
-            <div class="meta-info">Avg. used <span id="avg-used-val">0</span></div>
+            <div class="meta-info">True Circular Dist: <span id="avg-used-val">0</span></div>
             <div class="meta-info">Direction: <span id="direction-val">--</span></div>
             <div class="meta-info">Spins: <span id="spins-val">0</span></div>
             
@@ -102,10 +102,10 @@
         </div>
 
         <div class="panel">
-            <h2 style="margin:0; font-size: 1rem;">SIGNATURE ANALYTICS (POCKET ENGINE)</h2>
+            <h2 style="margin:0; font-size: 1rem;">VECTOR MATRIX ANALYTICS</h2>
             
             <div class="analytics-grid">
-                <div>Running Avg. Distance: <span id="stat-avg-dist" style="color:var(--accent); font-weight:bold;">0.00</span></div>
+                <div>Circular Mean Distance: <span id="stat-avg-dist" style="color:var(--accent); font-weight:bold;">0.00</span></div>
             </div>
 
             <div style="margin: 10px 0; font-size: 0.85rem; display: flex; justify-content: space-between;">
@@ -222,7 +222,7 @@
 
         resetSession();
 
-        // Standardized bottom-to-top execution format
+        // Process top row as newest, bottom row as oldest
         for(let i = nums.length - 1; i >= 0; i--) {
             executeTrackingStep(nums[i], true);
         }
@@ -237,53 +237,46 @@
             return updateUI();
         }
 
-        // 1. CALCULATE CORE RUNNING AVERAGE DISTANCE
-        const sampleSize = Math.min(dists.length, 6);
+        // 1. CHOOSE SAMPLE DEPTH (Recent 5 steps to find current signature momentum)
+        const sampleSize = Math.min(dists.length, 5);
         const activeDists = dists.slice(0, sampleSize); 
-        const avgDist = activeDists.reduce((a, b) => a + b, 0) / activeDists.length;
 
-        // 2. APPLY FIXED RESONANCE MATRIX CONDITION (37 Pocket Wave Mapping)
-        let wheelScores = new Array(37).fill(0);
+        // 2. CONVERT LINEAR POCKETS INTO TRIGNOMETRIC VECTORS (CIRCULAR MATHEMATICS)
+        let sumSin = 0;
+        let sumCos = 0;
+
+        activeDists.forEach(d => {
+            // Map 0-37 pockets to 0-2PI radians
+            let radians = (d / 37) * 2 * Math.PI;
+            sumSin += Math.sin(radians);
+            sumCos += Math.cos(radians);
+        });
+
+        // 3. EXTRACT TRUE RECURRING MEAN ANGLE
+        let meanAngle = Math.atan2(sumSin, sumCos);
+        if (meanAngle < 0) {
+            meanAngle += 2 * Math.PI;
+        }
+
+        // Turn vector radians cleanly back into exact pocket spaces
+        let circularAvgDistance = (meanAngle / (2 * Math.PI)) * 37;
+        let preciseTargetJump = Math.round(circularAvgDistance) % 37;
+
+        // 4. PROJECT FORWARD VIA NEXT WHEEL VELOCITY
         const lastIdx = wheelOrder.indexOf(history[0]);
+        let predIdx = 0;
 
-        for (let step = 0; step < 37; step++) {
-            let distanceToTarget = Math.abs(step - avgDist);
-            if (distanceToTarget > 18.5) distanceToTarget = 37 - distanceToTarget;
-
-            // Concentrates probability directly over the clean mathematical pocket target
-            let pocketProbability = Math.exp(-Math.pow(distanceToTarget, 2) / 6);
-            
-            let projectedWheelIndex = 0;
-            if (currentDirection === 'CW') {
-                projectedWheelIndex = (lastIdx + step + 37) % 37;
-            } else {
-                projectedWheelIndex = (lastIdx - step + 37) % 37;
-            }
-            wheelScores[projectedWheelIndex] += pocketProbability;
+        if (currentDirection === 'CW') {
+            predIdx = (lastIdx + preciseTargetJump + 37) % 37;
+        } else {
+            predIdx = (lastIdx - preciseTargetJump + 37) % 37;
         }
 
-        // 3. SCAN AND COMBINE 7-NEIGHBOR PEAK CHANNELS
-        let maximumSectorScore = -1;
-        let bestTargetCenterIndex = 0;
-
-        for (let i = 0; i < 37; i++) {
-            let combinedBundleScore = 0;
-            for (let neighborOffset = -7; neighborOffset <= 7; neighborOffset++) {
-                let currentNeighborIndex = (i + neighborOffset + 37) % 37;
-                combinedBundleScore += wheelScores[currentNeighborIndex];
-            }
-
-            if (combinedBundleScore > maximumSectorScore) {
-                maximumSectorScore = combinedBundleScore;
-                bestTargetCenterIndex = i;
-            }
-        }
-
-        const targetCenter = wheelOrder[bestTargetCenterIndex];
+        const targetCenter = wheelOrder[predIdx];
         const targetSector = get7Neighbors(targetCenter);
         
         predictedSectorsLog.unshift(targetSector);
-        updateUI(targetCenter, avgDist, targetSector);
+        updateUI(targetCenter, circularAvgDistance, targetSector);
     }
 
     function updateUI(prediction = null, avgDist = 0, targetSector = []) {
