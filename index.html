@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Roulette Advanced Analytics Tracker</title>
+    <title>Auto-Roulette Advanced Physics Analytics Tracker</title>
     <style>
         :root { --bg: #0b0f19; --panel: #161e2d; --accent: #38bdf8; --green: #10b981; --red: #ef4444; --black: #1e293b; --text: #f1f5f9; }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
@@ -25,7 +25,7 @@
         /* Panels */
         .panel { background: var(--panel); border-radius: 12px; padding: 20px; border: 1px solid #2d3748; }
         
-        /* SHADOW ROULETTE HUD MATCHING */
+        /* SHADOW HUD DISPLAY */
         .prediction-hero { text-align: left; background: #020617; border: 2px solid #2563eb; padding: 25px; border-radius: 12px; margin-bottom: 20px; font-family: monospace, sans-serif; }
         .pred-row { font-size: 1.4rem; font-weight: bold; margin-bottom: 8px; color: #ffffff; }
         .w-rate { color: #22c55e; }
@@ -223,37 +223,43 @@
     }
 
     function process() {
-        if (history.length < 2) {
+        if (history.length < 3) {
             predictedSectorsLog.push([]);
             return updateUI();
         }
 
-        // 1. ADVANCED CALCULATIONS BASED ON SCREENSHOT METRICS
-        const rollingDists = dists.slice(-5); // Emulating a running local baseline shift window
-        const avgDist = rollingDists.reduce((a, b) => a + b, 0) / rollingDists.length;
+        // 1. COLLECT STATISTICAL ARTIFACTS FROM HISTORICAL DATA
+        const sampleSize = Math.min(dists.length, 6);
+        const activeDists = dists.slice(-sampleSize); 
         
-        // Calculate Average Deviation (Avg. Dev)
-        const deviations = rollingDists.map(d => Math.abs(d - avgDist));
+        const avgDist = activeDists.reduce((a, b) => a + b, 0) / activeDists.length;
+        
+        const deviations = activeDists.map(d => Math.abs(d - avgDist));
         const avgDev = deviations.reduce((a, b) => a + b, 0) / deviations.length;
 
-        // Calculate Bias Factor (Drift velocity of recent offsets)
-        const lastD = dists[dists.length - 1];
-        const bias = lastD - avgDist; 
+        // Bias calculation assessing recent 3-spin trajectory variance vs average
+        const recentSample = dists.slice(-3);
+        const recentAvg = recentSample.reduce((a, b) => a + b, 0) / recentSample.length;
+        const bias = recentAvg - avgDist;
 
-        // 2. MATHEMATICALLY COMPENSATED SECTOR PREDICTION ENGINE
+        // 2. ADVANCED NON-LINEAR SIGNATURE PROJECTION 
         const lastIdx = wheelOrder.indexOf(history[history.length - 1]);
         
-        // Calculate the targeted leap indexing by shifting the base Average with the calculated continuous Bias
-        let mathematicalShift = avgDist + bias;
-        
-        // Bound calculation steps reliably within absolute integer spacing
-        let roundedJump = Math.round(mathematicalShift);
+        // Determine deviation adjustment modifier vector based on momentum
+        const lastD = dists[dists.length - 1];
+        const secondLastD = dists[dists.length - 2] ?? lastD;
+        const deviationSign = (lastD >= secondLastD) ? 1 : -1;
 
+        // Composite mathematical jump calculation
+        let calculatedJump = avgDist + bias + (deviationSign * avgDev);
+        let absoluteIntegerLeap = Math.round(calculatedJump);
+
+        // Project leap based on the actual alternating rotation direction matrix
         let predIdx = 0;
         if (currentDirection === 'CW') {
-            predIdx = (lastIdx + roundedJump + 37) % 37;
+            predIdx = (lastIdx + absoluteIntegerLeap + 37) % 37;
         } else {
-            predIdx = (lastIdx - roundedJump + 37) % 37;
+            predIdx = (lastIdx - absoluteIntegerLeap + 37) % 37;
         }
 
         const targetCenter = wheelOrder[predIdx];
@@ -272,7 +278,6 @@
             winRate = (wins / validOutcomes.length) * 100;
         }
 
-        // Live analytical displays updated as requested
         document.getElementById('stat-avg-dist').innerText = avgDist.toFixed(2);
         document.getElementById('stat-avg-dev').innerText = avgDev.toFixed(2);
         
@@ -291,10 +296,9 @@
         }
 
         document.getElementById('direction-val').innerText = currentDirection;
-        document.getElementById('spins-val').innerText = history.length > 0 ? history[history.length - 1] : "D";
+        document.getElementById('spins-val').innerText = history.length > 0 ? history[history.length - 1] : "0";
         document.getElementById('count-val').innerText = history.length;
 
-        // Render dynamic text streak nodes
         const streakTxtSpan = document.getElementById('streak-txt-span');
         streakTxtSpan.innerHTML = '';
         if(validOutcomes.length === 0) {
