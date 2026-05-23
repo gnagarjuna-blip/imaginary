@@ -120,7 +120,7 @@
                 <span id="count-val" style="font-weight: bold;">0</span>
             </div>
             
-            <textarea id="bulkData" class="bulk-area" placeholder="Paste history (e.g. 32, 15, 19, 4)"></textarea>
+            <textarea id="bulkData" class="bulk-area" placeholder="Paste history: Top is Latest (e.g. 32, 15, 19, 4)"></textarea>
             <button class="btn btn-primary" onclick="importHistory()">IMPORT DATA</button>
             <button class="btn btn-danger" onclick="resetSession()">RESET ALL</button>
         </div>
@@ -152,7 +152,7 @@
                 const cell = document.createElement('div');
                 cell.className = `cell ${reds.includes(n) ? 'r' : 'b'}`;
                 cell.innerText = n;
-                cell.onclick = () => track(n);
+                cell.onclick = () => trackSingleInput(n);
                 grid.appendChild(cell);
             });
         });
@@ -179,23 +179,30 @@
         return sector;
     }
 
-    function track(num) {
-        let currentActivePredictionSector = predictedSectorsLog.length > 0 ? predictedSectorsLog[predictedSectorsLog.length - 1] : [];
+    // Handles individual clicks from table board (incoming new single updates)
+    function trackSingleInput(num) {
+        // Since single live input is inherently chronological, we add it to the front
+        // of our runtime arrays to consistently match the "Top is Newest" design pattern.
+        executeTrackingStep(num, false);
+    }
+
+    function executeTrackingStep(num, isBulkMode = false) {
+        let currentActivePredictionSector = predictedSectorsLog.length > 0 ? predictedSectorsLog[0] : [];
 
         if (currentActivePredictionSector.length > 0) {
             if (currentActivePredictionSector.includes(num)) {
-                outcomesLog.push("W");
+                outcomesLog.unshift("W");
             } else {
-                outcomesLog.push("L");
+                outcomesLog.unshift("L");
             }
         } else {
-            outcomesLog.push(null); 
+            outcomesLog.unshift(null); 
         }
 
-        spinDirections.push(currentDirection);
+        spinDirections.unshift(currentDirection);
 
         if (history.length > 0) {
-            const lastNum = history[history.length - 1];
+            const lastNum = history[0]; // Most recent spin is always index 0
             const idxCurrent = wheelOrder.indexOf(num);
             const idxLast = wheelOrder.indexOf(lastNum);
             
@@ -205,56 +212,68 @@
             } else {
                 travel = (idxLast - idxCurrent + 37) % 37;
             }
-            dists.push(travel);
+            dists.unshift(travel);
         }
         
-        history.push(num);
+        history.unshift(num);
         currentDirection = currentDirection === 'CW' ? 'CCW' : 'CW';
         updateDirectionUI();
 
-        process();
+        if (!isBulkMode) {
+            processEngine();
+        }
     }
 
+    // CRITICAL CORRECTION: Reads bulk block from top to bottom (Top = Newest, Bottom = Oldest)
     function importHistory() {
         const raw = document.getElementById('bulkData').value;
+        // Parse input preserving text rows configuration
         const nums = raw.split(/[\s,]+/).map(Number).filter(n => !isNaN(n) && n >= 0 && n <= 36);
-        nums.forEach(n => track(n));
+        
+        if(nums.length === 0) return;
+
+        // Reset runtime logs to cleanly calculate across the imported dataset matrix
+        resetSession();
+
+        // Process from bottom of the text input box up to the top row (Oldest to Newest)
+        for(let i = nums.length - 1; i >= 0; i--) {
+            executeTrackingStep(nums[i], true);
+        }
+
+        processEngine();
         document.getElementById('bulkData').value = '';
     }
 
-    function process() {
+    function processEngine() {
         if (history.length < 3) {
-            predictedSectorsLog.push([]);
+            predictedSectorsLog.unshift([]);
             return updateUI();
         }
 
-        // 1. COLLECT STATISTICAL ARTIFACTS FROM HISTORICAL DATA
-        const sampleSize = Math.min(dists.length, 6);
-        const activeDists = dists.slice(-sampleSize); 
+        // Pull indicators referencing front indices (since index 0 is newest)
+        const sampleSize = Math.min(dists.length, 5);
+        const activeDists = dists.slice(0, sampleSize); 
         
         const avgDist = activeDists.reduce((a, b) => a + b, 0) / activeDists.length;
         
         const deviations = activeDists.map(d => Math.abs(d - avgDist));
         const avgDev = deviations.reduce((a, b) => a + b, 0) / deviations.length;
 
-        // Bias calculation assessing recent 3-spin trajectory variance vs average
-        const recentSample = dists.slice(-3);
+        // Core dynamic trajectory calculations
+        const recentSample = dists.slice(0, Math.min(dists.length, 3));
         const recentAvg = recentSample.reduce((a, b) => a + b, 0) / recentSample.length;
         const bias = recentAvg - avgDist;
 
-        // 2. ADVANCED NON-LINEAR SIGNATURE PROJECTION 
-        const lastIdx = wheelOrder.indexOf(history[history.length - 1]);
+        const lastIdx = wheelOrder.indexOf(history[0]);
         
-        // Determine deviation adjustment modifier vector based on momentum
-        const lastD = dists[dists.length - 1];
-        const secondLastD = dists[dists.length - 2] ?? lastD;
+        const lastD = dists[0];
+        const secondLastD = dists[1] ?? lastD;
         const deviationSign = (lastD >= secondLastD) ? 1 : -1;
 
-        // Composite mathematical jump calculation
+        // Composite mathematical predictive matrix formula
         let calculatedJump = avgDist + bias + (deviationSign * avgDev);
         let absoluteIntegerLeap = Math.round(calculatedJump);
 
-        // Project leap based on the actual alternating rotation direction matrix
         let predIdx = 0;
         if (currentDirection === 'CW') {
             predIdx = (lastIdx + absoluteIntegerLeap + 37) % 37;
@@ -264,7 +283,9 @@
 
         const targetCenter = wheelOrder[predIdx];
         const targetSector = get7Neighbors(targetCenter);
-        predictedSectorsLog.push(targetSector);
+        
+        // Add current prediction to front of log array for tracking next round's hits
+        predictedSectorsLog.unshift(targetSector);
 
         updateUI(targetCenter, avgDist, avgDev, bias, targetSector);
     }
@@ -296,7 +317,7 @@
         }
 
         document.getElementById('direction-val').innerText = currentDirection;
-        document.getElementById('spins-val').innerText = history.length > 0 ? history[history.length - 1] : "0";
+        document.getElementById('spins-val').innerText = history.length > 0 ? history[0] : "0";
         document.getElementById('count-val').innerText = history.length;
 
         const streakTxtSpan = document.getElementById('streak-txt-span');
@@ -304,7 +325,8 @@
         if(validOutcomes.length === 0) {
             streakTxtSpan.innerText = '-';
         } else {
-            const displayStreak = validOutcomes.slice(-8);
+            // Take the last 8 outcomes chronologically
+            const displayStreak = validOutcomes.slice(0, 8).reverse();
             displayStreak.forEach((outcome, idx) => {
                 const comma = idx < displayStreak.length - 1 ? ',' : '';
                 if(outcome === 'W') {
@@ -317,7 +339,7 @@
 
         const patternNextVal = document.getElementById('pattern-next-val');
         if (validOutcomes.length > 0) {
-            const lastOutcome = validOutcomes[validOutcomes.length - 1];
+            const lastOutcome = validOutcomes[0];
             if(lastOutcome === 'W') {
                 patternNextVal.innerText = 'WIN';
                 patternNextVal.className = 'pattern-win';
@@ -340,23 +362,24 @@
             });
         }
 
+        // Render Session Log UI Table View
         const tbody = document.getElementById('logTable');
         tbody.innerHTML = '';
         
-        history.slice().reverse().forEach((n, i) => {
-            const actualIdx = history.length - 1 - i;
-            const distance = dists[actualIdx - 1] ?? "-";
-            const loggedDirection = spinDirections[actualIdx] || "-";
+        history.forEach((n, idx) => {
+            const distance = dists[idx] ?? "-";
+            const loggedDirection = spinDirections[idx] || "-";
+            const totalSpinsCount = history.length;
             
             let outcomeVerdict = '<span style="opacity: 0.4;">-</span>';
-            if (outcomesLog[actualIdx] !== null && outcomesLog[actualIdx] !== undefined) {
-                outcomeVerdict = outcomesLog[actualIdx] === 'W' 
+            if (outcomesLog[idx] !== null && outcomesLog[idx] !== undefined) {
+                outcomeVerdict = outcomesLog[idx] === 'W' 
                     ? '<span class="trend-up" style="font-weight:bold;">HIT (WIN)</span>' 
                     : '<span class="trend-down">MISS (LOSS)</span>';
             }
 
             tbody.innerHTML += `<tr>
-                <td>${actualIdx + 1}</td>
+                <td>${totalSpinsCount - idx}</td>
                 <td><b>${n}</b></td>
                 <td><span style="font-size:0.8rem; font-weight:bold; color:#94a3b8">${loggedDirection}</span></td>
                 <td>${distance}</td>
