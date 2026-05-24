@@ -7,11 +7,13 @@
     <style>
         :root {
             --primary: #2563eb;
+            --primary-hover: #1d4ed8;
             --success: #16a34a;
             --danger: #dc2626;
             --background: #f8fafc;
             --card-bg: #ffffff;
             --text: #1e293b;
+            --border: #cbd5e1;
         }
 
         body {
@@ -23,39 +25,26 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 450px;
             padding: 20px;
+            box-sizing: border-box;
         }
 
         .card {
             background: var(--card-bg);
-            padding: 30px;
+            padding: 35px;
             border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
             text-align: center;
+            width: 100%;
+            max-width: 400px;
+            transition: all 0.3s ease;
         }
 
         h2 {
             margin-top: 0;
             color: #0f172a;
-        }
-
-        .clock {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin: 20px 0;
-            color: var(--primary);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .date {
-            color: #64748b;
-            margin-bottom: 30px;
-            font-weight: 500;
+            font-size: 1.6rem;
+            margin-bottom: 25px;
         }
 
         .form-group {
@@ -67,174 +56,205 @@
             display: block;
             margin-bottom: 6px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            color: #475569;
         }
 
         input {
             width: 100%;
             padding: 12px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--border);
             border-radius: 8px;
             box-sizing: border-box;
             font-size: 1rem;
-            transition: border 0.2s;
+            transition: all 0.2s;
         }
 
         input:focus {
             outline: none;
             border-color: var(--primary);
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 25px;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
 
         button {
-            flex: 1;
+            width: 100%;
             padding: 14px;
             border: none;
             border-radius: 8px;
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
+            transition: background 0.2s, transform 0.1s;
             color: white;
         }
 
         button:active {
-            transform: scale(0.98);
+            transform: scale(0.99);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Attendance System Dashboard (Hidden initially) */
+        #attendance-system {
+            display: none;
+        }
+
+        .clock {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin: 15px 0 5px 0;
+            color: var(--primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .date {
+            color: #64748b;
+            margin-bottom: 30px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
         }
 
         .btn-checkin { background-color: var(--success); }
         .btn-checkout { background-color: var(--danger); }
 
-        /* Access Denied Overlay */
-        #access-denied {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            z-index: 9999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        /* Error and Status Handlers */
+        .error-msg {
             color: var(--danger);
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: center;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+            text-align: left;
         }
 
-        #access-denied h1 { font-size: 3rem; margin-bottom: 10px; }
-        #access-denied p { color: #64748b; font-size: 1.2rem; }
-
-        /* Status Message */
         #status-log {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 6px;
+            margin-top: 25px;
+            padding: 12px;
+            border-radius: 8px;
             font-size: 0.9rem;
             display: none;
         }
-        .success-log { background: #dcfce7; color: #15803d; }
+        .success-log { 
+            background: #dcfce7; 
+            color: #15803d; 
+            border: 1px solid #bbf7d0;
+        }
     </style>
 </head>
 <body>
 
-    <div id="access-denied">
-        <h1>⚠️ Access Denied</h1>
-        <p>This system can only be accessed from the authorized company domain.</p>
+    <div class="card" id="login-gateway">
+        <h2>Corporate Gateway</h2>
+        <form id="gate-form" onsubmit="verifyGateway(event)">
+            <div class="form-group">
+                <label for="user-email">Domain Email Address</label>
+                <input type="email" id="user-email" placeholder="name@yourcompany.com" required>
+                <div class="error-msg" id="email-error">Invalid corporate domain email address.</div>
+            </div>
+            <div class="form-group">
+                <label for="user-password">Password</label>
+                <input type="password" id="user-password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-primary">Verify & Enter</button>
+        </form>
     </div>
 
-    <div class="container" id="app-container">
-        <div class="card">
-            <h2>Workplace Attendance</h2>
-            <div class="clock" id="live-clock">00:00:00 AM</div>
-            <div class="date" id="live-date">Loading date...</div>
+    <div class="card" id="attendance-system">
+        <h2>Workplace Attendance</h2>
+        <div class="clock" id="live-clock">00:00:00 AM</div>
+        <div class="date" id="live-date">Loading date...</div>
 
-            <div class="form-group">
-                <label for="employee-id">Employee ID</label>
-                <input type="text" id="employee-id" placeholder="e.g. EMP-1024" required>
-            </div>
-
-            <div class="btn-group">
-                <button class="btn-checkin" onclick="logAttendance('Check-In')">Clock In</button>
-                <button class="btn-checkout" onclick="logAttendance('Check-Out')">Clock Out</button>
-            </div>
-
-            <div id="status-log"></div>
+        <div class="form-group">
+            <label for="employee-id">Employee ID / Name</label>
+            <input type="text" id="employee-id" id="active-user" readonly>
         </div>
+
+        <div class="btn-group">
+            <button class="btn-checkin" onclick="logAttendance('Clock-In')">Clock In</button>
+            <button class="btn-checkout" onclick="logAttendance('Clock-Out')">Clock Out</button>
+        </div>
+
+        <div id="status-log"></div>
     </div>
 
     <script>
-        // CONFIGURATION: Set your specific allowed domain here
-        const ALLOWED_DOMAIN = "amazonserviceonline.com"; 
+        // CONFIGURATION: Set your specific allowed email domain here
+        const ALLOWED_DOMAIN = "aloricaservices.com"; 
 
-        // 1. Security Check: Verify Host/Domain
-        function verifyDomain() {
-            const currentHost = window.location.hostname;
+        let authenticatedUserEmail = "";
+
+        // 1. Gateway Email & Password Validation Rule
+        function verifyGateway(event) {
+            event.preventDefault(); // Stop page refresh
             
-            // Allow localhost for testing/development, otherwise enforce rule
-            if (currentHost !== ALLOWED_DOMAIN && currentHost !== "localhost" && currentHost !== "127.0.0.1") {
-                document.getElementById('app-container').style.display = 'none';
-                document.getElementById('access-denied').style.display = 'flex';
-                return false;
+            const emailInput = document.getElementById('user-email').value.trim();
+            const passwordInput = document.getElementById('user-password').value;
+            const emailError = document.getElementById('email-error');
+
+            // Extract the domain segment from the typed email address
+            const emailDomain = emailInput.substring(emailInput.lastIndexOf("@") + 1).toLowerCase();
+
+            // Check if the domain matches perfectly
+            if (emailDomain === ALLOWED_DOMAIN.toLowerCase()) {
+                emailError.style.display = 'none';
+                authenticatedUserEmail = emailInput;
+                
+                // Transition UI: Hide Login, Show Attendance Machine
+                document.getElementById('login-gateway').style.display = 'none';
+                document.getElementById('attendance-system').style.display = 'block';
+                
+                // Pre-populate the user field dynamically with their verified email prefix
+                document.getElementById('employee-id').value = emailInput.split('@')[0].toUpperCase();
+                
+                // Boot live timing engine
+                initClockSystem();
+            } else {
+                // Show unauthorized access domain warning
+                emailError.textContent = `Access Denied. Only @${ALLOWED_DOMAIN} accounts are authorized.`;
+                emailError.style.display = 'block';
             }
-            return true;
         }
 
-        // 2. Real-time Clock and Date
-        function updateClock() {
-            const now = new Date();
-            
-            // Time
-            document.getElementById('live-clock').textContent = now.toLocaleTimeString([], {
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit'
-            });
-            
-            // Date
-            document.getElementById('live-date').textContent = now.toLocaleDateString([], {
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric'
-            });
-        }
-
-        // 3. Attendance Logic
-        function logAttendance(type) {
-            const empId = document.getElementById('employee-id').value.trim();
-            
-            if (!empId) {
-                alert("Please enter your Employee ID before logging time.");
-                return;
+        // 2. Real-time clock initialization 
+        function initClockSystem() {
+            function updateClock() {
+                const now = new Date();
+                document.getElementById('live-clock').textContent = now.toLocaleTimeString([], {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+                document.getElementById('live-date').textContent = now.toLocaleDateString([], {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
             }
-
-            const currentTime = new Date().toLocaleTimeString();
-            const logDiv = document.getElementById('status-log');
-            
-            // Display visual success confirmation
-            logDiv.className = "success-log";
-            logDiv.style.display = "block";
-            logDiv.innerHTML = `<strong>Success!</strong> ${empId} signed <b>${type}</b> at ${currentTime}.`;
-
-            // Ready for Backend integration:
-            console.log(`Sending Payload: Data={ Employee: ${empId}, Action: ${type}, Time: ${new Date().toISOString()} }`);
-            
-            // Optional: Clear input field after successful log
-            document.getElementById('employee-id').value = "";
-        }
-
-        // Initialize setup on page load
-        if (verifyDomain()) {
             setInterval(updateClock, 1000);
             updateClock();
+        }
+
+        // 3. Log Working Hours Action (Clock In / Clock Out)
+        function logAttendance(statusType) {
+            const userIdentifier = document.getElementById('employee-id').value;
+            const timestamp = new Date();
+            const statusLog = document.getElementById('status-log');
+
+            statusLog.className = "success-log";
+            statusLog.style.display = "block";
+            statusLog.innerHTML = `<strong>Logged!</strong> ${userIdentifier} marked <b>${statusType}</b> at ${timestamp.toLocaleTimeString()}.`;
+
+            // Ready for Backend Storage payload structure:
+            console.log("Transmission Data Target API:", {
+                user: authenticatedUserEmail,
+                action: statusType,
+                exact_time: timestamp.toISOString()
+            });
         }
     </script>
 </body>
