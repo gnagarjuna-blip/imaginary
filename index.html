@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Attendance System</title>
+    <title>Smart Attendance & Month Matrix</title>
     <style>
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
             --success: #16a34a;
+            --warning: #eab308;
             --danger: #dc2626;
-            --background: #f8fafc;
+            --background: #f1f5f9;
             --card-bg: #ffffff;
             --text: #1e293b;
             --border: #cbd5e1;
@@ -31,24 +32,26 @@
 
         .card {
             background: var(--card-bg);
-            padding: 35px;
+            padding: 30px;
             border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            text-align: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
             width: 100%;
-            max-width: 400px;
+            max-width: 750px;
             transition: all 0.3s ease;
         }
 
-        h2 {
+        .auth-card {
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h2, h3 {
             margin-top: 0;
             color: #0f172a;
-            font-size: 1.6rem;
-            margin-bottom: 25px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             text-align: left;
         }
 
@@ -62,200 +65,378 @@
 
         input {
             width: 100%;
-            padding: 12px;
+            padding: 10px 12px;
             border: 1px solid var(--border);
             border-radius: 8px;
             box-sizing: border-box;
-            font-size: 1rem;
-            transition: all 0.2s;
+            font-size: 0.95rem;
         }
 
         input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
 
         button {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             border: none;
             border-radius: 8px;
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
             color: white;
+            transition: background 0.2s;
         }
 
-        button:active {
-            transform: scale(0.99);
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-        }
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        /* Attendance System Dashboard (Hidden initially) */
-        #attendance-system {
-            display: none;
-        }
-
-        .clock {
-            font-size: 2.8rem;
-            font-weight: 700;
-            margin: 15px 0 5px 0;
+        .btn-primary { background-color: var(--primary); }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        
+        .toggle-link {
+            margin-top: 15px;
+            font-size: 0.85rem;
             color: var(--primary);
-            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+            display: inline-block;
         }
 
-        .date {
-            color: #64748b;
-            margin-bottom: 30px;
-            font-weight: 500;
-            font-size: 0.95rem;
+        /* Dashboard Interface Details */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
         }
 
-        .btn-group {
+        .clock-section {
+            text-align: right;
+        }
+
+        #live-clock {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .actions-bar {
             display: flex;
             gap: 15px;
+            margin-bottom: 25px;
         }
 
         .btn-checkin { background-color: var(--success); }
         .btn-checkout { background-color: var(--danger); }
 
-        /* Error and Status Handlers */
-        .error-msg {
+        /* Calendar Grid Layout */
+        .grid-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .grid-header {
+            font-weight: bold;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #64748b;
+            text-align: center;
+            padding: 5px 0;
+        }
+
+        .day-cell {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            min-height: 65px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Color Coding States */
+        .state-empty { background-color: #f8fafc; color: #475569;}
+        .state-progress { background-color: #fef9c3; border-color: #fde047; color: #854d0e; } /* Yellow */
+        .state-complete { background-color: #dcfce7; border-color: #bbf7d0; color: #166534; } /* Green */
+
+        .time-stamp {
+            font-size: 0.7rem;
+            font-weight: normal;
+            margin-top: 2px;
+            display: block;
+        }
+
+        .error-text {
             color: var(--danger);
             font-size: 0.85rem;
             margin-top: 5px;
             display: none;
-            text-align: left;
         }
-
-        #status-log {
-            margin-top: 25px;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            display: none;
-        }
-        .success-log { 
-            background: #dcfce7; 
-            color: #15803d; 
-            border: 1px solid #bbf7d0;
+        
+        .logout-btn {
+            background: #64748b;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            width: auto;
         }
     </style>
 </head>
 <body>
 
-    <div class="card" id="login-gateway">
-        <h2>Corporate Gateway</h2>
-        <form id="gate-form" onsubmit="verifyGateway(event)">
+    <div class="card auth-card" id="register-view">
+        <h2>Register Account</h2>
+        <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">Setup your workplace credentials</p>
+        <form onsubmit="handleRegister(event)">
             <div class="form-group">
-                <label for="user-email">Domain Email Address</label>
-                <input type="email" id="user-email" placeholder="name@yourcompany.com" required>
-                <div class="error-msg" id="email-error">Invalid corporate domain email address.</div>
+                <label for="reg-email">Company Email</label>
+                <input type="email" id="reg-email" placeholder="username@yourcompany.com" required>
+                <div class="error-text" id="reg-error"></div>
             </div>
             <div class="form-group">
-                <label for="user-password">Password</label>
-                <input type="password" id="user-password" placeholder="••••••••" required>
+                <label for="reg-pass">Password</label>
+                <input type="password" id="reg-pass" placeholder="••••••••" required>
             </div>
-            <button type="submit" class="btn-primary">Verify & Enter</button>
+            <button type="submit" class="btn-primary">Create Account</button>
         </form>
+        <span class="toggle-link" onclick="switchView('login-view')">Already registered? Log In here</span>
     </div>
 
-    <div class="card" id="attendance-system">
-        <h2>Workplace Attendance</h2>
-        <div class="clock" id="live-clock">00:00:00 AM</div>
-        <div class="date" id="live-date">Loading date...</div>
+    <div class="card auth-card" id="login-view" style="display: none;">
+        <h2>Company Sign In</h2>
+        <form onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="login-email">Company Email</label>
+                <input type="email" id="login-email" required>
+                <div class="error-text" id="login-error">Account details don't match.</div>
+            </div>
+            <div class="form-group">
+                <label for="login-pass">Password</label>
+                <input type="password" id="login-pass" required>
+            </div>
+            <button type="submit" class="btn-primary">Access Dashboard</button>
+        </form>
+        <span class="toggle-link" onclick="switchView('register-view')">Need to register? Create account</span>
+    </div>
 
-        <div class="form-group">
-            <label for="employee-id">Employee ID / Name</label>
-            <input type="text" id="employee-id" id="active-user" readonly>
+    <div class="card" id="dashboard-view" style="display: none;">
+        <div class="dashboard-header">
+            <div>
+                <h3 id="welcome-message" style="margin:0 0 5px 0;">Welcome back!</h3>
+                <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+            </div>
+            <div class="clock-section">
+                <div id="live-clock">00:00:00 PM</div>
+                <div id="live-date" style="font-size:0.85rem; color:#64748b;">Date</div>
+            </div>
         </div>
 
-        <div class="btn-group">
-            <button class="btn-checkin" onclick="logAttendance('Clock-In')">Clock In</button>
-            <button class="btn-checkout" onclick="logAttendance('Clock-Out')">Clock Out</button>
+        <div class="actions-bar">
+            <button class="btn-checkin" onclick="executeTimeLog('in')">Clock In Daily Work</button>
+            <button class="btn-checkout" onclick="executeTimeLog('out')">Clock Out / Finish</button>
         </div>
 
-        <div id="status-log"></div>
+        <div class="grid-title" id="calendar-title">Monthly Attendance Matrix</div>
+        
+        <div class="month-grid" id="attendance-matrix">
+            </div>
     </div>
 
     <script>
-        // CONFIGURATION: Set your specific allowed email domain here
-        const ALLOWED_DOMAIN = "aloricaservices.com"; 
+        // CONFIGURATION: Set the allowed corporate domain name here
+        const EXCLUSIVE_DOMAIN = "yourcompany.com";
 
-        let authenticatedUserEmail = "";
+        let currentActiveUser = null;
+        let attendanceDatabase = {}; 
 
-        // 1. Gateway Email & Password Validation Rule
-        function verifyGateway(event) {
-            event.preventDefault(); // Stop page refresh
+        // 1. Scene Controller Router Switching Engine
+        function switchView(targetId) {
+            document.getElementById('register-view').style.display = 'none';
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById(targetId).style.display = 'block';
+        }
+
+        // 2. Action Handlers: Registration Process
+        function handleRegister(e) {
+            e.preventDefault();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-pass').value;
+            const errDiv = document.getElementById('reg-error');
             
-            const emailInput = document.getElementById('user-email').value.trim();
-            const passwordInput = document.getElementById('user-password').value;
-            const emailError = document.getElementById('email-error');
-
-            // Extract the domain segment from the typed email address
-            const emailDomain = emailInput.substring(emailInput.lastIndexOf("@") + 1).toLowerCase();
-
-            // Check if the domain matches perfectly
-            if (emailDomain === ALLOWED_DOMAIN.toLowerCase()) {
-                emailError.style.display = 'none';
-                authenticatedUserEmail = emailInput;
-                
-                // Transition UI: Hide Login, Show Attendance Machine
-                document.getElementById('login-gateway').style.display = 'none';
-                document.getElementById('attendance-system').style.display = 'block';
-                
-                // Pre-populate the user field dynamically with their verified email prefix
-                document.getElementById('employee-id').value = emailInput.split('@')[0].toUpperCase();
-                
-                // Boot live timing engine
-                initClockSystem();
-            } else {
-                // Show unauthorized access domain warning
-                emailError.textContent = `Access Denied. Only @${ALLOWED_DOMAIN} accounts are authorized.`;
-                emailError.style.display = 'block';
+            const domainSegment = email.substring(email.lastIndexOf("@") + 1).toLowerCase();
+            
+            if(domainSegment !== EXCLUSIVE_DOMAIN.toLowerCase()) {
+                errDiv.textContent = `Registration blocked. Must use a @${EXCLUSIVE_DOMAIN} email.`;
+                errDiv.style.display = 'block';
+                return;
             }
+            
+            errDiv.style.display = 'none';
+            localStorage.setItem(`user_${email}`, JSON.stringify({ email: email, pass: pass }));
+            alert("Account registered successfully! Please log in.");
+            switchView('login-view');
         }
 
-        // 2. Real-time clock initialization 
-        function initClockSystem() {
-            function updateClock() {
-                const now = new Date();
-                document.getElementById('live-clock').textContent = now.toLocaleTimeString([], {
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
-                document.getElementById('live-date').textContent = now.toLocaleDateString([], {
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                });
+        // 3. Action Handlers: Login Verification Processing 
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            const errDiv = document.getElementById('login-error');
+
+            const storedRecord = localStorage.getItem(`user_${email}`);
+            if (storedRecord) {
+                const parsedUserData = JSON.parse(storedRecord);
+                if (parsedUserData.pass === pass) {
+                    errDiv.style.display = 'none';
+                    initializeSession(email);
+                    return;
+                }
             }
-            setInterval(updateClock, 1000);
-            updateClock();
+            errDiv.style.display = 'block';
         }
 
-        // 3. Log Working Hours Action (Clock In / Clock Out)
-        function logAttendance(statusType) {
-            const userIdentifier = document.getElementById('employee-id').value;
-            const timestamp = new Date();
-            const statusLog = document.getElementById('status-log');
+        // 4. Boot Up Session Workspace Dashboard
+        function initializeSession(email) {
+            currentActiveUser = email;
+            
+            // Extract username handle for display UI personalization
+            const userHandle = email.split('@')[0].toUpperCase();
+            document.getElementById('welcome-message').textContent = `Employee: ${userHandle}`;
+            
+            // Load users individual attendance history dataset profiles from LocalStorage
+            const records = localStorage.getItem(`logs_${currentActiveUser}`);
+            attendanceDatabase = records ? JSON.parse(records) : {};
 
-            statusLog.className = "success-log";
-            statusLog.style.display = "block";
-            statusLog.innerHTML = `<strong>Logged!</strong> ${userIdentifier} marked <b>${statusType}</b> at ${timestamp.toLocaleTimeString()}.`;
+            switchView('dashboard-view');
+            renderCalendarMatrix();
+        }
 
-            // Ready for Backend Storage payload structure:
-            console.log("Transmission Data Target API:", {
-                user: authenticatedUserEmail,
-                action: statusType,
-                exact_time: timestamp.toISOString()
+        function handleLogout() {
+            currentActiveUser = null;
+            document.getElementById('login-email').value = '';
+            document.getElementById('login-pass').value = '';
+            switchView('login-view');
+        }
+
+        // 5. Build Dynamic Month Matrix System Core Grid UI
+        function renderCalendarMatrix() {
+            const container = document.getElementById('attendance-matrix');
+            container.innerHTML = ''; // Reset UI panel
+            
+            const now = new Date();
+            const targetYear = now.getFullYear();
+            const targetMonth = now.getMonth(); // 0-indexed
+
+            document.getElementById('calendar-title').textContent = now.toLocaleString('default', { month: 'long', year: 'numeric' }) + " Timecard Matrix";
+
+            // Add Header Labels for Weekdays
+            const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            daysOfWeek.forEach(day => {
+                const headerNode = document.createElement('div');
+                headerNode.className = 'grid-header';
+                headerNode.textContent = day;
+                container.appendChild(headerNode);
             });
+
+            // Calculate starting paddings day indicators
+            const entryFirstDayOffset = new Date(targetYear, targetMonth, 1).getDay();
+            const totalDaysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+            // Render Empty Grid Structural Dividers
+            for (let i = 0; i < entryFirstDayOffset; i++) {
+                const blankCell = document.createElement('div');
+                container.appendChild(blankCell);
+            }
+
+            // Render real Days cells
+            for (let day = 1; day <= totalDaysInMonth; day++) {
+                const cell = document.createElement('div');
+                cell.className = 'day-cell';
+                
+                // Formulate a clean string tracking key (Format: YYYY-MM-DD)
+                const dateKey = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dailyLog = attendanceDatabase[dateKey] || null;
+
+                // Evaluate State to apply responsive background profiles styling color blocks
+                if(dailyLog) {
+                    if (dailyLog.checkIn && dailyLog.checkOut) {
+                        cell.classList.add('state-complete'); // Green block complete
+                    } else if (dailyLog.checkIn) {
+                        cell.classList.add('state-progress'); // Yellow block active tracking
+                    }
+                } else {
+                    cell.classList.add('state-empty');
+                }
+
+                // Internal text layout builder
+                let logDataHTML = '';
+                if(dailyLog) {
+                    if(dailyLog.checkIn) logDataHTML += `<span class="time-stamp">🛫 In: ${dailyLog.checkIn}</span>`;
+                    if(dailyLog.checkOut) logDataHTML += `<span class="time-stamp">🛬 Out: ${dailyLog.checkOut}</span>`;
+                }
+
+                cell.innerHTML = `<div>${day}</div><div>${logDataHTML}</div>`;
+                container.appendChild(cell);
+            }
         }
+
+        // 6. Log Execution Logic Engine (Calculates input tracking triggers)
+        function executeTimeLog(type) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`;
+            
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (!attendanceDatabase[dateKey]) {
+                attendanceDatabase[dateKey] = { checkIn: null, checkOut: null };
+            }
+
+            if (type === 'in') {
+                if(attendanceDatabase[dateKey].checkIn) {
+                    alert("You have already recorded a Check-In timestamp entry for today.");
+                    return;
+                }
+                attendanceDatabase[dateKey].checkIn = timeString;
+            } else if (type === 'out') {
+                if(!attendanceDatabase[dateKey].checkIn) {
+                    alert("Action Rejected: You must initiate a Daily Check-In before choosing to check-out.");
+                    return;
+                }
+                if(attendanceDatabase[dateKey].checkOut) {
+                    alert("You have already recorded a completed Check-Out stamp execution today.");
+                    return;
+                }
+                attendanceDatabase[dateKey].checkOut = timeString;
+            }
+
+            // Save state array adjustments to client device sandbox partition 
+            localStorage.setItem(`logs_${currentActiveUser}`, JSON.stringify(attendanceDatabase));
+            
+            // Re-render UI table updates
+            renderCalendarMatrix();
+        }
+
+        // Live Operational System Clock Runtime Loop Module
+        setInterval(() => {
+            const timeObj = new Date();
+            document.getElementById('live-clock').textContent = timeObj.toLocaleTimeString();
+            document.getElementById('live-date').textContent = timeObj.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+        }, 1000);
     </script>
 </body>
 </html>
